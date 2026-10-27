@@ -39,7 +39,7 @@ The GraphQL context carries the Better Auth session (`ctx.session`); see the `me
 Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`).
 
 - **Deploys:** every push to `main` triggers Cloud Build, which builds the `Dockerfile` and rolls out a new Cloud Run revision.
-- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com` and `CORS_ORIGINS=` (no web client). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET` and optionally `EXPO_ACCESS_TOKEN`.
+- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (no web client). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET` and optionally `EXPO_ACCESS_TOKEN`.
 - **Production behavior** (`NODE_ENV=production`, set in the image):
   - The OpenAPI auth reference is disabled.
   - GraphQL introspection and Apollo Sandbox are off.

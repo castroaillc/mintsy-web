@@ -10,6 +10,8 @@ export const env = {
   isProduction: process.env.NODE_ENV === "production",
   port: Number(process.env.PORT ?? 4000),
   mongodbUri: required("MONGODB_URI"),
+  // Optional: overrides the database name in MONGODB_URI
+  mongodbDb: process.env.MONGODB_DB || undefined,
   betterAuthSecret: required("BETTER_AUTH_SECRET"),
   betterAuthUrl: required("BETTER_AUTH_URL"),
   // Optional: only needed if "enhanced push security" is enabled for the Expo project
