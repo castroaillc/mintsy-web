@@ -1,0 +1,108 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Cancel superseded CI runs on the same branch; never cancel a production deploy mid-way
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  PROJECT_ID: mintsy-prod
+  REGION: us-central1
+  SERVICE: mintsy-api
+  IMAGE: us-central1-docker.pkg.dev/mintsy-prod/mintsy/api
+
+jobs:
+  check:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+
+  integration:
+    name: Docker image + auth smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start MongoDB (single-node replica set, needed for Better Auth transactions)
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:8 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval "db.adminCommand('ping').ok" && break
+            sleep 1
+          done
+          docker exec mongo mongosh --quiet --eval \
+            "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })"
+
+      - name: Build production image
+        run: docker build -t mintsy-api:ci .
+
+      - name: Run image
+        run: |
+          docker run -d --name api --network host \
+            -e PORT=8080 \
+            -e "MONGODB_URI=mongodb://localhost:27017/ci?directConnection=true" \
+            -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+            -e BETTER_AUTH_URL=http://localhost:8080 \
+            -e CORS_ORIGINS= \
+            mintsy-api:ci
+          for i in $(seq 1 30); do curl -sf http://localhost:8080/health && break; sleep 1; done
+
+      - name: Smoke test
+        run: scripts/smoke-test.sh http://localhost:8080
+
+      - name: Container logs
+        if: failure()
+        run: docker logs api
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: [check, integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation (no stored keys)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/884851838962/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deployer@mintsy-prod.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE:$GITHUB_SHA" .
+          docker push "$IMAGE:$GITHUB_SHA"
+
+      # Only swaps the image; env vars, secrets and scaling stay as configured on the service
+      - name: Deploy
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --image "$IMAGE:$GITHUB_SHA" \
+            --quiet
+
+      - name: Health check
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/health"
