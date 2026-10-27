@@ -1,0 +1,34 @@
+import { NativeTabs } from 'expo-router/native-tabs';
+import { styled } from 'nativewind';
+import type { ReactNode } from 'react';
+import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+
+function TintedTabsBase({ style, children }: { style?: StyleProp<TextStyle>; children: ReactNode }) {
+  return <NativeTabs tintColor={StyleSheet.flatten(style)?.color}>{children}</NativeTabs>;
+}
+
+/** NativeTabs whose selected color comes from a theme class, so it follows light/dark mode. */
+const TintedTabs = styled(TintedTabsBase, { className: 'style' });
+
+export default function AppTabs() {
+  return (
+    <TintedTabs className="text-brand">
+      <NativeTabs.Trigger name="(home)">
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="search">
+        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="my-list">
+        <NativeTabs.Trigger.Label>My List</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'bookmark', selected: 'bookmark.fill' }} md="bookmark" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="downloads">
+        <NativeTabs.Trigger.Label>Downloads</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'arrow.down.circle', selected: 'arrow.down.circle.fill' }} md="download" />
+      </NativeTabs.Trigger>
+    </TintedTabs>
+  );
+}
