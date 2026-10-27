@@ -40,7 +40,9 @@ jobs:
 
       - name: Start MongoDB (single-node replica set, needed for Better Auth transactions)
         run: |
-          docker run -d --name mongo -p 27017:27017 mongo:8 --replSet rs0 --bind_ip_all
+          # mongo 7.0: MongoDB 8.0+ refuses to start on Linux kernel 6.19+, which some
+          # GitHub runners use (https://jira.mongodb.org/browse/SERVER-121912)
+          docker run -d --name mongo -p 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
           for i in $(seq 1 30); do
             docker exec mongo mongosh --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null && break
             sleep 1
