@@ -1,54 +1,82 @@
-# Remotion video
+# studio
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+Turns a book PDF into mintsy episodes: one ~5-minute narrated, animated video per chapter.
 
-Welcome to your Remotion project!
-
-## Commands
-
-**Install Dependencies**
-
-```console
-npm i --loglevel=error
+```
+book.pdf ─ingest─▶ book.json (metadata + chapter pages)
+                     │
+   episode ─▶ chapter.txt ─▶ script.json ─▶ scenes.json ─▶ voice.json + audio/ ─▶ episode.mp4 + thumbnail.jpg
+              (pages)        (Claude)       (Claude)       (ElevenLabs)            (Remotion)
+                                                                                      │
+   publish ─▶ gs://mintsy-media + backend/scripts/catalog.json ◀─────────────────────┘
 ```
 
-**Start Preview**
+| Step | What it does | Output (in `work/<book>/ep-<nn>/`) |
+|---|---|---|
+| `ingest` | Extracts text per page; Claude reads the book once for title, author, category, colors and chapter page ranges | `work/<book>/book.json`, `pages.json` |
+| `chapter` | Cuts the chapter's pages out | `chapter.txt` |
+| `script` | Claude writes ~700 words of narration, a one-line summary and 3 takeaways | `script.json` |
+| `scenes` | Claude splits the narration into 10–16 scenes and picks a visual template for each, with cue phrases that time on-screen items to the voice | `scenes.json` |
+| `voice` | ElevenLabs narrates each scene with character timestamps; cue times and per-sentence transcript lines come from those | `audio/*.mp3`, `voice.json` |
+| `render` | Remotion renders 1280×720 H.264 (faststart) and a thumbnail | `episode.mp4`, `thumbnail.jpg` |
+| `publish` | Uploads to the media bucket under a content-hashed name and writes the episode (title, summary, takeaways, transcript, duration, paths) into the backend catalog | — |
 
-```console
-npm run dev
+## Setup
+
+```sh
+pnpm install
+cp .env.example .env     # ElevenLabs key and voice
+ant auth login           # or set ANTHROPIC_API_KEY in .env
 ```
 
-**Render video**
+Also needs `ffmpeg` (`brew install ffmpeg`) and, for `publish`, `gcloud` signed in with access to `gs://mintsy-media`.
 
-```console
-npx remotion render
+## Usage
+
+```sh
+pnpm run pipeline ingest ~/Books/psychology-of-money.pdf --book psychology-of-money
+pnpm run pipeline episode --book psychology-of-money --chapter 4
+pnpm run pipeline publish --book psychology-of-money --chapter 4
+cd ../backend && pnpm seed:catalog
 ```
 
-**Upgrade Remotion**
+Every step writes a file you can read and edit. A step is skipped when its output already exists, so hand edits survive; use `--from <step>` to regenerate from that step on (e.g. `--from scenes` after editing `script.json`, `--from render` after changing a template), and `--to <step>` to stop early (e.g. `--to scenes` to review before paying for voice).
 
-```console
-npx remotion upgrade
+The `--book` id becomes the book's id in the app; use the existing id (e.g. `psychology-of-money`) to fill in that series' episodes.
+
+## Look
+
+Episodes use the **collage** style by default: diagonal stripes, paper cut-out cards, puppet figures, icon stickers, rubber stamps and condensed kinetic type, with paper grain and a vignette. Every episode opens with the mintsy logo intro (book and chapter on tape) and has a background music bed.
+
+- `src/collage/schema.ts`: what Claude fills in per scene: one or two **beats**, each a background plus a layout (`stage`, `headline`, `counter`, `lineup`, `versus`, `takeaways`) made of props (puppet `figure`s with hat/mood/outfit, or `icon`s) that appear on spoken cue phrases.
+- `src/collage/Layouts.tsx`: how each layout is drawn; `src/collage/kit.tsx`: stripes, puppets, stamps, kinetic lines, paper finish.
+- `src/collage/icons.ts`: the ~120 icons Claude may use ([Phosphor](https://phosphoricons.com), MIT). To add one, add the name to `iconNames.ts` and map it in `icons.ts`.
+- `src/branding/`: the logo intro and music (`brand/intro-sting.mp3`, `brand/music-bed.mp3`, generated once with Google Lyria on Vertex AI; volumes in `Branded.tsx`).
+
+The collage schema is too nested for constrained decoding, so Claude gets its JSON Schema in the prompt and the reply is validated (structure, verbatim narration, cue phrases, icon names) with one retry on problems. Re-running `--from scenes` with an unchanged script keeps the existing scene split, so cached narration is reused and only the visuals change.
+
+`VIDEO_STYLE=cards pnpm run pipeline episode … --from scenes` regenerates the original text-card style instead; `render` picks the composition from the scenes' format.
+
+## Previewing and changing the look
+
+`pnpm dev` opens Remotion Studio with sample props (`CollageEpisode` shows every layout). To preview a generated episode with its audio:
+
+```sh
+npx remotion studio --public-dir work/<book>/ep-<nn> --props work/<book>/ep-<nn>/props.json
 ```
 
-## Docs
+Then open the `CollageEpisode` composition. (`props.json` is written by `render`: book title, chapter, episode title and the timed scenes from `voice.json`.)
 
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
+Adding a collage layout means adding it to `src/collage/schema.ts` (what Claude can ask for) and `src/collage/Layouts.tsx` (how it's drawn). The older text-card templates live in `src/episode/`.
 
-## Help
+## Content rules
 
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
+The script prompt (`pipeline/steps/script.ts`) requires narration in our own words, only facts from the chapter, and at most one short attributed quote. Review scripts before publishing: summaries of copyrighted books are only safe as genuinely original commentary.
 
-## Issues
+## Costs (per episode, approximate)
 
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
+- Claude Opus 5.5: ingest ≈ $0.50–1.00 once per book (whole book in context); script + scenes ≈ $0.15
+- ElevenLabs: ~4,500 characters ≈ 4,500 credits
+- Rendering is local (a few minutes on an M-series Mac)
 
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+Remotion is free for companies of up to 3 people; larger teams need a [company license](https://www.remotion.pro/license).
