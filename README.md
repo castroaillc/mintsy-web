@@ -8,8 +8,10 @@ book.pdf ─ingest─▶ book.json (metadata + chapter pages)
    episode ─▶ chapter.txt ─▶ script.json ─▶ scenes.json ─▶ voice.json + audio/ ─▶ episode.mp4 + thumbnail.jpg
               (pages)        (Claude)       (Claude)       (ElevenLabs)            (Remotion)
                                                                                       │
-   publish ─▶ gs://mintsy-media + backend/scripts/catalog.json ◀─────────────────────┘
+   upload ─▶ gs://mintsy-media + draft episode in MongoDB `books` ◀────────────────────┘
 ```
+
+Staff run this from the admin dashboard (`mintsy-admin/`): it queues jobs in MongoDB and `pnpm worker` here runs them. MongoDB `books` is the catalog's source of truth; the worker writes **drafts** and staff publish them in the dashboard. The CLI below still works for hand runs.
 
 | Step | What it does | Output (in `work/<book>/ep-<nn>/`) |
 |---|---|---|
@@ -19,7 +21,8 @@ book.pdf ─ingest─▶ book.json (metadata + chapter pages)
 | `scenes` | Claude splits the narration into 10–16 scenes and picks a visual template for each, with cue phrases that time on-screen items to the voice | `scenes.json` |
 | `voice` | ElevenLabs narrates each scene with character timestamps; cue times and per-sentence transcript lines come from those | `audio/*.mp3`, `voice.json` |
 | `render` | Remotion renders 1280×720 H.264 (faststart) and a thumbnail | `episode.mp4`, `thumbnail.jpg` |
-| `publish` | Uploads to the media bucket under a content-hashed name and writes the episode (title, summary, takeaways, transcript, duration, paths) into the backend catalog | — |
+| upload (worker `render` job) | Uploads to the media bucket under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg`, `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs) and upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft | — |
+| `publish` (legacy CLI) | Same upload, but writes the episode into `backend/scripts/catalog.json` instead of MongoDB | — |
 
 ## Setup
 
@@ -29,16 +32,41 @@ cp .env.example .env     # ElevenLabs key and voice
 ant auth login           # or set ANTHROPIC_API_KEY in .env
 ```
 
-Also needs `ffmpeg` (`brew install ffmpeg`) and, for `publish`, `gcloud` signed in with access to `gs://mintsy-media`.
+Also needs `ffmpeg` (`brew install ffmpeg`) and, for uploads (worker `render` jobs, legacy `publish`), `gcloud` signed in with access to `gs://mintsy-media`. The worker also needs `MONGODB_URI` in `.env`.
+
+## Worker (admin dashboard jobs)
+
+```sh
+pnpm worker                              # runs queued jobs from <MONGODB_DB>.studio_jobs, one at a time
+STUDIO_WORKER_DRY_RUN=1 pnpm worker      # fake results, no Claude / ElevenLabs / Remotion / bucket
+```
+
+| Env | Default | |
+|---|---|---|
+| `MONGODB_URI` | (required) | e.g. `mongodb://localhost:27017` |
+| `MONGODB_DB` | `mintsy` | database holding `books` and `studio_jobs` |
+| `STUDIO_WORKER_DRY_RUN` | off | `1` fakes every job's work and result, but still writes `studio_jobs` and `books` |
+| `STUDIO_WORKER_ID` | hostname | stored on claimed jobs; on startup, `running` jobs with this id are marked `failed` |
+| `STUDIO_WORKER_POLL_MS` | `2000` | how often to look for a queued job when idle |
+
+Job flow (contract: "Studio jobs" in `.claude/skills/mintsy-contracts`): the dashboard inserts `{ kind, bookId, …, status: "queued", log: [], createdAt }`; the worker claims the oldest queued job (`findOneAndUpdate` → `running`, `startedAt`, `workerId`), streams console output into `log` (last 500 lines, flushed every second), and finishes it as `succeeded` + `result` or `failed` + `error`.
+
+| Kind | Input | Does | `result` |
+|---|---|---|---|
+| `ingest` | `bookId`, `pdfPath` | `ingest`, then inserts the book into `books` (status `draft`, `episodes: []`, `order` after the last book) only if the id is new | `{ book: { title, author, category, description }, chapters: [{ number, title }] }` |
+| `script` | `bookId`, `chapter`, `regenerate?` | episode steps up to `scenes` (from `script` when `regenerate`) | `{ script, scenes }` (contents of script.json / scenes.json) |
+| `render` | `bookId`, `chapter`, `scriptJson?`, `scenesJson?` | writes the edited files, reruns from `voice` (from `scenes` if only the script's narration changed), renders, uploads, upserts the episode into `books` as `draft` | `{ durationSec, videoPath, thumbnailPath }` |
+
+A render job always re-renders and always returns the episode to `draft`, even if it was published. Voice audio is cached per scene, so only changed narration is paid for. Ctrl-C stops the worker after the current job; a second Ctrl-C aborts the job and marks it failed.
 
 ## Usage
 
 ```sh
 pnpm run pipeline ingest ~/Books/psychology-of-money.pdf --book psychology-of-money
 pnpm run pipeline episode --book psychology-of-money --chapter 4
-pnpm run pipeline publish --book psychology-of-money --chapter 4
-cd ../backend && pnpm seed:catalog
 ```
+
+Legacy: `pnpm run pipeline publish --book <id> --chapter <n>` uploads and writes `backend/scripts/catalog.json` for `pnpm seed:catalog`. Seeding only adds missing books now, so use the worker (`render` job) to get episodes into MongoDB.
 
 Every step writes a file you can read and edit. A step is skipped when its output already exists, so hand edits survive; use `--from <step>` to regenerate from that step on (e.g. `--from scenes` after editing `script.json`, `--from render` after changing a template), and `--to <step>` to stop early (e.g. `--to scenes` to review before paying for voice).
 
