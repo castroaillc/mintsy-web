@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo first-run home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="home" top="none" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 24px 28px; border-right: 1px solid #1E2028; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.6px">mintsy<span style="color: {{accent}}">.</span></div>
+<a href="DuoProfile.dc.html" aria-label="Profile" style="width: 44px; height: 44px; border-radius: 22px; background: #24382F; border: 2px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px">S</a>
+</div>
+<div>
+<div style="font-size: 14px; color: #A3A5B0">Welcome, Steve</div>
+<h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.12">Start your first series</h1>
+</div>
+<div style="border-radius: 22px; overflow: hidden; background: #17181F; border: 1px solid #23252E">
+<div style="display: flex; gap: 16px; align-items: center; padding: 18px; background: #24382F">
+<div style="flex: none; width: 96px; height: 144px; border-radius: 6px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 10px 9px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 28px rgba(0,0,0,0.4)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.05">The Psychology of Money</div>
+<div style="font-size: 8px; font-weight: 500">Morgan Housel</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; font-weight: 600; color: #F5DFA0">Your pick from onboarding</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">The Psychology of Money</div>
+<div style="font-size: 13px; color: #D6E2DA">20 episodes · 5 min each</div>
+</div>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 14px; color: #C9CAD2"><b style="color: #F2F2F5; font-weight: 600">Episode 1 of 20 · No One’s Crazy</b> · 4:52 · Free</div>
+<a href="DuoPlayerOpen.dc.html" style="height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Start Episode 1</a>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<div role="img" aria-label="0 of 15 minutes today" style="flex: none; width: 48px; height: 48px; border-radius: 24px; border: 5px solid #2A2C36; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">0</div>
+<div style="display: flex; flex-direction: column; gap: 3px"><div style="font-size: 15px; font-weight: 600">Today’s goal: 15 minutes</div><div style="font-size: 13px; color: #A3A5B0">That’s 3 episodes. Your streak starts today.</div></div>
+</div>
+</section>
+
+<section class="scroll" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 24px 0 24px 28px; overflow-y: auto">
+<a href="DuoSearch.dc.html" style="display: flex; align-items: center; gap: 10px; height: 48px; margin-right: 28px; padding: 0 16px; border-radius: 14px; background: #17181F; border: 1px solid #2A2C36; color: #8B8D99; font-size: 15px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search books, authors, topics</a>
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="3">
+<section style="padding-top: 24px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding-right: 28px; margin-bottom: 12px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700">{{row.heading}}</h2>
+<a href="DuoCategory.dc.html" style="font-size: 14px; color: #A3A5B0">See all</a>
+</div>
+<div class="scroll" style="display: flex; gap: 12px; overflow-x: auto; padding-right: 28px">
+<sc-for list="{{row.books}}" as="b" hint-placeholder-count="4">
+<a href="DuoSeriesOpen.dc.html" aria-label="{{b.title}} by {{b.author}}" style="flex: none; width: 112px; height: 168px; position: relative; border-radius: 8px; overflow: hidden; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 30px 10px 10px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="position: absolute; top: 7px; left: 7px; height: 18px; padding: 0 6px; border-radius: 9px; background: rgba(13,14,18,0.78); color: #F2F2F5; font-size: 10px; font-weight: 600; display: flex; align-items: center">{{b.eps}} eps</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; line-height: 1.08">{{b.title}}</span>
+<span style="font-size: 10px; font-weight: 500">{{b.author}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const b = (title, author, eps, bg, fg) => ({ title, author, eps, bg, fg });
+    const rows = [
+      { heading: 'Because you picked Finance', books: [b('The Intelligent Investor', 'Benjamin Graham', 20, '#1E3557', '#F4EFE6'), b('I Will Teach You to Be Rich', 'Ramit Sethi', 10, '#E2B34C', '#1C1C1C'), b('Rich Dad Poor Dad', 'Robert T. Kiyosaki', 10, '#5B2333', '#F7E9EC'), b('The Simple Path to Wealth', 'JL Collins', 30, '#C9D6CF', '#1C1C1C')] },
+      { heading: 'Because you picked Psychology', books: [b('Thinking, Fast and Slow', 'Daniel Kahneman', 38, '#F0EEE9', '#1C1C1C'), b('Sapiens', 'Yuval Noah Harari', 20, '#B9542F', '#FFF4EE'), b('The Lean Startup', 'Eric Ries', 14, '#3A2F5B', '#F2EEFA'), b('Die with Zero', 'Bill Perkins', 9, '#24382F', '#F4EFE6')] },
+      { heading: 'Popular this week', books: [b('Atomic Habits', 'James Clear', 20, '#C9D6CF', '#1C1C1C'), b('The Little Book of Common Sense Investing', 'John C. Bogle', 19, '#2F4A3D', '#F4EFE6'), b('The Psychology of Money', 'Morgan Housel', 20, '#E7DFCF', '#1C1C1C'), b('The Millionaire Next Door', 'Thomas J. Stanley', 8, '#B9542F', '#FFF4EE')] }
+    ];
+    return { accent, rows };
+  }
+}
+</script>
+</body>
+</html>

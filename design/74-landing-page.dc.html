@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mintsy landing page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+.lp{container-type:inline-size}
+.lp a{color:inherit;text-decoration:none}
+.lp .mock a{pointer-events:none}
+.lp .dc-annot{display:none !important}
+.lp .navlink:hover{color:#F2F2F5}
+.lp .btn:hover{background:#FFD27A}
+.lp .ghost:hover{border-color:#5A5D6B}
+.lp .faq-q:hover{color:#FFFFFF}
+.lp .h1{font-size:clamp(40px, 4.9cqi, 70px)}
+.lp .h2{font-size:clamp(30px, 4cqi, 54px)}
+@media (prefers-reduced-motion: no-preference){.lp .faq-a{animation:fadein .2s ease}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div class="lp" style="width: 100%; min-width: 0; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; overflow: hidden">
+
+<header style="position: relative; z-index: 2; max-width: 1240px; margin: 0 auto; padding: 22px 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<a href="#top" style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.5px; line-height: 1">mintsy<span style="color: {{accent}}">.</span></a>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; font-size: 15px; font-weight: 500; color: #A3A5B0">
+<a class="navlink" href="#how">How it works</a>
+<a class="navlink" href="#duo">iPhone Duo</a>
+<a class="navlink" href="#pricing">Pricing</a>
+<a class="navlink" href="#faq">FAQ</a>
+<a class="btn" href="#download" style="height: 42px; padding: 0 18px; border-radius: 12px; background: {{accent}}; color: #15161B; display: inline-flex; align-items: center; font-weight: 600">Get the app</a>
+</nav>
+</header>
+
+<section id="top" style="position: relative; max-width: 1240px; margin: 0 auto; padding: 40px 24px 96px; box-sizing: border-box">
+<div aria-hidden="true" style="position: absolute; right: -10%; top: 0; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, rgba(245,184,61,0.22), rgba(245,184,61,0))"></div>
+<div style="position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 56px 48px">
+<div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+<div style="align-self: flex-start; padding: 7px 12px; border-radius: 999px; border: 1px solid #343744; font-size: 13px; font-weight: 600; color: #D4D5DC">Books, as 5‑minute video series</div>
+<h1 class="h1" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.0; letter-spacing: -0.03em; text-wrap: balance">Finish the books you keep meaning to read.</h1>
+<p style="margin: 0; max-width: 520px; font-size: 19px; line-height: 1.55; color: #B8BAC4; text-wrap: pretty">mintsy turns every chapter into a short video episode with a full transcript. Watch one on your commute, read along at your desk, and get through a whole book a few minutes at a time.</p>
+<div id="download" style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px">
+<a href="https://apps.apple.com/app/[APP ID]" aria-label="Download on the App Store" style="height: 56px; padding: 0 20px; border-radius: 12px; background: #000; border: 1px solid #5A5D6B; display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; color: #F2F2F5">[Apple App Store badge]</a>
+<span style="font-size: 15px; color: #A3A5B0">First 3 episodes of every book are free.</span>
+</div>
+</div>
+
+<div class="mock" style="flex: 1.7 1 560px; min-width: 0; position: relative">
+<div style="padding: 1.4%; border-radius: 4.2% / 5.4%; background: #050608; box-shadow: 0 0 0 1.5px #3A3D49, 0 40px 90px rgba(0,0,0,0.55)">
+<div ref="{{refHero}}" data-k="hero" style="position: relative; width: 100%; aspect-ratio: 1080 / 820; overflow: hidden; border-radius: 3% / 4%; background: #0D0E12">
+<div style="width: 1080px; transform: scale({{scHero}}); transform-origin: top left"><dc-import name="DuoSeriesOpen" hint-size="1080px,820px"></dc-import></div>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3))"></div>
+</div>
+</div>
+<div style="margin-top: 14px; text-align: center; font-size: 13px; color: #8B8D99">Shown on iPhone Duo, open. Works on every iPhone.</div>
+</div>
+</div>
+</section>
+
+<section aria-label="At a glance" style="border-top: 1px solid #1E2028; border-bottom: 1px solid #1E2028; background: #101116">
+<div style="max-width: 1240px; margin: 0 auto; padding: 28px 24px; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px 32px">
+<sc-for list="{{facts}}" as="f" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; color: {{accent}}">{{f.big}}</div>
+<div style="font-size: 15px; color: #B8BAC4">{{f.label}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section id="how" style="max-width: 1240px; margin: 0 auto; padding: 104px 24px 40px; box-sizing: border-box">
+<div style="max-width: 720px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: {{accent}}">How it works</div>
+<h2 class="h2" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">One chapter. One episode. Five minutes.</h2>
+</div>
+<div style="margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 48px 32px">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 20px">
+<div class="mock" style="width: 72%; max-width: 300px; align-self: center; padding: 3.2%; border-radius: 13% / 6.2%; background: #050608; box-shadow: 0 0 0 1.5px #3A3D49, 0 30px 70px rgba(0,0,0,0.5)">
+<div ref="{{st.ref}}" data-k="{{st.key}}" style="position: relative; width: 100%; aspect-ratio: 390 / 844; overflow: hidden; border-radius: 10.5% / 4.9%; background: #0D0E12">
+<div style="width: 390px; transform: scale({{st.sc}}); transform-origin: top left">
+<sc-if value="{{st.isBrowse}}" hint-placeholder-val="{{ true }}"><dc-import name="Main" hint-size="390px,1560px"></dc-import></sc-if>
+<sc-if value="{{st.isPlayer}}" hint-placeholder-val="{{ false }}"><dc-import name="Player" hint-size="390px,1320px"></dc-import></sc-if>
+<sc-if value="{{st.isRead}}" hint-placeholder-val="{{ false }}"><dc-import name="TranscriptReader" hint-size="390px,844px"></dc-import></sc-if>
+</div>
+</div>
+</div>
+<div style="display: flex; gap: 14px">
+<div style="flex: none; width: 34px; height: 34px; border-radius: 50%; background: #1E2028; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: {{accent}}">{{st.n}}</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h3 style="margin: 4px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700">{{st.title}}</h3>
+<p style="margin: 0; font-size: 16px; line-height: 1.55; color: #A3A5B0">{{st.body}}</p>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section id="duo" style="margin-top: 80px; background: linear-gradient(180deg, #0D0E12 0%, #14130F 50%, #0D0E12 100%)">
+<div style="max-width: 1240px; margin: 0 auto; padding: 96px 24px; box-sizing: border-box">
+<div style="max-width: 760px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: {{accent}}">Made for iPhone Duo</div>
+<h2 class="h2" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">Unfold it and the book opens up.</h2>
+<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #B8BAC4; text-wrap: pretty">Open, you get the video and the transcript side by side. Half-folded on a table, the video sits up top and the controls stay below the fold.</p>
+</div>
+<div style="margin-top: 56px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 40px">
+<div class="mock" style="flex: 2.2 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="padding: 1.4%; border-radius: 4.2% / 5.4%; background: #050608; box-shadow: 0 0 0 1.5px #3A3D49, 0 40px 90px rgba(0,0,0,0.55)">
+<div ref="{{refDuoOpen}}" data-k="duoOpen" style="position: relative; width: 100%; aspect-ratio: 1080 / 820; overflow: hidden; border-radius: 3% / 4%; background: #0D0E12">
+<div style="width: 1080px; transform: scale({{scDuoOpen}}); transform-origin: top left"><dc-import name="DuoPlayerOpen" hint-size="1080px,820px"></dc-import></div>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3))"></div>
+</div>
+</div>
+<div style="font-size: 15px; color: #A3A5B0"><b style="color: #F2F2F5; font-weight: 600">Open.</b> Watch on the left, read along on the right.</div>
+</div>
+<div class="mock" style="flex: 1 1 260px; min-width: 0; max-width: 380px; display: flex; flex-direction: column; gap: 14px">
+<div style="padding: 2%; border-radius: 6% / 4.6%; background: #050608; box-shadow: 0 0 0 1.5px #3A3D49, 0 40px 90px rgba(0,0,0,0.55)">
+<div ref="{{refDuoTable}}" data-k="duoTable" style="position: relative; width: 100%; aspect-ratio: 820 / 1080; overflow: hidden; border-radius: 4% / 3%; background: #0D0E12">
+<div style="width: 820px; transform: scale({{scDuoTable}}); transform-origin: top left"><dc-import name="DuoPlayerTabletop" hint-size="820px,1080px"></dc-import></div>
+</div>
+</div>
+<div style="font-size: 15px; color: #A3A5B0"><b style="color: #F2F2F5; font-weight: 600">Tabletop.</b> Prop it up and watch hands-free.</div>
+</div>
+</div>
+</div>
+</section>
+
+<section style="max-width: 1240px; margin: 0 auto; padding: 96px 24px; box-sizing: border-box">
+<h2 class="h2" style="margin: 0; max-width: 720px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">Built for a few minutes a day.</h2>
+<div style="margin-top: 44px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px">
+<sc-for list="{{features}}" as="ft" hint-placeholder-count="6">
+<div style="padding: 24px; border-radius: 18px; background: #15161C; border: 1px solid #23252E; display: flex; flex-direction: column; gap: 10px">
+<div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(245,184,61,0.12); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ft.icon}}"></path></svg></div>
+<h3 style="margin: 6px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">{{ft.title}}</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #A3A5B0">{{ft.body}}</p>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="shelf-h" style="max-width: 1240px; margin: 0 auto; padding: 0 24px 96px; box-sizing: border-box">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<h2 id="shelf-h" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700">Start with a series</h2>
+<span style="font-size: 15px; color: #8B8D99">[CATALOG: replace with the licensed launch titles]</span>
+</div>
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="aspect-ratio: 2 / 3; border-radius: 8px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 14px 30px rgba(0,0,0,0.4)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.08">{{b.title}}</div>
+<div style="font-size: 11px; font-weight: 500">{{b.author}}</div>
+</div>
+<div style="font-size: 14px; color: #A3A5B0">{{b.eps}} episodes · {{b.topic}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section id="pricing" style="background: #101116; border-top: 1px solid #1E2028; border-bottom: 1px solid #1E2028">
+<div style="max-width: 1040px; margin: 0 auto; padding: 96px 24px; box-sizing: border-box">
+<div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: {{accent}}">Pricing</div>
+<h2 class="h2" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em">Start free. Upgrade when you’re hooked.</h2>
+</div>
+<div style="margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px">
+<div style="padding: 32px; border-radius: 22px; background: #15161C; border: 1px solid #23252E; display: flex; flex-direction: column; gap: 18px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700">Free</div>
+<div><span style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700">$0</span></div>
+<sc-for list="{{freeList}}" as="li" hint-placeholder-count="4">
+<div style="display: flex; gap: 10px; font-size: 16px; line-height: 1.45; color: #D4D5DC"><svg style="flex: none; margin-top: 3px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B8D99" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg><span>{{li}}</span></div>
+</sc-for>
+<a class="ghost" href="#download" style="margin-top: auto; height: 52px; border-radius: 14px; border: 1px solid #343744; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Download free</a>
+</div>
+<div style="position: relative; padding: 32px; border-radius: 22px; background: #1A1810; border: 2px solid {{accent}}; display: flex; flex-direction: column; gap: 18px">
+<div style="position: absolute; top: -14px; right: 24px; padding: 5px 12px; border-radius: 999px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; letter-spacing: 0.5px">[TRIAL LENGTH] FREE TRIAL</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700">Premium</div>
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700">[YEARLY PRICE]</span><span style="font-size: 15px; color: #A3A5B0">a year, or [MONTHLY PRICE] a month</span></div>
+<sc-for list="{{premiumList}}" as="li" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; font-size: 16px; line-height: 1.45; color: #F2F2F5"><svg style="flex: none; margin-top: 3px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg><span>{{li}}</span></div>
+</sc-for>
+<a class="btn" href="#download" style="margin-top: auto; height: 52px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700">Start your free trial in the app</a>
+</div>
+</div>
+<p style="margin: 20px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: #8B8D99">Subscriptions are billed through your Apple ID and renew automatically until canceled in Settings. Prices may vary by country.</p>
+</div>
+</section>
+
+<section id="faq" style="max-width: 820px; margin: 0 auto; padding: 96px 24px; box-sizing: border-box">
+<h2 class="h2" style="margin: 0 0 32px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em">Questions</h2>
+<sc-for list="{{faqs}}" as="q" hint-placeholder-count="6">
+<div style="border-top: 1px solid #23252E">
+<button class="faq-q" onClick="{{q.toggle}}" aria-expanded="{{q.open}}" style="width: 100%; padding: 22px 0; border: 0; background: transparent; color: #F2F2F5; display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; font-family: Inter, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer">
+<span>{{q.q}}</span>
+<span aria-hidden="true" style="flex: none; font-size: 24px; font-weight: 400; color: {{accent}}">{{q.sign}}</span>
+</button>
+<sc-if value="{{q.open}}" hint-placeholder-val="{{ false }}">
+<p class="faq-a" style="margin: -6px 0 22px; max-width: 680px; font-size: 16px; line-height: 1.6; color: #A3A5B0">{{q.a}}</p>
+</sc-if>
+</div>
+</sc-for>
+</section>
+
+<section style="max-width: 1240px; margin: 0 auto; padding: 0 24px 96px; box-sizing: border-box">
+<div style="position: relative; overflow: hidden; padding: clamp(36px, 6cqi, 72px); border-radius: 28px; background: {{accent}}; color: #15161B; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 28px">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<h2 class="h2" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; line-height: 1.02; letter-spacing: -0.02em; text-wrap: balance">Your next book is five minutes away.</h2>
+<p style="margin: 0; font-size: 18px; line-height: 1.5; color: #3D3420">Free to download. The first 3 episodes of every book are on us.</p>
+</div>
+<a href="https://apps.apple.com/app/[APP ID]" aria-label="Download on the App Store" style="height: 56px; padding: 0 20px; border-radius: 12px; background: #000; display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; color: #F2F2F5">[Apple App Store badge]</a>
+</div>
+</section>
+
+<footer style="border-top: 1px solid #1E2028">
+<div style="max-width: 1240px; margin: 0 auto; padding: 36px 24px 44px; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px 40px; font-size: 14px; color: #8B8D99">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: #F2F2F5">mintsy<span style="color: {{accent}}">.</span></div>
+<div>© [YEAR] [COMPANY NAME]. All rights reserved.</div>
+</div>
+<nav aria-label="Footer" style="display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: flex-start">
+<a class="navlink" href="[PRIVACY URL]">Privacy</a>
+<a class="navlink" href="[TERMS URL]">Terms</a>
+<a class="navlink" href="mailto:[SUPPORT EMAIL]">Support</a>
+<a class="navlink" href="[PRESS KIT URL]">Press</a>
+</nav>
+</div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1440,"height":6400}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { faq: 0, sz: {} };
+    this.els = {};
+    this.cbs = {};
+  }
+  mkRef(key) {
+    if (!this.cbs[key]) {
+      this.cbs[key] = (el) => {
+        if (!el) return;
+        this.els[key] = el;
+        if (this.ro) this.ro.observe(el);
+      };
+    }
+    return this.cbs[key];
+  }
+  componentDidMount() {
+    if (typeof ResizeObserver === 'undefined') return;
+    this.ro = new ResizeObserver((entries) => {
+      const sz = Object.assign({}, this.state.sz);
+      let changed = false;
+      for (const e of entries) {
+        const k = e.target.getAttribute('data-k');
+        const w = Math.round(e.contentRect.width);
+        if (k && sz[k] !== w) { sz[k] = w; changed = true; }
+      }
+      if (changed) this.setState({ sz });
+    });
+    Object.values(this.els).forEach((el) => this.ro.observe(el));
+  }
+  componentWillUnmount() { if (this.ro) this.ro.disconnect(); }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const sz = this.state.sz;
+    const sc = (k, base, fallback) => (sz[k] ? sz[k] / base : fallback);
+    const steps = [
+      { key: 's1', n: '1', title: 'Pick a book', body: 'Browse by topic or search for the one on your list. Every series shows how many episodes it has and how long it takes.', isBrowse: true },
+      { key: 's2', n: '2', title: 'Watch an episode a day', body: 'Each chapter becomes one 5-minute video. Set a daily goal and mintsy keeps your place.', isPlayer: true },
+      { key: 's3', n: '3', title: 'Read along or skim', body: 'Every episode has a full transcript and key takeaways. Tap any line to jump to that moment.', isRead: true }
+    ].map((s) => Object.assign({}, s, {
+      isBrowse: !!s.isBrowse, isPlayer: !!s.isPlayer, isRead: !!s.isRead,
+      ref: this.mkRef(s.key), sc: sc(s.key, 390, 0.6)
+    }));
+    const faqsRaw = [
+      { q: 'What is a mintsy series?', a: 'A book, turned into a set of short video episodes: one per chapter, about 5 minutes each, with a full transcript you can read along with.' },
+      { q: 'What do I get for free?', a: 'The first 3 episodes of every book, with their transcripts. You can try as many series as you like before deciding on Premium.' },
+      { q: 'What does Premium add?', a: 'Every episode of every book, full transcripts and key takeaways, offline downloads, and new series as they’re added.' },
+      { q: 'Does it work on iPhone Duo?', a: 'Yes. Open, you get two panes: the video and the transcript side by side. Half-folded in tabletop mode, the video sits on top and the controls stay below the fold.' },
+      { q: 'Can I watch offline?', a: 'Premium members can download episodes to watch on flights and commutes without a connection.' },
+      { q: 'How do I cancel?', a: 'Any time in your iPhone Settings, under your name, then Subscriptions. You keep Premium until the end of the period you paid for.' }
+    ];
+    const faqs = faqsRaw.map((f, i) => Object.assign({}, f, {
+      open: this.state.faq === i,
+      sign: this.state.faq === i ? '−' : '+',
+      toggle: () => this.setState({ faq: this.state.faq === i ? -1 : i })
+    }));
+    return {
+      accent, steps, faqs,
+      refHero: this.mkRef('hero'), scHero: sc('hero', 1080, 0.6),
+      refDuoOpen: this.mkRef('duoOpen'), scDuoOpen: sc('duoOpen', 1080, 0.6),
+      refDuoTable: this.mkRef('duoTable'), scDuoTable: sc('duoTable', 820, 0.4),
+      facts: [
+        { big: '5 min', label: 'per episode' },
+        { big: '1 : 1', label: 'one episode for every chapter' },
+        { big: '100%', label: 'of episodes have a transcript' },
+        { big: '3 free', label: 'episodes of every book' }
+      ],
+      features: [
+        { title: 'Episode N of 20, always', body: 'You always know where you are in a book and how much is left.', icon: 'M4 6h16M4 12h10M4 18h7' },
+        { title: 'Full transcripts', body: 'Read instead of watch, search inside a chapter, or copy a takeaway.', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5' },
+        { title: 'Daily goal and streak', body: 'Pick 5, 15 or 30 minutes a day. A gentle reminder at the time you choose.', icon: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
+        { title: 'My List', body: 'Save series for later and pick up exactly where you stopped.', icon: 'M6 3h12v18l-6-4-6 4z' },
+        { title: 'Offline downloads', body: 'Premium episodes download for flights and subways.', icon: 'M12 4v11M7 10l5 5 5-5M5 20h14' },
+        { title: 'Up next, automatically', body: 'When an episode ends, the next one is ready. Or stop there and come back tomorrow.', icon: 'M5 5l10 7-10 7zM19 5v14' }
+      ],
+      books: [
+        { title: 'The Psychology of Money', author: 'Morgan Housel', eps: 20, topic: 'Finance', bg: '#E6DFCF', fg: '#1C1C1C' },
+        { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', eps: 38, topic: 'Psychology', bg: '#F0EEE9', fg: '#1C1C1C' },
+        { title: 'Atomic Habits', author: 'James Clear', eps: 20, topic: 'Productivity', bg: '#C9D6D0', fg: '#1C1C1C' },
+        { title: 'The Lean Startup', author: 'Eric Ries', eps: 14, topic: 'Business', bg: '#3B2F5C', fg: '#F2F2F5' },
+        { title: 'Sapiens', author: 'Yuval Noah Harari', eps: 20, topic: 'History', bg: '#C2582E', fg: '#FFF4EA' },
+        { title: 'The Intelligent Investor', author: 'Benjamin Graham', eps: 20, topic: 'Finance', bg: '#1F2F52', fg: '#F2F2F5' }
+      ],
+      freeList: ['First 3 episodes of every book', 'Transcripts for those episodes', 'Daily goal, streak and reminders', 'My List'],
+      premiumList: ['Every episode of every book', 'Full transcripts and key takeaways', 'Offline downloads', 'New series as they’re added', 'Cancel anytime in Settings']
+    };
+  }
+}
+</script>
+</body>
+</html>

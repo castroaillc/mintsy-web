@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo system rail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="System rail, drawn by iOS from the app’s native tabs and header" style="width: 84px; height: 820px; box-sizing: border-box; padding: 16px 0 14px; background: #121318; border-right: 1px solid #1E2028; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}">
+<a href="{{backHref}}" aria-label="Back" style="width: 44px; height: 44px; border-radius: 22px; background: #1B1C24; color: #F2F2F5; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+</sc-if>
+<sc-if value="{{hasCancelSave}}" hint-placeholder-val="{{ false }}">
+<a href="{{backHref}}" style="width: 72px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #A3A5B0; text-decoration: none">Cancel</a>
+<a href="{{saveHref}}" style="width: 72px; height: 44px; border-radius: 22px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; text-decoration: none">Save</a>
+</sc-if>
+<div style="flex: 1"></div>
+<sc-if value="{{showTabs}}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<a href="{{t.href}}" aria-current="{{t.current}}" style="width: 64px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{t.color}}; font-size: 10px; font-weight: {{t.weight}}; text-decoration: none">
+<sc-if value="{{t.isHome}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"></path></svg></sc-if>
+<sc-if value="{{t.isSearch}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></sc-if>
+<sc-if value="{{t.isList}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></sc-if>
+<sc-if value="{{t.isProfile}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></sc-if>
+{{t.label}}
+</a>
+</sc-for>
+</sc-if>
+<div style="flex: 1"></div>
+<div class="dc-annot" aria-hidden="true" style="font-size: 9px; font-weight: 600; letter-spacing: 0.8px; text-align: center; line-height: 1.3; color: #6B6E7A">SYSTEM<br>RAIL</div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","search","list","profile","none"],"default":"home"},"top":{"editor":"enum","options":["none","back","cancelSave"],"default":"none"},"showTabs":{"editor":"boolean","default":true},"backHref":{"editor":"text","default":"Main.dc.html"},"saveHref":{"editor":"text","default":"DuoProfile.dc.html"},"accent":{"editor":"color","default":"#F5B83D"},"$preview":{"width":84,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const active = this.props.active ?? 'home';
+    const top = this.props.top ?? 'none';
+    const showTabs = this.props.showTabs === undefined ? true : (this.props.showTabs === true || this.props.showTabs === 'true');
+    const defs = [['home', 'Home', 'DuoBrowseOpen.dc.html'], ['search', 'Search', 'DuoSearch.dc.html'], ['list', 'My List', 'DuoLibrary.dc.html'], ['profile', 'Profile', 'DuoProfile.dc.html']];
+    const tabs = defs.map(([id, label, href]) => {
+      const on = id === active;
+      return {
+        label, href,
+        current: on ? 'page' : 'false',
+        color: on ? accent : '#A3A5B0',
+        weight: on ? 600 : 500,
+        isHome: id === 'home', isSearch: id === 'search', isList: id === 'list', isProfile: id === 'profile'
+      };
+    });
+    return {
+      accent, tabs, showTabs,
+      hasBack: top === 'back',
+      hasCancelSave: top === 'cancelSave',
+      backHref: this.props.backHref ?? 'Main.dc.html',
+      saveHref: this.props.saveHref ?? 'DuoProfile.dc.html'
+    };
+  }
+}
+</script>
+</body>
+</html>

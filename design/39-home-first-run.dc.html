@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home, first run</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.rail{scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+input::placeholder{color:#8B8D99}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1300px; position: relative; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; box-sizing: border-box; padding-bottom: 104px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 12px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.6px">mintsy<span style="color: {{accent}}">.</span></div>
+<a href="Profile.dc.html" aria-label="Profile" style="width: 44px; height: 44px; border-radius: 22px; background: #24382F; border: 2px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px">S</a>
+</header>
+
+<div style="padding: 4px 20px 0">
+<a href="SearchResults.dc.html" style="display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 16px; border-radius: 14px; background: #17181F; border: 1px solid #2A2C36; color: #8B8D99; font-size: 15px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+Search books, authors, topics
+</a>
+</div>
+
+<section style="padding: 24px 20px 0">
+<div style="font-size: 14px; color: #A3A5B0">Welcome, Steve</div>
+<h1 style="margin: 4px 0 14px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.15">Start your first series</h1>
+<div style="border-radius: 22px; overflow: hidden; background: #17181F; border: 1px solid #23252E">
+<div style="display: flex; gap: 16px; align-items: center; padding: 18px; background: #24382F">
+<div style="flex: none; width: 92px; height: 138px; border-radius: 6px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 10px 9px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 28px rgba(0,0,0,0.4)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.05">The Psychology of Money</div>
+<div style="font-size: 8px; font-weight: 500">Morgan Housel</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; font-weight: 600; color: #F5DFA0">Your pick from onboarding</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">The Psychology of Money</div>
+<div style="font-size: 13px; color: #D6E2DA">20 episodes · 5 min each</div>
+</div>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 14px; color: #C9CAD2"><b style="color: #F2F2F5; font-weight: 600">Episode 1 of 20 · No One’s Crazy</b> · 4:52 · Free</div>
+<a href="Player.dc.html" style="height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+Start Episode 1
+</a>
+</div>
+</div>
+</section>
+
+<section style="margin: 14px 20px 0; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<div role="img" aria-label="0 of 15 minutes today" style="flex: none; width: 48px; height: 48px; border-radius: 24px; border: 5px solid #2A2C36; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">0</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 15px; font-weight: 600">Today’s goal: 15 minutes</div>
+<div style="font-size: 13px; color: #A3A5B0">That’s 3 episodes. Your streak starts today.</div>
+</div>
+</section>
+
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="3">
+<section style="padding-top: 28px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 20px 12px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">{{row.heading}}</h2>
+<a href="CategoryAll.dc.html" style="font-size: 14px; color: #A3A5B0">See all</a>
+</div>
+<div class="rail" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 20px">
+<sc-for list="{{row.books}}" as="b" hint-placeholder-count="3">
+<a href="Book.dc.html" aria-label="{{b.title}} by {{b.author}}, {{b.eps}} episodes" style="flex: none; width: 124px; height: 186px; position: relative; border-radius: 8px; overflow: hidden; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 34px 11px 12px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="position: absolute; top: 8px; left: 8px; height: 20px; padding: 0 7px; border-radius: 10px; background: rgba(13,14,18,0.78); color: #F2F2F5; font-size: 11px; font-weight: 600; display: flex; align-items: center">{{b.eps}} eps</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.08">{{b.title}}</span>
+<span style="font-size: 11px; font-weight: 500">{{b.author}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+</sc-for>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0">
+<dc-import name="TabBar" active="home" accent="{{accent}}" hint-size="390px,84px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const rows = [
+      { heading: 'Because you picked Finance', books: [
+        { title: 'The Intelligent Investor', author: 'Benjamin Graham', eps: 20, bg: '#1E3557', fg: '#F4EFE6' },
+        { title: 'I Will Teach You to Be Rich', author: 'Ramit Sethi', eps: 10, bg: '#E2B34C', fg: '#1C1C1C' },
+        { title: 'Rich Dad Poor Dad', author: 'Robert T. Kiyosaki', eps: 10, bg: '#5B2333', fg: '#F7E9EC' }
+      ] },
+      { heading: 'Because you picked Psychology', books: [
+        { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', eps: 38, bg: '#F0EEE9', fg: '#1C1C1C' },
+        { title: 'Sapiens', author: 'Yuval Noah Harari', eps: 20, bg: '#B9542F', fg: '#FFF4EE' },
+        { title: 'The Lean Startup', author: 'Eric Ries', eps: 14, bg: '#3A2F5B', fg: '#F2EEFA' }
+      ] },
+      { heading: 'Popular this week', books: [
+        { title: 'Atomic Habits', author: 'James Clear', eps: 20, bg: '#C9D6CF', fg: '#1C1C1C' },
+        { title: 'The Little Book of Common Sense Investing', author: 'John C. Bogle', eps: 19, bg: '#2F4A3D', fg: '#F4EFE6' },
+        { title: 'The Psychology of Money', author: 'Morgan Housel', eps: 20, bg: '#E7DFCF', fg: '#1C1C1C' }
+      ] }
+    ];
+    return { accent, rows };
+  }
+}
+</script>
+</body>
+</html>

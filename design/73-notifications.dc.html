@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#08090C}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+</style>
+</helmet>
+<div style="width: 1720px; height: 1040px; box-sizing: border-box; padding: 36px 40px; background: #08090C; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; gap: 48px">
+
+<div style="flex: none; width: 390px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8B8D99">On the lock screen</div>
+<div style="height: 900px; border-radius: 36px; overflow: hidden; background: #1D2A24; box-sizing: border-box; padding: 140px 12px 0; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{items}}" as="n" hint-placeholder-count="5">
+<div style="padding: 12px; border-radius: 18px; background: rgba(23,24,31,0.88); display: flex; gap: 10px">
+<div style="flex: none; width: 38px; height: 38px; border-radius: 9px; background: #15161C; border: 1px solid #2A2C36; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; letter-spacing: -1px; margin-top: -5px">m<span style="color: {{accent}}">.</span></div></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #A3A5B0"><span style="font-weight: 600; color: #D4D5DC">mintsy</span><span>{{n.ago}}</span></div>
+<div style="font-size: 14px; font-weight: 600">{{n.title}}</div>
+<div style="font-size: 13px; line-height: 1.35; color: #C9CAD2">{{n.body}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700">Notifications: what they say and where they land</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #A3A5B0">Every notification opens straight to its destination, even from a cold start. If the user is signed out, they sign in first and then land there.</p>
+<div style="border-radius: 16px; border: 1px solid #23252E; overflow: hidden">
+<div style="display: grid; grid-template-columns: 170px 210px minmax(0, 1fr) 210px; gap: 16px; padding: 12px 18px; background: #15161C; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #A3A5B0"><span>Type</span><span>When</span><span>Tapping opens</span><span>Setting</span></div>
+<sc-for list="{{items}}" as="n" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 170px 210px minmax(0, 1fr) 210px; gap: 16px; padding: 14px 18px; border-top: 1px solid #23252E; font-size: 14px; line-height: 1.45">
+<span style="font-weight: 600">{{n.type}}</span>
+<span style="color: #C9CAD2">{{n.when}}</span>
+<span style="color: #E4E5EA">{{n.lands}}</span>
+<span style="color: #A3A5B0">{{n.setting}}</span>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+<div style="padding: 16px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-size: 14px; font-weight: 600">At most 2 a day</div><div style="margin-top: 4px; font-size: 13px; line-height: 1.5; color: #A3A5B0">Trial-ending always sends. Otherwise skip lower-priority ones (new series, downloads) once 2 have gone out.</div></div>
+<div style="padding: 16px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-size: 14px; font-weight: 600">Quiet hours 9 PM–8 AM</div><div style="margin-top: 4px; font-size: 13px; line-height: 1.5; color: #A3A5B0">Local time. The user’s own reminder time always wins, even inside quiet hours.</div></div>
+<div style="padding: 16px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-size: 14px; font-weight: 600">Skip if already done</div><div style="margin-top: 4px; font-size: 13px; line-height: 1.5; color: #A3A5B0">No daily reminder or streak nudge once today’s goal is met. No reminders while a video is playing.</div></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1720,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const items = [
+      { type: 'Daily reminder', ago: 'now', title: 'Episode 5 of 20 is ready', body: 'Getting Wealthy vs. Staying Wealthy · 5 min', when: 'User’s chosen time (onboarding / Settings)', lands: 'Player, next unwatched episode. Free user at Episode 4 → the Episode 3 upsell. Series finished → Series complete.', setting: 'Notifications › Daily reminder' },
+      { type: 'Streak at risk', ago: '8:00 PM', title: 'Keep your 5-day streak', body: 'One 5-minute episode does it.', when: '8 PM if streak is 3+ days and nothing watched today', lands: 'Player, next unwatched episode', setting: 'Follows Daily reminder' },
+      { type: 'Trial ending', ago: 'Wed', title: 'Your Premium trial ends Friday', body: 'Keep going, or change your plan anytime.', when: '2 days before trial end (once)', lands: 'Plan details', setting: 'Always on (account)' },
+      { type: 'New series', ago: 'Tue', title: 'New in Finance: Die with Zero', body: '9 episodes, 45 minutes. First 3 are free.', when: 'At most weekly, matches an interest', lands: 'That series page', setting: 'Notifications › New series in your interests' },
+      { type: 'Downloads ready', ago: 'Mon', title: '3 episodes ready offline', body: 'The Psychology of Money, Episodes 5–7', when: 'Batch finishes while the app is in the background', lands: 'Downloads', setting: 'Always on, only when backgrounded' }
+    ];
+    return { accent, items };
+  }
+}
+</script>
+</body>
+</html>

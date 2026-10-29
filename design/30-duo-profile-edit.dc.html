@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo edit profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+input::placeholder{color:#8B8D99}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="profile" top="cancelSave" back-href="DuoProfile.dc.html" save-href="DuoProfile.dc.html" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 32px 40px; border-right: 1px solid #1E2028; display: flex; flex-direction: column; gap: 18px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px">Edit profile</h1>
+<div style="display: flex; align-items: center; gap: 16px">
+<div aria-hidden="true" style="width: 88px; height: 88px; border-radius: 44px; background: #24382F; border: 2px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px">S</div>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #343744; background: transparent; color: {{accent}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">Change photo</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="dpe-name" style="font-size: 14px; font-weight: 600; color: #D4D5DC">Name</label>
+<input id="dpe-name" type="text" value="Steve" autocomplete="name" style="height: 52px; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2C36; background: #15161C; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 16px; outline: none">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="dpe-email" style="font-size: 14px; font-weight: 600; color: #D4D5DC">Email</label>
+<input id="dpe-email" type="email" placeholder="you@example.com" autocomplete="email" style="height: 52px; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2C36; background: #15161C; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 16px; outline: none">
+<div style="font-size: 13px; line-height: 1.4; color: #8B8D99">If you change it, we’ll send a link to confirm the new address.</div>
+</div>
+</section>
+
+<section style="flex: 1; min-width: 0; box-sizing: border-box; padding: 32px 40px; display: flex; flex-direction: column; gap: 26px">
+<fieldset style="margin: 0; padding: 0; border: 0">
+<legend style="padding: 0; margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #D4D5DC">Daily goal</legend>
+<div role="radiogroup" aria-label="Daily goal" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #15161C; border: 1px solid #23252E">
+<sc-for list="{{goals}}" as="g" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{g.on}}" onClick="{{g.pick}}" style="height: 42px; border: 0; border-radius: 9px; background: {{g.bg}}; color: {{g.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">{{g.label}}</button>
+</sc-for>
+</div>
+</fieldset>
+<fieldset style="margin: 0; padding: 0; border: 0">
+<legend style="padding: 0; margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #D4D5DC">Interests</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{topics}}" as="t" hint-placeholder-count="14">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid {{t.bd}}; background: {{t.bg}}; color: {{t.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+</fieldset>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { goal: 1, picked: ['Finance', 'Psychology', 'Productivity'] };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const goals = ['5 min', '15 min', '30 min', 'Flexible'].map((label, i) => {
+      const on = this.state.goal === i;
+      return { label, on, bg: on ? '#F2F2F5' : 'transparent', fg: on ? '#15161B' : '#C9CAD2', pick: () => this.setState({ goal: i }) };
+    });
+    const picked = this.state.picked;
+    const topics = ['Finance', 'Investing', 'Business', 'Leadership', 'Psychology', 'Productivity', 'Health', 'Science', 'History', 'Philosophy', 'Relationships', 'Creativity', 'Marketing', 'Startups'].map((label) => {
+      const on = picked.includes(label);
+      return { label, on, bg: on ? '#2A2416' : '#15161C', bd: on ? accent : '#2A2C36', fg: on ? '#FFFFFF' : '#C9CAD2', pick: () => this.setState({ picked: on ? picked.filter((p) => p !== label) : picked.concat(label) }) };
+    });
+    return { accent, goals, topics };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Welcome to Premium</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 24px 24px 32px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px">
+<div aria-hidden="true" style="position: relative; width: 132px; height: 132px; border-radius: 34px; background: #15161C; border: 1px solid #23252E; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 92px; line-height: 1; letter-spacing: -3px; margin-top: -18px">m<span style="color: {{accent}}">.</span></div>
+<div style="position: absolute; right: -10px; top: -10px; width: 40px; height: 40px; border-radius: 20px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</div>
+</div>
+<div style="font-size: 13px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: {{accent}}">You’re Premium</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px; line-height: 1.1; letter-spacing: -0.6px">Every episode is unlocked.</h1>
+<p style="margin: 0; max-width: 300px; font-size: 16px; line-height: 1.5; color: #A3A5B0">Your free trial runs until [TRIAL END DATE]. We’ll remind you 2 days before it ends.</p>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<div style="flex: none; position: relative; width: 104px; height: 60px; border-radius: 8px; background: #2C3245">
+<div style="position: absolute; left: 8px; top: 6px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: #F4EFE6">4</div>
+<div style="position: absolute; right: 6px; bottom: 6px; height: 18px; padding: 0 5px; border-radius: 4px; background: rgba(13,14,18,0.82); font-size: 11px; font-weight: 600; display: flex; align-items: center">5:12</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 600; color: #A3A5B0">Up next · Episode 4 of 20</div>
+<div style="font-size: 15px; font-weight: 600">Confounding Compounding</div>
+</div>
+</div>
+
+<a href="Player.dc.html" style="margin-top: 16px; height: 56px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; font-weight: 700">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+Play Episode 4
+</a>
+<a href="Main.dc.html" style="margin-top: 6px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Go to Home</a>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#F5B83D' };
+  }
+}
+</script>
+</body>
+</html>

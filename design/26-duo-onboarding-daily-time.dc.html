@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo onboarding: daily time</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="none" top="back" back-href="DuoOnbInterests.dc.html" show-tabs="false" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 56px 48px; border-right: 1px solid #1E2028; display: flex; flex-direction: column; gap: 32px">
+<ol aria-label="Onboarding steps" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<li aria-current="{{s.current}}" style="display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: {{s.weight}}; color: {{s.fg}}">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 14px; border: 2px solid {{s.ring}}; background: {{s.fill}}; color: #15161B; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">{{s.mark}}</span>
+{{s.label}}
+</li>
+</sc-for>
+</ol>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">Step 2 of 4</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 36px; line-height: 1.08; letter-spacing: -0.6px">How much time do you have each day?</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A5B0">Episodes are about 5 minutes. You can change this anytime.</p>
+</div>
+</section>
+
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 56px 48px 32px">
+<div role="radiogroup" aria-label="Daily goal" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+<button role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 20px; border-radius: 18px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: #F2F2F5; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="display: flex; align-items: baseline; gap: 6px"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 1">{{o.big}}</span><span style="font-size: 14px; color: #A3A5B0">{{o.unit}}</span></span>
+<span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 600">{{o.title}}</span><span style="font-size: 14px; color: #A3A5B0">{{o.sub}}</span></span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 22px 0 0; font-size: 15px; line-height: 1.5; color: #C9CAD2">{{estimate}}</p>
+<div style="flex: 1"></div>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px">
+<a href="DuoOnbReminders.dc.html" style="height: 52px; padding: 0 18px; display: flex; align-items: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Skip</a>
+<a href="DuoOnbReminders.dc.html" style="min-width: 240px; height: 52px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Continue</a>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 1 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const step = 2;
+    const steps = ['Interests', 'Daily time', 'Reminders', 'First series'].map((label, i) => {
+      const n = i + 1, done = n < step, cur = n === step;
+      return { label, current: cur ? 'step' : 'false', mark: done ? '✓' : String(n), fill: done ? accent : 'transparent', ring: done || cur ? accent : '#3A3D49', fg: cur ? '#F2F2F5' : done ? '#C9CAD2' : '#8B8D99', weight: cur ? 600 : 500 };
+    });
+    const defs = [
+      { mins: 5, big: '5', unit: 'min', title: 'Quick', sub: '1 episode a day' },
+      { mins: 15, big: '15', unit: 'min', title: 'Steady', sub: '3 episodes a day' },
+      { mins: 30, big: '30', unit: 'min', title: 'Deep dive', sub: '6 episodes a day' },
+      { mins: 0, big: 'Flex', unit: '', title: 'I’ll decide as I go', sub: 'No daily goal' }
+    ];
+    const options = defs.map((d, i) => {
+      const on = this.state.sel === i;
+      return Object.assign({}, d, { on, bd: on ? accent : '#2A2C36', bg: on ? '#1A1912' : '#15161C', pick: () => this.setState({ sel: i }) });
+    });
+    const cur = defs[this.state.sel];
+    let estimate = 'No pressure. Your progress is saved after every episode.';
+    if (cur.mins) {
+      const days = Math.ceil(20 / (cur.mins / 5));
+      estimate = 'At ' + cur.mins + ' minutes a day, you’d finish a 20-chapter book in about ' + days + (days === 1 ? ' day.' : ' days.');
+    }
+    return { accent, steps, options, estimate };
+  }
+}
+</script>
+</body>
+</html>

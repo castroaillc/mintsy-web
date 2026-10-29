@@ -30,7 +30,7 @@ a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
 <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
 <div style="border-top: {{r.border}}">
 <sc-if value="{{r.isLink}}" hint-placeholder-val="{{ true }}">
-<a href="#" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 0 16px; font-size: 15px">
+<a href="{{r.href}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 0 16px; font-size: 15px">
 <span>{{r.label}}</span>
 <span style="display: flex; align-items: center; gap: 8px; color: #A3A5B0; font-size: 14px">{{r.value}}
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
@@ -65,7 +65,7 @@ a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
 
 <a href="AuthWelcome.dc.html" style="margin-top: 30px; height: 54px; border-radius: 14px; border: 1px solid #5A2A2E; background: #1C1213; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #FF9C94">Sign out</a>
 <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 18px">
-<a href="#" style="font-size: 14px; color: #A3A5B0; text-decoration: underline">Delete account</a>
+<a href="DeleteAccount.dc.html" style="font-size: 14px; color: #A3A5B0; text-decoration: underline">Delete account</a>
 <span style="font-size: 12px; color: #8B8D99">mintsy 1.0.0</span>
 </div>
 
@@ -80,7 +80,7 @@ class Component extends DCLogic {
   renderVals() {
     const accent = this.props.accent ?? '#F5B83D';
     const on = this.state.on;
-    const link = (label, value) => ({ isLink: true, label, value: value || '' });
+    const link = (label, value, href) => ({ isLink: true, label, value: value || '', href: href || '#' });
     const toggle = (key, label, hint) => ({
       isToggle: true, label, hint, on: on[key],
       track: on[key] ? accent : '#3A3D49',
@@ -88,7 +88,7 @@ class Component extends DCLogic {
       flip: () => this.setState({ on: Object.assign({}, on, { [key]: !on[key] }) })
     });
     const defs = [
-      { title: 'Account', rows: [link('Email', 'you@example.com'), link('Change password'), link('Daily goal', '15 min')] },
+      { title: 'Account', rows: [link('Subscription', 'Free · Upgrade', 'PlanDetails.dc.html'), link('Email', 'you@example.com'), link('Change password', '', 'ChangePassword.dc.html'), link('Daily goal', '15 min')] },
       { title: 'Playback', rows: [toggle('autoplay', 'Autoplay next episode', 'Keep the series going'), link('Default speed', '1×'), toggle('captions', 'Captions on by default', 'Show captions in the player'), toggle('wifi', 'Download on Wi-Fi only', 'Save mobile data')] },
       { title: 'Appearance', rows: [{ isTheme: true }] },
       { title: 'Notifications', rows: [toggle('reminder', 'Daily reminder', 'Every day at 8:00 AM'), link('Reminder time', '8:00 AM'), toggle('newEps', 'New series in your interests', 'At most once a week')] },

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mintsy user journeys</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+</style>
+</helmet>
+<div style="width: 1680px; min-height: 2900px; box-sizing: border-box; padding: 64px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px; max-width: 860px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 44px; letter-spacing: -0.8px">User journeys</h1>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #A3A5B0">Twelve journeys traced through every link in the 32 designed phone screens. Free tier: the first 3 episodes of every book; Premium unlocks the rest. Each step is marked by whether the screen exists, exists but goes nowhere yet, or still needs designing.</p>
+</div>
+<div style="display: flex; gap: 20px; flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #D4D5DC"><span style="width: 18px; height: 18px; border-radius: 5px; background: #1B2A22; border: 1px solid #3E7A5B"></span>Designed</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #D4D5DC"><span style="width: 18px; height: 18px; border-radius: 5px; background: #2A2416; border: 1px dashed #F5B83D; box-sizing: border-box"></span>Button exists, goes nowhere</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #D4D5DC"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1px dashed #8B8D99; box-sizing: border-box"></span>Screen missing</span>
+</div>
+</header>
+
+<div style="display: flex; flex-direction: column; gap: 16px; margin-top: 48px">
+<sc-for list="{{journeys}}" as="j" hint-placeholder-count="10">
+<section style="display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 32px; padding: 24px 28px; border-radius: 18px; background: #121318; border: 1px solid #23252E">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; color: #0D0E12; background: {{j.badge}}; border-radius: 6px; padding: 2px 8px">{{j.id}}</span>
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: {{j.badge}}">{{j.status}}</span>
+</div>
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; line-height: 1.2">{{j.title}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.45; color: #A3A5B0">{{j.goal}}</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px">
+<sc-for list="{{j.steps}}" as="s" hint-placeholder-count="6">
+<li style="display: flex; align-items: center; gap: 8px">
+<sc-if value="{{s.arrow}}" hint-placeholder-val="{{ true }}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6E7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+</sc-if>
+<span style="display: flex; flex-direction: column; gap: 2px; min-height: 52px; justify-content: center; padding: 6px 14px; border-radius: 10px; box-sizing: border-box; background: {{s.bg}}; border: 1px {{s.line}} {{s.bd}}">
+<span style="font-size: 14px; font-weight: 600; color: {{s.fg}}">{{s.label}}</span>
+<span style="font-size: 12px; color: {{s.subFg}}">{{s.sub}}</span>
+</span>
+</li>
+</sc-for>
+</ol>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #C9CAD2"><span style="font-weight: 600; color: #F2F2F5">Gaps: </span>{{j.gaps}}</p>
+</div>
+</section>
+</sc-for>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 48px">
+<section style="padding: 28px; border-radius: 18px; background: #121318; border: 1px solid #23252E">
+<h2 style="margin: 0 0 16px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">Fix in screens that already exist</h2>
+<ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 1.5; color: #D4D5DC">
+<li><s style="color: #8B8D99">Tab bars don’t match.</s> Fixed: Home · Search · My List · Profile everywhere; Downloads lives in Profile.</li>
+<li><s style="color: #8B8D99">“Play Episode 1” on the Home featured card opens the series page.</s> Fixed: it opens the player.</li>
+<li><s style="color: #8B8D99">Player Next and Up next aren’t wired.</s> Fixed: they lead to the Up next screen.</li>
+<li><s style="color: #8B8D99">A brand-new user’s Home shows “Continue watching”.</s> Fixed: First-run Home.</li>
+<li><b style="color: #F2F2F5">Skipping interests in onboarding</b> leaves the First series step with nothing to match. Fall back to popular series.</li>
+<li><b style="color: #F2F2F5">The series page’s Transcripts and About tabs</b> have no content designed.</li>
+<li><b style="color: #F2F2F5">The Home profile button is a generic icon;</b> Profile uses the user’s initial. Use the initial on both.</li>
+</ol>
+</section>
+<section style="padding: 28px; border-radius: 18px; background: #121318; border: 1px solid #23252E">
+<h2 style="margin: 0 0 16px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">What’s still open</h2>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6FCF97">Now designed</div>
+<div style="font-size: 15px; line-height: 1.6; color: #D4D5DC">Search results · Category “See all” · My List (Saved, In progress, Finished) · Downloads · First-run Home · Up next · Episode 3 upsell · Series complete · Transcript reader · Forgot password (3 screens) · Change password · Delete account · Plan details · Loading, empty, offline and error states</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6FCF97">Finishing touches, done</div>
+<div style="font-size: 15px; line-height: 1.6; color: #D4D5DC">Toasts (Saved · Undo, goal met and more) · Premium badge and free-plan upgrade card on Profile · series page Transcripts and About tabs · reset-password, email-change and trial-ending emails · notification copy, timing and landing screens. Still yours to fill in: prices, trial length, author bios, licensing credit line, company address.</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8FB0FF">iPhone Duo</div>
+<div style="font-size: 15px; line-height: 1.6; color: #D4D5DC">Every screen now has an open-display layout, including library, watching and account (design files 52–66).</div>
+</div>
+</div>
+</section>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1680,"height":2900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = 'd', P = 'p', M = 'm';
+    const style = {
+      d: { bg: '#1B2A22', bd: '#3E7A5B', line: 'solid', fg: '#F2F2F5', subFg: '#9CC7AE' },
+      p: { bg: '#2A2416', bd: '#F5B83D', line: 'dashed', fg: '#F2F2F5', subFg: '#E8C77A' },
+      m: { bg: 'transparent', bd: '#8B8D99', line: 'dashed', fg: '#C9CAD2', subFg: '#A3A5B0' }
+    };
+    const statusOf = { ok: ['Works end to end', '#6FCF97'], partial: ['Partly designed', '#F5B83D'], missing: ['Mostly missing', '#FF8A65'] };
+    const raw = [
+      { id: 'J1', s: 'ok', title: 'First-time user', goal: 'Downloads the app, creates an account and watches a first episode.', steps: [['Welcome', 'Auth 1', D], ['Create account', 'Auth 2', D], ['Interests', 'Onboarding 1', D], ['Daily time', 'Onboarding 2', D], ['Reminders', 'Onboarding 3', D], ['First series', 'Onboarding 4', D], ['Episode 1', 'Player', D], ['Up next: Episode 2', 'Watching 1', D], ['First-run Home', 'Library 5', D]], gaps: 'Designed end to end. Free users reach the Episode 3 upsell (J11).' },
+      { id: 'J2', s: 'ok', title: 'Returning user', goal: 'Signs back in and picks up the episode they stopped in.', steps: [['Welcome', 'Auth 1', D], ['Sign in', 'Auth 3', D], ['Home', 'Browse', D], ['Continue watching', 'Browse', D], ['Resume Episode 4', 'Player', D]], gaps: 'Works. Once signed in, relaunching should skip Welcome and open Home (the app’s auth guard already does this).' },
+      { id: 'J3', s: 'ok', title: 'Forgot password', goal: 'Can’t remember their password and needs to get back in.', steps: [['Sign in', 'Auth 3', D], ['Forgot password?', 'Account 1', D], ['Check your email', 'Account 2', D], ['Set new password', 'Account 3', D], ['Signed in', 'Home', D]], gaps: 'Designed, including the reset email.' },
+      { id: 'J4', s: 'ok', title: 'Discover a new book', goal: 'Looks for a book on a topic and starts the series.', steps: [['Home', 'Browse', D], ['Search', 'Library 1', D], ['Or “See all”', 'Library 2', D], ['Series page', 'Book', D], ['Play Episode 1', 'Player', D], ['Episode 4 (free users)', 'Paywall', D]], gaps: 'Designed, including no-results (States). Search also finds episodes by what’s said in them.' },
+      { id: 'J5', s: 'ok', title: 'Finish a whole series', goal: 'Watches chapter after chapter until the book is done.', steps: [['Episode N', 'Player', D], ['Up next countdown', 'Watching 1', D], ['Episode 20', 'Player', D], ['Series complete', 'Watching 3', D], ['What to watch next', 'Watching 3', D], ['Finished tab', 'Library 3', D]], gaps: 'Designed.' },
+      { id: 'J6', s: 'ok', title: 'Read instead of watch', goal: 'Prefers to read the chapter, or wants to look something up again.', steps: [['Series page', 'Book', D], ['Read transcript', 'Book', D], ['Transcript reader', 'Watching 4', D], ['Play from a paragraph', 'Player', D]], gaps: 'Designed. The series page’s Transcripts tab could list every chapter’s reader.' },
+      { id: 'J7', s: 'ok', title: 'Save for later', goal: 'Finds something interesting but not right now.', steps: [['Home “+” or series “My List”', 'Buttons', D], ['Saved · Undo toast', 'Touches 1', D], ['My List · Saved', 'Library 3', D], ['Series page', 'Book', D]], gaps: 'Designed.' },
+      { id: 'J8', s: 'ok', title: 'Watch offline', goal: 'Downloads episodes before a flight or commute.', steps: [['Series page', 'Book', D], ['Download', 'Book', D], ['Downloading', 'Library 4', D], ['Downloads', 'Library 4', D], ['Offline Home', 'States', D]], gaps: 'Designed. Downloads are Premium-only; free users get the paywall.' },
+      { id: 'J9', s: 'ok', title: 'Daily habit', goal: 'Gets the daily reminder, watches, and keeps a streak.', steps: [['Reminder set', 'Onboarding 3', D], ['Notification', 'Notifications', D], ['Next episode', 'Player', D], ['Goal met toast', 'Touches 1', D], ['Streak and week', 'Profile', D]], gaps: 'Designed: copy, timing, caps and the landing screen for every notification.' },
+      { id: 'J10', s: 'ok', title: 'Manage account', goal: 'Updates their details, preferences or signs out.', steps: [['Home avatar', 'Browse', D], ['Profile', 'Profile 1', D], ['Edit profile', 'Profile 2', D], ['Settings', 'Profile 3', D], ['Change password', 'Account 4', D], ['Delete account', 'Account 5', D], ['Sign out', 'Welcome', D]], gaps: 'Designed, including the email-change confirmation email.' },
+      { id: 'J11', s: 'ok', title: 'Upgrade to Premium', goal: 'A free user finishes the 3 free episodes and wants to keep going.', steps: [['Episode 3 ends', 'Watching 2', D], ['Episode 4 locked', 'Series page, free', D], ['Paywall', 'Premium 2', D], ['Purchase', 'App Store / Play sheet', D], ['Welcome to Premium', 'Premium 3', D], ['Episode 4', 'Player', D]], gaps: 'Designed. Prices and trial length are placeholders until set in the stores.' },
+      { id: 'J12', s: 'ok', title: 'Manage or cancel Premium', goal: 'Checks their plan, renewal date or trial end, or cancels.', steps: [['Settings', 'Profile 3', D], ['Subscription', 'Profile 3', D], ['Plan details', 'Account 6', D], ['Manage in App Store', 'System', D], ['Back to free tier', 'Series page, free', D]], gaps: 'Designed (trial, active and cancelled states). The trial-ending reminder needs a notification.' }
+    ];
+    const journeys = raw.map((j) => ({
+      id: j.id, title: j.title, goal: j.goal, gaps: j.gaps,
+      status: statusOf[j.s][0], badge: statusOf[j.s][1],
+      steps: j.steps.map(([label, sub, st], i) => Object.assign({ label, sub, arrow: i > 0 }, style[st]))
+    }));
+    return { journeys };
+  }
+}
+</script>
+</body>
+</html>

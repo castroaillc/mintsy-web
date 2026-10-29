@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Category: Finance</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<header style="display: flex; align-items: center; gap: 6px; padding: 12px 20px 0">
+<a href="Main.dc.html" aria-label="Back" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div style="display: flex; flex-direction: column">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px">Top in Finance</h1>
+<span style="font-size: 13px; color: #A3A5B0">24 series</span>
+</div>
+</header>
+
+<div role="tablist" aria-label="Sort" style="display: flex; gap: 8px; padding: 16px 20px 6px">
+<sc-for list="{{sorts}}" as="s" hint-placeholder-count="3">
+<button role="tab" aria-selected="{{s.on}}" onClick="{{s.pick}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{s.bd}}; background: {{s.bg}}; color: {{s.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">{{s.label}}</button>
+</sc-for>
+</div>
+
+<div style="height: 640px; overflow-y: auto; padding: 12px 20px 24px; box-sizing: border-box">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 12px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="9">
+<a href="Book.dc.html" aria-label="{{b.title}} by {{b.author}}, {{b.eps}} episodes" style="display: flex; flex-direction: column; gap: 6px">
+<span style="position: relative; height: 158px; border-radius: 8px; overflow: hidden; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 30px 9px 10px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="position: absolute; top: 7px; left: 7px; height: 18px; padding: 0 6px; border-radius: 9px; background: rgba(13,14,18,0.78); color: #F2F2F5; font-size: 10px; font-weight: 600; display: flex; align-items: center">{{b.eps}} eps</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.08">{{b.title}}</span>
+<span style="font-size: 9px; font-weight: 500">{{b.author}}</span>
+</span>
+<span style="font-size: 12px; color: #A3A5B0">{{b.runtime}}</span>
+</a>
+</sc-for>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0">
+<dc-import name="TabBar" active="home" accent="{{accent}}" hint-size="390px,84px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sort: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const sorts = ['Popular', 'Newest', 'Shortest'].map((label, i) => {
+      const on = this.state.sort === i;
+      return { label, on, bg: on ? '#F2F2F5' : '#17181F', fg: on ? '#15161B' : '#D4D5DC', bd: on ? '#F2F2F5' : '#2A2C36', pick: () => this.setState({ sort: i }) };
+    });
+    const books = [
+      { title: 'The Psychology of Money', author: 'Morgan Housel', eps: 20, runtime: '1 hr 41 min', bg: '#E7DFCF', fg: '#1C1C1C' },
+      { title: 'The Intelligent Investor', author: 'Benjamin Graham', eps: 20, runtime: '1 hr 40 min', bg: '#1E3557', fg: '#F4EFE6' },
+      { title: 'Rich Dad Poor Dad', author: 'Robert T. Kiyosaki', eps: 10, runtime: '50 min', bg: '#5B2333', fg: '#F7E9EC' },
+      { title: 'I Will Teach You to Be Rich', author: 'Ramit Sethi', eps: 10, runtime: '50 min', bg: '#E2B34C', fg: '#1C1C1C' },
+      { title: 'The Little Book of Common Sense Investing', author: 'John C. Bogle', eps: 19, runtime: '1 hr 35 min', bg: '#2F4A3D', fg: '#F4EFE6' },
+      { title: 'The Simple Path to Wealth', author: 'JL Collins', eps: 30, runtime: '2 hr 30 min', bg: '#C9D6CF', fg: '#1C1C1C' },
+      { title: 'Your Money or Your Life', author: 'Vicki Robin', eps: 9, runtime: '45 min', bg: '#3A2F5B', fg: '#F2EEFA' },
+      { title: 'The Millionaire Next Door', author: 'Thomas J. Stanley', eps: 8, runtime: '40 min', bg: '#B9542F', fg: '#FFF4EE' },
+      { title: 'A Random Walk Down Wall Street', author: 'Burton G. Malkiel', eps: 14, runtime: '1 hr 10 min', bg: '#F0EEE9', fg: '#1C1C1C' }
+    ];
+    return { accent, sorts, books };
+  }
+}
+</script>
+</body>
+</html>

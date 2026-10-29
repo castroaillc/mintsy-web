@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo sign in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+input::placeholder{color:#8B8D99}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="none" top="back" back-href="DuoAuthWelcome.dc.html" show-tabs="false" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 64px 48px; background: #24382F; display: flex; flex-direction: column; justify-content: center; gap: 14px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; letter-spacing: -0.6px">Welcome back</h1>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #D6E2DA">Sign in to pick up where you left off.</p>
+<div style="margin-top: 18px; display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; background: rgba(13,14,18,0.45)">
+<div style="flex: none; position: relative; width: 104px; height: 58px; border-radius: 8px; background: #2C3245">
+<div style="position: absolute; left: 8px; top: 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; color: #F4EFE6">4</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,0.18)"><div style="height: 4px; width: 40%; background: {{accent}}"></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 600; color: #D6E2DA">Episode 4 of 20 · 3 min left</div>
+<div style="font-size: 14px; font-weight: 600">Confounding Compounding</div>
+</div>
+</div>
+</section>
+
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 48px 56px">
+<form style="max-width: 420px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="dsi-email" style="font-size: 14px; font-weight: 600; color: #D4D5DC">Email</label>
+<input id="dsi-email" type="email" autocomplete="email" placeholder="you@example.com" style="height: 52px; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2C36; background: #15161C; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 16px; outline: none">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<label for="dsi-pass" style="font-size: 14px; font-weight: 600; color: #D4D5DC">Password</label>
+<a href="#" style="font-size: 14px; font-weight: 500; color: {{accent}}">Forgot password?</a>
+</div>
+<div style="display: flex; align-items: center; height: 52px; padding: 0 4px 0 16px; border-radius: 12px; border: 1px solid #2A2C36; background: #15161C">
+<input id="dsi-pass" type="{{passType}}" autocomplete="current-password" placeholder="Your password" style="flex: 1; min-width: 0; background: transparent; border: 0; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 16px; outline: none">
+<button type="button" onClick="{{toggle}}" aria-label="{{toggleLabel}}" style="width: 44px; height: 44px; border: 0; background: transparent; color: #A3A5B0; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+</button>
+</div>
+</div>
+<sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="padding: 12px 14px; border-radius: 12px; background: #2A1719; border: 1px solid #5A2A2E; font-size: 14px; line-height: 1.4; color: #FFB4AE">That email and password don’t match. Try again or reset your password.</div>
+</sc-if>
+<a href="DuoBrowseOpen.dc.html" style="margin-top: 8px; height: 54px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Sign in</a>
+<p style="margin: 4px 0 0; text-align: center; font-size: 15px; color: #A3A5B0">New to mintsy? <a href="DuoAuthSignUp.dc.html" style="font-weight: 600; color: #F2F2F5">Create account</a></p>
+</form>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"showError":{"editor":"boolean","default":false},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { show: false };
+  }
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#F5B83D',
+      showError: this.props.showError ?? false,
+      passType: this.state.show ? 'text' : 'password',
+      toggleLabel: this.state.show ? 'Hide password' : 'Show password',
+      toggle: () => this.setState({ show: !this.state.show })
+    };
+  }
+}
+</script>
+</body>
+</html>

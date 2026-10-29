@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="profile" top="back" back-href="DuoProfile.dc.html" hint-size="84px,820px"></dc-import>
+
+<sc-for list="{{columns}}" as="col" hint-placeholder-count="2">
+<section class="scroll" style="flex: none; width: {{col.width}}; box-sizing: border-box; padding: 28px 32px; border-right: {{col.border}}; overflow-y: auto">
+<sc-if value="{{col.first}}" hint-placeholder-val="{{ true }}">
+<h1 style="margin: 0 0 4px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px">Settings</h1>
+</sc-if>
+<sc-for list="{{col.sections}}" as="s" hint-placeholder-count="3">
+<div style="margin-top: 22px">
+<h2 style="margin: 0 0 10px 4px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #A3A5B0">{{s.title}}</h2>
+<div style="border-radius: 16px; background: #15161C; border: 1px solid #23252E; overflow: hidden">
+<sc-for list="{{s.rows}}" as="r" hint-placeholder-count="3">
+<div style="border-top: {{r.border}}">
+<sc-if value="{{r.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="#" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; font-size: 15px">
+<span>{{r.label}}</span>
+<span style="display: flex; align-items: center; gap: 8px; color: #A3A5B0; font-size: 14px">{{r.value}}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span>
+</a>
+</sc-if>
+<sc-if value="{{r.isToggle}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; padding: 8px 16px; box-sizing: border-box">
+<span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px">{{r.label}}</span><span style="font-size: 13px; color: #8B8D99">{{r.hint}}</span></span>
+<button role="switch" aria-checked="{{r.on}}" aria-label="{{r.label}}" onClick="{{r.flip}}" style="flex: none; width: 52px; height: 32px; border-radius: 16px; border: 0; padding: 3px; background: {{r.track}}; display: flex; justify-content: {{r.justify}}; cursor: pointer"><span style="width: 26px; height: 26px; border-radius: 13px; background: #FFFFFF"></span></button>
+</div>
+</sc-if>
+<sc-if value="{{r.isTheme}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px 16px">
+<div role="radiogroup" aria-label="Theme" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #0D0E12">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="height: 40px; border: 0; border-radius: 9px; background: {{t.bg}}; color: {{t.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{col.last}}" hint-placeholder-val="{{ false }}">
+<a href="DuoAuthWelcome.dc.html" style="margin-top: 26px; height: 52px; border-radius: 14px; border: 1px solid #5A2A2E; background: #1C1213; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #FF9C94">Sign out</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding: 0 4px">
+<a href="#" style="font-size: 14px; color: #A3A5B0; text-decoration: underline">Delete account</a>
+<span style="font-size: 12px; color: #8B8D99">mintsy 1.0.0</span>
+</div>
+</sc-if>
+</section>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { theme: 2, on: { autoplay: true, captions: false, wifi: true, reminder: true, newEps: true } };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const on = this.state.on;
+    const link = (label, value) => ({ isLink: true, label, value: value || '' });
+    const toggle = (key, label, hint) => ({
+      isToggle: true, label, hint, on: on[key],
+      track: on[key] ? accent : '#3A3D49',
+      justify: on[key] ? 'flex-end' : 'flex-start',
+      flip: () => this.setState({ on: Object.assign({}, on, { [key]: !on[key] }) })
+    });
+    const fix = (s) => ({ title: s.title, rows: s.rows.map((r, i) => Object.assign({ isLink: false, isToggle: false, isTheme: false }, r, { border: i ? '1px solid #23252E' : '0' })) });
+    const left = [
+      { title: 'Account', rows: [link('Subscription', 'Free · Upgrade'), link('Email', 'you@example.com'), link('Change password'), link('Daily goal', '15 min')] },
+      { title: 'Appearance', rows: [{ isTheme: true }] },
+      { title: 'Support', rows: [link('Help center'), link('Send feedback'), link('Terms of Service'), link('Privacy Policy')] }
+    ].map(fix);
+    const right = [
+      { title: 'Playback', rows: [toggle('autoplay', 'Autoplay next episode', 'Keep the series going'), link('Default speed', '1×'), toggle('captions', 'Captions on by default', 'Show captions in the player'), toggle('wifi', 'Download on Wi-Fi only', 'Save mobile data')] },
+      { title: 'Notifications', rows: [toggle('reminder', 'Daily reminder', 'Every day at 8:00 AM'), link('Reminder time', '8:00 AM'), toggle('newEps', 'New series in your interests', 'At most once a week')] }
+    ].map(fix);
+    const columns = [
+      { sections: left, width: '456px', border: '1px solid #1E2028', first: true, last: false },
+      { sections: right, width: '540px', border: '0', first: false, last: true }
+    ];
+    const themes = ['System', 'Light', 'Dark'].map((label, i) => {
+      const sel = this.state.theme === i;
+      return { label, on: sel, bg: sel ? '#F2F2F5' : 'transparent', fg: sel ? '#15161B' : '#C9CAD2', pick: () => this.setState({ theme: i }) };
+    });
+    return { accent, columns, themes };
+  }
+}
+</script>
+</body>
+</html>

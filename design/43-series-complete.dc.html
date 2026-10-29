@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Series complete</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.rail{scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1240px; box-sizing: border-box; padding-bottom: 32px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<section style="position: relative; padding: 12px 20px 28px; background: #24382F; display: flex; flex-direction: column; align-items: center; text-align: center">
+<a href="Main.dc.html" aria-label="Close" style="align-self: flex-start; width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+<div style="position: relative; margin-top: 4px; width: 120px; height: 180px; border-radius: 6px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 12px 10px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; box-shadow: 0 18px 40px rgba(0,0,0,0.45)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 1.05">The Psychology of Money</div>
+<div style="font-size: 10px; font-weight: 500">Morgan Housel</div>
+<div aria-hidden="true" style="position: absolute; right: -14px; top: -14px; width: 40px; height: 40px; border-radius: 20px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
+</div>
+<div style="margin-top: 20px; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #F5DFA0">Series complete</div>
+<h1 style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.1">You finished The Psychology of Money</h1>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 20px 0">
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">20</div><div style="font-size: 12px; color: #A3A5B0">episodes</div></div>
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">1h 41m</div><div style="font-size: 12px; color: #A3A5B0">watched</div></div>
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">12</div><div style="font-size: 12px; color: #A3A5B0">days</div></div>
+</section>
+
+<section style="margin: 24px 20px 0">
+<h2 style="margin: 0 0 12px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">The book in 5 ideas</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{ideas}}" as="k" hint-placeholder-count="5">
+<li style="display: flex; gap: 12px; font-size: 15px; line-height: 1.45; color: #E4E5EA"><span style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{k.n}}</span>{{k.x}}</li>
+</sc-for>
+</ol>
+</section>
+
+<section style="margin: 24px 20px 0; padding: 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">How was this series?</h2>
+<div role="radiogroup" aria-label="Rate this series" style="display: flex; gap: 6px">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+<button role="radio" aria-checked="{{s.on}}" aria-label="{{s.label}}" onClick="{{s.pick}}" style="width: 44px; height: 44px; border: 0; background: transparent; color: {{s.color}}; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg></button>
+</sc-for>
+</div>
+<div style="font-size: 13px; color: #A3A5B0">{{ratingNote}}</div>
+</section>
+
+<section style="padding-top: 26px">
+<h2 style="margin: 0 0 12px; padding: 0 20px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">What to watch next</h2>
+<div class="rail" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 20px">
+<sc-for list="{{next}}" as="b" hint-placeholder-count="3">
+<a href="Book.dc.html" style="flex: none; width: 124px; display: flex; flex-direction: column; gap: 8px">
+<span style="height: 186px; border-radius: 8px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 12px 11px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.08">{{b.title}}</span>
+<span style="font-size: 11px; font-weight: 500">{{b.author}}</span>
+</span>
+<span style="font-size: 12px; color: #A3A5B0">{{b.why}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; gap: 10px; margin: 26px 20px 0">
+<button style="flex: 1; height: 50px; border-radius: 12px; border: 1px solid #343744; background: transparent; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer">Share</button>
+<a href="Main.dc.html" style="flex: 1; height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600">Back to Home</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { rating: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const ideas = [
+      'Everyone’s money decisions make sense through their own experiences.',
+      'Luck and risk shape outcomes more than effort alone.',
+      'Time in the market beats chasing the highest return.',
+      'Real wealth is the money you didn’t spend.',
+      'Leave room for error; a plan has to survive being wrong.'
+    ].map((x, i) => ({ n: i + 1, x }));
+    const r = this.state.rating;
+    const stars = [1, 2, 3, 4, 5].map((n) => ({ on: r === n, label: n + (n === 1 ? ' star' : ' stars'), color: n <= r ? accent : '#3A3D49', pick: () => this.setState({ rating: n }) }));
+    const next = [
+      { title: 'The Intelligent Investor', author: 'Benjamin Graham', bg: '#1E3557', fg: '#F4EFE6', why: 'More on investing' },
+      { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', bg: '#F0EEE9', fg: '#1C1C1C', why: 'More on behavior' },
+      { title: 'The Simple Path to Wealth', author: 'JL Collins', bg: '#C9D6CF', fg: '#1C1C1C', why: 'Readers also finished' }
+    ];
+    return { accent, ideas, stars, next, ratingNote: r ? 'Thanks! This helps us recommend your next book.' : 'Tap a star to rate it.' };
+  }
+}
+</script>
+</body>
+</html>

@@ -26,11 +26,21 @@ a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
 <section style="display: flex; align-items: center; gap: 16px; margin-top: 22px">
 <div aria-hidden="true" style="flex: none; width: 76px; height: 76px; border-radius: 38px; background: #24382F; border: 2px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px">S</div>
 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
-<div style="font-size: 20px; font-weight: 600">Steve</div>
-<div style="font-size: 14px; color: #A3A5B0">Member since Oct 2026</div>
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 20px; font-weight: 600">Steve</span>
+<sc-if value="{{isPremium}}" hint-placeholder-val="{{ false }}"><a href="PlanDetails.dc.html" aria-label="Premium member, view plan" style="height: 22px; padding: 0 8px; border-radius: 11px; background: {{accent}}; color: #15161B; font-size: 11px; font-weight: 700; letter-spacing: 0.6px; display: flex; align-items: center; gap: 4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg>PREMIUM</a></sc-if>
+</div>
+<div style="font-size: 14px; color: #A3A5B0">{{memberLine}}</div>
 </div>
 <a href="ProfileEdit.dc.html" style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #343744; box-sizing: border-box; display: flex; align-items: center; font-size: 14px; font-weight: 600">Edit</a>
 </section>
+
+<sc-if value="{{isFree}}" hint-placeholder-val="{{ true }}">
+<a href="Premium.dc.html" style="margin-top: 18px; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: #24382F">
+<span aria-hidden="true" style="flex: none; width: 40px; height: 40px; border-radius: 20px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8-1"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600">Unlock every episode</span><span style="font-size: 13px; color: #D6E2DA">You’re on the free plan · first 3 episodes of each book</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</a>
+</sc-if>
 
 <section aria-label="Your stats" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 24px">
 <div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E; display: flex; flex-direction: column; gap: 4px">
@@ -65,7 +75,7 @@ a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
 <section style="margin-top: 28px">
 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px">
 <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700">In progress</h2>
-<a href="#" style="font-size: 14px; color: #A3A5B0">See all</a>
+<a href="Library.dc.html" style="font-size: 14px; color: #A3A5B0">See all</a>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
 <sc-for list="{{inProgress}}" as="b" hint-placeholder-count="2">
@@ -109,11 +119,11 @@ a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"></path></svg>
 Home
 </a>
-<a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
+<a href="SearchResults.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
 Search
 </a>
-<a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
+<a href="Library.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>
 My List
 </a>
@@ -125,7 +135,7 @@ Profile
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":1180}}'>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"plan":{"editor":"enum","options":["free","premium"],"default":"free"},"$preview":{"width":390,"height":1180}}'>
 class Component extends DCLogic {
   renderVals() {
     const accent = this.props.accent ?? '#F5B83D';
@@ -141,9 +151,10 @@ class Component extends DCLogic {
       { title: 'The Psychology of Money', meta: 'Episode 4 of 20 · 15%', pct: '15%', cover: '#E7DFCF', coverFg: '#1C1C1C' },
       { title: 'The Intelligent Investor', meta: 'Episode 2 of 20 · 8%', pct: '8%', cover: '#1E3557', coverFg: '#F4EFE6' }
     ];
-    const rowDefs = [['My List', '6 series', '#'], ['Downloads', '3 episodes', '#'], ['Finished', '1 series', '#'], ['Settings', '', 'ProfileSettings.dc.html']];
+    const rowDefs = [['My List', '6 series', 'Library.dc.html'], ['Downloads', '3 episodes', 'Downloads.dc.html'], ['Finished', '1 series', 'Library.dc.html'], ['Settings', '', 'ProfileSettings.dc.html']];
     const rows = rowDefs.map(([label, value, href], i) => ({ label, value, href, border: i ? '1px solid #23252E' : '0' }));
-    return { accent, week, inProgress, rows };
+    const isPremium = (this.props.plan ?? 'free') === 'premium';
+    return { accent, week, inProgress, rows, isPremium, isFree: !isPremium, memberLine: isPremium ? 'Premium · Yearly · since Oct 2026' : 'Member since Oct 2026' };
   }
 }
 </script>

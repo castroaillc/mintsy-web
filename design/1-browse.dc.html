@@ -54,7 +54,7 @@ input::placeholder{color:#8B8D99}
 <a href="Book.dc.html" style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; line-height: 1.15">The Psychology of Money</a>
 <div style="font-size: 14px; color: #A3A5B0">Morgan Housel · 20 episodes · 5 min each</div>
 <div style="display: flex; gap: 10px; margin-top: 6px">
-<a href="Book.dc.html" style="flex: 1; height: 48px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px">
+<a href="Player.dc.html" style="flex: 1; height: 48px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
 Play Episode 1
 </a>
@@ -74,7 +74,7 @@ Play Episode 1
 <sc-for list="{{continueList}}" as="c" hint-placeholder-count="2">
 <a href="Player.dc.html" style="flex: none; width: 236px; display: flex; flex-direction: column; gap: 10px">
 <div style="position: relative; height: 133px; border-radius: 12px; overflow: hidden; background: {{c.bg}}">
-<div style="position: absolute; left: 14px; top: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; color: {{c.fg}}">CH. {{c.ch}}</div>
+<div style="position: absolute; left: 14px; top: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1px; color: {{c.fg}}">EP. {{c.ch}}</div>
 <div style="position: absolute; left: 14px; bottom: 18px; right: 60px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 1.15; color: {{c.fg}}">{{c.chapter}}</div>
 <div style="position: absolute; right: 12px; bottom: 14px; width: 38px; height: 38px; border-radius: 19px; background: rgba(13,14,18,0.72); color: #FFFFFF; display: flex; align-items: center; justify-content: center">
 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
@@ -96,7 +96,7 @@ Play Episode 1
 <section style="padding-top: 32px">
 <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 20px 12px">
 <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">{{row.heading}}</h2>
-<a href="#" style="font-size: 14px; color: #A3A5B0">See all</a>
+<a href="CategoryAll.dc.html" style="font-size: 14px; color: #A3A5B0">See all</a>
 </div>
 <div class="rail" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 20px">
 <sc-for list="{{row.books}}" as="b" hint-placeholder-count="3">
@@ -115,17 +115,17 @@ Play Episode 1
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"></path></svg>
 Home
 </a>
-<a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
+<a href="SearchResults.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
 Search
 </a>
-<a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
+<a href="Library.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>
 My List
 </a>
-<a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
-Downloads
+<a href="Profile.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; color: #A3A5B0; font-size: 11px; font-weight: 500">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>
+Profile
 </a>
 </nav>
 

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Episode ends, up next</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div style="position: relative; height: 260px; background: #142019; overflow: hidden">
+<div style="position: absolute; left: 0; right: 0; top: 0; display: flex; padding: 12px">
+<a href="Book.dc.html" aria-label="Close player" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(13,14,18,0.55); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"></path></svg></a>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 66px; padding: 12px; border-radius: 16px; background: rgba(13,14,18,0.82); border: 1px solid #343744; display: flex; gap: 12px; align-items: center">
+<div style="flex: none; position: relative; width: 112px; height: 63px; border-radius: 8px; background: #2C3245">
+<div style="position: absolute; left: 8px; top: 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: #F4EFE6">5</div>
+<div style="position: absolute; right: 6px; bottom: 6px; height: 18px; padding: 0 5px; border-radius: 4px; background: rgba(13,14,18,0.82); font-size: 11px; font-weight: 600; display: flex; align-items: center">5:03</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div role="timer" aria-live="polite" style="font-size: 12px; font-weight: 600; color: {{accent}}">{{countLabel}}</div>
+<div style="font-size: 15px; font-weight: 600; line-height: 1.25">Getting Wealthy vs. Staying Wealthy</div>
+<div style="font-size: 12px; color: #A3A5B0">Episode 5 of 20</div>
+</div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 172px; display: flex; gap: 10px">
+<a href="Player.dc.html" style="flex: 1; height: 44px; border-radius: 10px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Play now</a>
+<button onClick="{{cancel}}" style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #343744; background: rgba(13,14,18,0.6); color: #F2F2F5; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">{{cancelLabel}}</button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 12px; height: 4px; border-radius: 2px; background: {{accent}}"></div>
+</div>
+
+<section style="padding: 20px 20px 0; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6FCF97">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+Episode 4 of 20 complete
+</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700">Confounding Compounding</h1>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; margin-top: 10px">
+<sc-for list="{{ticks}}" as="t" hint-placeholder-count="20"><div style="height: 4px; border-radius: 2px; background: {{t.bg}}"></div></sc-for>
+</div>
+</section>
+
+<section style="margin: 18px 20px 0; padding: 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<h2 style="margin: 0 0 12px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #A3A5B0">Quick recap</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<li style="display: flex; gap: 10px; font-size: 14px; line-height: 1.45"><span style="flex: none; width: 22px; height: 22px; border-radius: 11px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">1</span>Compounding rewards time far more than a high rate of return.</li>
+<li style="display: flex; gap: 10px; font-size: 14px; line-height: 1.45"><span style="flex: none; width: 22px; height: 22px; border-radius: 11px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span>Choose returns you can sustain for decades.</li>
+<li style="display: flex; gap: 10px; font-size: 14px; line-height: 1.45"><span style="flex: none; width: 22px; height: 22px; border-radius: 11px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span>Avoid moves that interrupt the process.</li>
+</ol>
+</section>
+
+<section style="margin: 12px 20px 0; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<div role="img" aria-label="10 of 15 minutes today" style="flex: none; position: relative; width: 48px; height: 48px">
+<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="#2A2C36" stroke-width="5"></circle><circle cx="24" cy="24" r="20" fill="none" stroke="{{accent}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="84 126" transform="rotate(-90 24 24)"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 15px; font-weight: 600">10 of 15 minutes today</div>
+<div style="font-size: 13px; color: #A3A5B0">One more episode keeps your 5-day streak.</div>
+</div>
+</section>
+
+<div style="display: flex; gap: 10px; margin: 16px 20px 0">
+<a href="TranscriptReader.dc.html" style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #343744; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500">Read transcript</a>
+<button style="flex: 1; height: 44px; border-radius: 10px; border: 1px solid #343744; background: transparent; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">Share takeaway</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { count: 8, cancelled: false };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      if (this.state.cancelled) return;
+      this.setState({ count: this.state.count > 0 ? this.state.count - 1 : 8 });
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const ticks = Array.from({ length: 20 }, (_, i) => ({ bg: i < 4 ? accent : '#2A2C36' }));
+    return {
+      accent, ticks,
+      countLabel: this.state.cancelled ? 'Autoplay paused · Up next' : 'Up next in ' + this.state.count + 's',
+      cancelLabel: this.state.cancelled ? 'Autoplay off' : 'Cancel',
+      cancel: () => this.setState({ cancelled: true })
+    };
+  }
+}
+</script>
+</body>
+</html>
