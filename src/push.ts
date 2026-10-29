@@ -34,6 +34,10 @@ export async function unregisterPushToken(userId: string, token: string) {
   await pushTokens.deleteOne({ token, userId });
 }
 
+export async function deletePushTokensForUser(userId: string) {
+  return (await pushTokens.deleteMany({ userId })).deletedCount;
+}
+
 /** Sends a notification to every device registered for the user. Returns the number of devices targeted. */
 export async function sendPushToUser(
   userId: string,

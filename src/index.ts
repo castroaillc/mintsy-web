@@ -6,8 +6,12 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { expressMiddleware } from "@as-integrations/express5";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
+import { ensureCatalogIndexes } from "./catalog.js";
 import { client } from "./db.js";
+import { ensureEntitlementIndexes } from "./entitlements.js";
 import { ensurePushIndexes } from "./push.js";
+import { ensureSavedIndexes } from "./saved.js";
+import { revenueCatWebhook } from "./revenuecat-webhook.js";
 import { env } from "./env.js";
 import { typeDefs, resolvers } from "./graphql/schema.js";
 import { createContext, type Context } from "./graphql/context.js";
@@ -15,6 +19,9 @@ import { createContext, type Context } from "./graphql/context.js";
 async function main() {
   await client.connect();
   await ensurePushIndexes();
+  await ensureCatalogIndexes();
+  await ensureEntitlementIndexes();
+  await ensureSavedIndexes();
 
   const app = express();
   const httpServer = http.createServer(app);
@@ -23,6 +30,9 @@ async function main() {
 
   // Better Auth must be mounted before express.json()
   app.all("/api/auth/{*any}", toNodeHandler(auth));
+
+  // RevenueCat webhook: POST /webhooks/revenuecat, with its own JSON parser
+  app.use(revenueCatWebhook);
 
   app.use(express.json());
 
@@ -42,6 +52,12 @@ async function main() {
   await new Promise<void>((resolve) => httpServer.listen(env.port, resolve));
   console.log(`Server ready at http://localhost:${env.port}`);
   console.log(`  GraphQL:  http://localhost:${env.port}/graphql`);
+  console.log(`  Media:    ${env.signedMedia ? `signed URLs (gs://${env.mediaBucket})` : env.mediaBaseUrl}`);
+  if (!env.revenueCatWebhookAuth) console.warn("  REVENUECAT_WEBHOOK_AUTH is not set: /webhooks/revenuecat answers 503");
+  if (!env.revenueCatSecretApiKey) console.warn("  REVENUECAT_SECRET_API_KEY is not set: entitlements come from webhook payloads only");
+  if (!env.resendApiKey) {
+    (env.isProduction ? console.error : console.warn)("  RESEND_API_KEY is not set: emails are logged, not sent");
+  }
   if (!env.isProduction) {
     console.log(`  Auth API: http://localhost:${env.port}/api/auth/reference`);
   }
