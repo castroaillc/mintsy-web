@@ -1,8 +1,9 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, type AlertButton } from 'react-native';
 
+import { FormAlert } from '@/components/auth/form-alert';
 import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { Spinner } from '@/components/mintsy/spinner';
 import { SafeAreaView } from '@/components/safe-area-view';
@@ -16,11 +17,17 @@ import { DAILY_GOALS, REMINDER_TIMES, reminderTime, type ReminderTimeId } from '
 import { SPEEDS } from '@/hooks/use-playback-clock';
 import { useNotificationPermission } from '@/hooks/use-notification-permission';
 import { authClient } from '@/lib/auth-client';
+import { formatBytes, useDownloads } from '@/lib/downloads';
+import { clearFlash, useFlash } from '@/lib/flash';
+import { openLegalUrl, PRIVACY_URL, SHOW_TERMS, TERMS_LABEL, TERMS_URL } from '@/lib/legal';
 import { sendTestNotification } from '@/lib/notifications';
+import { planName } from '@/lib/offering';
 import { useOnboarding } from '@/lib/onboarding';
 import { setPreferences, usePreferences } from '@/lib/preferences';
+import { openPaywall, usePremium } from '@/lib/premium';
 import { registerForPushNotifications, sendTestPush, unregisterPushNotifications } from '@/lib/push';
 import { cancelDailyReminder, scheduleDailyReminder } from '@/lib/reminders';
+import { openHelpCenter, sendFeedback } from '@/lib/support';
 import { useThemeMode } from '@/lib/theme-mode';
 
 const THEME_OPTIONS: { label: string; value: ModeType }[] = [
@@ -29,18 +36,19 @@ const THEME_OPTIONS: { label: string; value: ModeType }[] = [
   { label: 'Dark', value: 'dark' },
 ];
 
-function comingSoon(title: string) {
-  Alert.alert(title, 'Coming soon.');
-}
-
 export default function SettingsScreen() {
   const { data: session } = authClient.useSession();
   const { mode, setMode } = useThemeMode();
   const { permission, request } = useNotificationPermission();
   const { data: onboarding, update } = useOnboarding();
   const prefs = usePreferences();
+  const premium = usePremium();
   const [signingOut, setSigningOut] = useState(false);
   const [sendingPush, setSendingPush] = useState(false);
+  const downloads = useDownloads();
+  // "Password changed", "Email updated" etc. from the account screens
+  const notice = useFlash('settings');
+  useEffect(() => () => clearFlash('settings'), []);
 
   const goal = DAILY_GOALS.find((g) => g.minutes === onboarding.dailyGoal)!;
   const time = reminderTime(onboarding.reminderTime);
@@ -114,6 +122,8 @@ export default function SettingsScreen() {
           // Remove this device's push token while the session is still valid
           await unregisterPushNotifications();
           await cancelDailyReminder();
+          // Downloads stay with the account, so they leave the device with it
+          downloads.removeAll();
           // The root layout's guard returns to the welcome screen once the session clears
           await authClient.signOut();
         },
@@ -121,31 +131,37 @@ export default function SettingsScreen() {
     ]);
   }
 
-  function confirmDeleteAccount() {
-    // TODO: call the account deletion endpoint once the API has one
-    Alert.alert(
-      'Delete account?',
-      'This will permanently remove your account and watch history. Account deletion isn’t available in the app yet.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => comingSoon('Delete account') },
-      ],
-    );
-  }
-
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-background">
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-5 pb-10 pt-3">
         <ScreenHeader title="Settings" backHref="/profile" backLabel="Back to profile" />
+
+        {notice ? (
+          <Pressable accessibilityHint="Dismisses the message" onPress={() => clearFlash('settings')} className="mt-4">
+            <FormAlert tone="success" message={notice} />
+          </Pressable>
+        ) : null}
 
         <VStack className="mt-[26px] gap-[26px]">
           <SettingsSection title="Account">
             <SettingsLinkRow
               label="Email"
               value={session?.user.email}
-              onPress={() => comingSoon('Change email')}
+              onPress={() => router.push('/profile/change-email')}
             />
-            <SettingsLinkRow label="Change password" onPress={() => comingSoon('Change password')} />
+            <SettingsLinkRow
+              role="link"
+              label="Subscription"
+              value={
+                premium.loading
+                  ? '…'
+                  : premium.isPremium
+                    ? ['Premium', planName(premium.productId)].filter(Boolean).join(' · ')
+                    : 'Free · Upgrade'
+              }
+              onPress={() => (premium.isPremium ? router.push('/profile/plan') : openPaywall())}
+            />
+            <SettingsLinkRow role="link" label="Change password" onPress={() => router.push('/profile/change-password')} />
             <SettingsLinkRow
               role="link"
               label="Daily goal"
@@ -174,6 +190,14 @@ export default function SettingsScreen() {
               value={prefs.downloadOnWifiOnly}
               onChange={(v) => setPreferences({ downloadOnWifiOnly: v })}
             />
+            {downloads.items.length > 0 ? (
+              <SettingsLinkRow
+                role="link"
+                label="Downloads"
+                value={`${downloads.items.length} · ${formatBytes(downloads.totalBytes)}`}
+                onPress={() => router.navigate('/downloads')}
+              />
+            ) : null}
           </SettingsSection>
 
           <SettingsSection title="Appearance">
@@ -218,10 +242,12 @@ export default function SettingsScreen() {
           </SettingsSection>
 
           <SettingsSection title="Support">
-            <SettingsLinkRow label="Help center" onPress={() => comingSoon('Help center')} />
-            <SettingsLinkRow label="Send feedback" onPress={() => comingSoon('Send feedback')} />
-            <SettingsLinkRow label="Terms of Service" onPress={() => comingSoon('Terms of Service')} />
-            <SettingsLinkRow label="Privacy Policy" onPress={() => comingSoon('Privacy Policy')} />
+            <SettingsLinkRow role="link" label="Help center" onPress={openHelpCenter} />
+            <SettingsLinkRow label="Send feedback" onPress={sendFeedback} />
+            {SHOW_TERMS ? (
+              <SettingsLinkRow role="link" label={TERMS_LABEL} onPress={() => openLegalUrl(TERMS_URL)} />
+            ) : null}
+            <SettingsLinkRow role="link" label="Privacy Policy" onPress={() => openLegalUrl(PRIVACY_URL)} />
           </SettingsSection>
         </VStack>
 
@@ -237,7 +263,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         <VStack className="mt-[18px] items-center gap-1.5">
-          <Pressable accessibilityRole="button" onPress={confirmDeleteAccount} className="h-11 justify-center px-3">
+          <Pressable accessibilityRole="link" onPress={() => router.push('/profile/delete-account')} className="h-11 justify-center px-3">
             <Text className="font-inter text-[14px] text-muted-foreground underline">Delete account</Text>
           </Pressable>
           <Text className="font-inter text-[12px] text-faint">mintsy {Constants.expoConfig?.version}</Text>

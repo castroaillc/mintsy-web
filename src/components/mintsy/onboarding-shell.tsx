@@ -43,7 +43,7 @@ export function OnboardingShell({
   const label = `Step ${step} of ${ONBOARDING_STEPS}`;
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <HStack className="mt-4 h-11 items-center gap-3 px-6">
+      <HStack className="mt-4 h-11 w-full max-w-[480px] self-center items-center gap-3 px-6">
         {backHref ? (
           <Box className="-ml-2.5">
             <IconButton
@@ -69,7 +69,8 @@ export function OnboardingShell({
         )}
       </HStack>
 
-      <ScrollView contentContainerClassName="px-6 pb-6">
+      {/* Readable column on wide windows; phones are narrower than the cap */}
+      <ScrollView contentContainerClassName="w-full max-w-[480px] self-center px-6 pb-6">
         {hero ? <Box className="mt-5">{hero}</Box> : null}
         <VStack className={`gap-2 ${hero ? 'mt-[26px]' : 'mt-6'}`}>
           <Text className="font-inter-semibold text-[13px] text-brand">{label}</Text>
@@ -81,8 +82,10 @@ export function OnboardingShell({
         {children}
       </ScrollView>
 
-      <VStack className={`gap-1.5 bg-background px-6 pb-4 pt-4 ${footerDivider ? 'border-t border-border' : ''}`}>
-        {footer}
+      <VStack className={`gap-1.5 bg-background pb-4 pt-4 ${footerDivider ? 'border-t border-border' : ''}`}>
+        <VStack className="w-full max-w-[480px] self-center gap-1.5 px-6">
+          {footer}
+        </VStack>
       </VStack>
     </SafeAreaView>
   );

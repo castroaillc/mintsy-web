@@ -30,48 +30,48 @@
     --accent-foreground: 52 52 52;
 
     /* mintsy */
-    /* Darker gold: 5.3:1 on white */
-    --brand: 148 98 0;
-    /* White on the darker gold; the dark ink only reaches ~3.5:1 here */
+    /* Ink & Coral palette. Darker coral: 5.5:1 on white */
+    --brand: 196 50 31;
+    /* White on the darker coral; the dark ink falls short here */
     --brand-foreground: 255 255 255;
-    --surface-raised: 243 243 246;
-    --tag: 238 238 242;
-    --faint: 117 119 130;
+    --surface-raised: 244 242 248;
+    --tag: 239 236 245;
+    --faint: 112 106 132;
     /* Outline buttons */
-    --border-strong: 209 210 216;
+    --border-strong: 212 208 224;
     /* Fixed in both modes: overlays and text drawn on tinted (always dark) panels */
-    --scrim: 13 14 18;
+    --scrim: 14 13 24;
     --on-scrim: 255 255 255;
     --on-tint: 244 239 230;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --primary: 242 242 245;
-      --primary-foreground: 21 22 27;
-      --card: 21 22 28;
-      --secondary: 27 28 36;
-      --secondary-foreground: 212 213 220;
-      --background: 13 14 18;
-      --popover: 21 22 28;
-      --popover-foreground: 242 242 245;
-      --muted: 27 28 36;
-      --muted-foreground: 163 165 176;
+      --primary: 244 242 248;
+      --primary-foreground: 26 20 36;
+      --card: 24 22 38;
+      --secondary: 32 29 46;
+      --secondary-foreground: 218 214 230;
+      --background: 14 13 24;
+      --popover: 24 22 38;
+      --popover-foreground: 244 242 248;
+      --muted: 32 29 46;
+      --muted-foreground: 172 166 194;
       --destructive: 255 100 103;
-      --foreground: 242 242 245;
-      --border: 35 37 46;
-      --input: 42 44 54;
-      --accent: 27 28 36;
-      --accent-foreground: 242 242 245;
-      --ring: 90 92 105;
+      --foreground: 244 242 248;
+      --border: 42 39 64;
+      --input: 51 47 74;
+      --accent: 32 29 46;
+      --accent-foreground: 244 242 248;
+      --ring: 103 96 127;
 
       /* mintsy */
-      --brand: 245 184 61;
-      --brand-foreground: 21 22 27;
-      --surface-raised: 23 24 31;
-      --tag: 27 28 36;
-      --faint: 139 141 153;
-      --border-strong: 52 55 68;
+      --brand: 255 107 87;
+      --brand-foreground: 26 20 36;
+      --surface-raised: 27 25 41;
+      --tag: 32 29 46;
+      --faint: 150 144 174;
+      --border-strong: 61 57 86;
     }
   }
 }

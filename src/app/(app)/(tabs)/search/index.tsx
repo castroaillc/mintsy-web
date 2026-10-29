@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView } from 'react-native';
 
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { Icon } from '@/components/mintsy/icon';
@@ -9,23 +9,30 @@ import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Input, InputField, InputSlot } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { BOOKS } from '@/data/mock';
+import { useCatalog } from '@/lib/catalog';
 
 /** Placeholder: a simple filterable catalog until real search exists. */
 export default function SearchScreen() {
+  const { books, refresh } = useCatalog();
   const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refresh().finally(() => setRefreshing(false));
+  }, [refresh]);
   const q = query.trim().toLowerCase();
-  const results = BOOKS.filter((b) =>
+  const results = books.filter((b) =>
     [b.title, b.author, b.category].some((field) => field.toLowerCase().includes(q)),
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-background">
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-4 px-5 pb-8 pt-5"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text accessibilityRole="header" className="font-display text-[26px] text-foreground">
           Search

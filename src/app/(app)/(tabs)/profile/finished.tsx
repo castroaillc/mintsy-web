@@ -6,15 +6,17 @@ import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { SafeAreaView } from '@/components/safe-area-view';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
+import { useCatalog } from '@/lib/catalog';
 import { useProgress } from '@/lib/progress';
 import { finishedBooks } from '@/lib/stats';
 
 export default function FinishedScreen() {
   const { progress } = useProgress();
-  const books = finishedBooks(progress);
+  const catalog = useCatalog();
+  const books = finishedBooks(catalog.books, progress);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-background">
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-5 px-5 pb-10 pt-3">
         <ScreenHeader title="Finished" backHref="/profile" backLabel="Back to profile" />
         {books.length > 0 ? (

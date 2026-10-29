@@ -42,6 +42,11 @@ const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 // SecureStore keys allow only alphanumerics, ".", "-" and "_"
 const storageKey = (userId: string) => `onboarding.${userId.replace(/[^\w.-]/g, '_')}`;
 
+/** Forgets a user's saved onboarding answers on this device (account deletion). */
+export function clearOnboardingData(userId: string) {
+  return SecureStore.deleteItemAsync(storageKey(userId)).catch(() => {});
+}
+
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const { data: session } = authClient.useSession();
   const userId = session?.user.id;

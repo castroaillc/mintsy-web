@@ -33,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: variant.bundleId,
     adaptiveIcon: {
-      backgroundColor: '#15161C',
+      backgroundColor: '#181626',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -49,13 +49,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#0D0E12',
+        backgroundColor: '#0E0D18',
         image: './assets/images/splash-icon.png',
         imageWidth: 76,
       },
     ],
     'expo-secure-store',
     ['expo-notifications', { defaultChannel: 'default' }],
+    // Send feedback: in-app mail sheet (and mail app queries on Android)
+    'expo-mail-composer',
   ],
   experiments: {
     typedRoutes: true,

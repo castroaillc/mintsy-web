@@ -2,7 +2,8 @@ import { Pressable } from 'react-native';
 
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
-import { coverInk, type Book } from '@/data/mock';
+import { coverInk, type Book } from '@/data/types';
+import { countLabel } from '@/lib/series';
 
 type Preset = {
   title: number;
@@ -62,7 +63,7 @@ export function CoverTile({ book, width = 124, showEpisodeCount, onPress }: Cove
     >
       {showEpisodeCount ? (
         <Box className="absolute left-2 top-2 h-5 justify-center rounded-full bg-scrim/80 px-[7px]">
-          <Text className="font-inter-semibold text-[11px] text-on-scrim">{book.episodes.length} eps</Text>
+          <Text className="font-inter-semibold text-[11px] text-on-scrim">{book.episodes.length === 1 ? '1 episode' : `${book.episodes.length} eps`}</Text>
         </Box>
       ) : null}
       <Text
@@ -84,7 +85,7 @@ export function CoverTile({ book, width = 124, showEpisodeCount, onPress }: Cove
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${book.title} by ${book.author}, ${book.episodes.length} episodes`}
+      accessibilityLabel={`${book.title} by ${book.author}, ${countLabel(book.episodes.length, 'episode')}`}
       onPress={onPress}
       className="active:opacity-80"
     >

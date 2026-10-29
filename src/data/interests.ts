@@ -1,4 +1,4 @@
-import type { Category } from '@/data/mock';
+import type { Category } from '@/data/types';
 
 export const INTERESTS = [
   'Finance',
@@ -38,11 +38,14 @@ export const INTEREST_CATEGORY: Record<Interest, Category> = {
   History: 'History',
 };
 
-/** Minutes per day; 0 = no daily goal. */
+/**
+ * Minutes per day; 0 = no daily goal. `sub` is the fallback caption; onboarding swaps in episodes a day
+ * from the catalog's real episode length when it has one.
+ */
 export const DAILY_GOALS = [
-  { minutes: 5, title: 'Quick', sub: '1 episode a day', short: '5 min' },
-  { minutes: 15, title: 'Steady', sub: '3 episodes a day', short: '15 min' },
-  { minutes: 30, title: 'Deep dive', sub: '6 episodes a day', short: '30 min' },
+  { minutes: 5, title: 'Quick', sub: '5 minutes a day', short: '5 min' },
+  { minutes: 15, title: 'Steady', sub: '15 minutes a day', short: '15 min' },
+  { minutes: 30, title: 'Deep dive', sub: '30 minutes a day', short: '30 min' },
   { minutes: 0, title: 'I’ll decide as I go', sub: 'No daily goal', short: 'Flexible' },
 ] as const;
 export type DailyGoal = (typeof DAILY_GOALS)[number]['minutes'];

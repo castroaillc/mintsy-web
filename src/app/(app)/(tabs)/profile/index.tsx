@@ -15,13 +15,18 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { goalLabel } from '@/data/interests';
 import { authClient } from '@/lib/auth-client';
+import { useCatalog } from '@/lib/catalog';
 import { useOnboarding } from '@/lib/onboarding';
+import { usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { episodeLabel } from '@/lib/series';
 import { booksInProgress, finishedBooks, learningStats, weekActivity } from '@/lib/stats';
 
 const CHART_HEIGHT = 76;
-const CHART_MAX_MINUTES = 25;
+/** Bars never scale to less than this, so a single short day doesn't fill the chart. */
+const CHART_MIN_SCALE_MINUTES = 15;
+/** Empty days still show a stub so the week reads as a chart. */
+const BAR_MIN_HEIGHT = 6;
 
 function memberSince(createdAt: Date | string | undefined) {
   if (!createdAt) return undefined;
@@ -31,19 +36,24 @@ function memberSince(createdAt: Date | string | undefined) {
 export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const { data: onboarding } = useOnboarding();
-  const { progress } = useProgress();
+  const { progress, activity } = useProgress();
+  const catalog = useCatalog();
+  const { isPremium } = usePremium();
 
   const user = session?.user;
-  const stats = learningStats(progress);
+  const stats = learningStats(catalog.books, progress, activity);
   const goal = onboarding.dailyGoal;
-  const week = weekActivity();
-  const metGoal = week.filter((d) => (goal ? d.minutes >= goal : d.minutes > 0)).length;
-  const inProgress = booksInProgress(progress);
-  const finished = finishedBooks(progress);
+  const week = weekActivity(activity);
+  const metDay = (minutes: number) => (goal ? minutes >= goal : minutes > 0);
+  const metGoal = week.filter((d) => metDay(d.minutes)).length;
+  // Scale to the busiest day or the goal, whichever is larger; never zero, so empty weeks don't divide by it
+  const chartMax = Math.max(CHART_MIN_SCALE_MINUTES, goal, ...week.map((d) => d.minutes));
+  const inProgress = booksInProgress(catalog.books, progress);
+  const finished = finishedBooks(catalog.books, progress);
   const since = memberSince(user?.createdAt);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-background">
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="px-5 pb-10 pt-4">
         <ScreenHeader
           title="Profile"
@@ -62,9 +72,16 @@ export default function ProfileScreen() {
         <HStack className="mt-[22px] items-center gap-4">
           <Avatar name={user?.name} />
           <VStack className="min-w-0 flex-1 gap-1">
-            <Text numberOfLines={1} className="font-inter-semibold text-[20px] text-foreground">
-              {user?.name}
-            </Text>
+            <HStack className="items-center gap-2">
+              <Text numberOfLines={1} className="shrink font-inter-semibold text-[20px] text-foreground">
+                {user?.name}
+              </Text>
+              {isPremium ? (
+                <Box accessibilityLabel="Premium member" className="h-[22px] justify-center rounded-full bg-brand px-2">
+                  <Text className="font-inter-semibold text-[11px] tracking-[0.4px] text-brand-foreground">PREMIUM</Text>
+                </Box>
+              ) : null}
+            </HStack>
             {since ? <Text className="font-inter text-[14px] text-muted-foreground">Member since {since}</Text> : null}
           </VStack>
           <Pressable
@@ -100,8 +117,8 @@ export default function ProfileScreen() {
             className="mt-4 h-24 items-end gap-2.5"
           >
             {week.map((day, i) => {
-              const met = goal ? day.minutes >= goal : day.minutes > 0;
-              const height = Math.max(6, Math.round((Math.min(day.minutes, CHART_MAX_MINUTES) / CHART_MAX_MINUTES) * CHART_HEIGHT));
+              const met = metDay(day.minutes);
+              const height = Math.max(BAR_MIN_HEIGHT, Math.round((day.minutes / chartMax) * CHART_HEIGHT));
               return (
                 <VStack key={i} className="flex-1 items-center gap-1.5">
                   <Box

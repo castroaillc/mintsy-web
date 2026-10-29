@@ -7,13 +7,17 @@ import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import type { Book, Episode, EpisodeProgress } from '@/data/mock';
+import type { Book, Episode, EpisodeProgress } from '@/data/types';
 import { episodeFraction, episodeLabel, episodeStatus, formatTime, minutesLeft } from '@/lib/series';
 
 type EpisodeRowProps = {
   book: Book;
   episode: Episode;
   entry: EpisodeProgress | undefined;
+  /** Premium-only for this viewer: lock badge, "Premium ·" label, "Unlock with Premium". */
+  locked?: boolean;
+  /** Viewer is on the free tier: unlocked episodes read "Free ·". */
+  freeTier?: boolean;
   expanded: boolean;
   onToggle: () => void;
   onPlay: () => void;
@@ -23,15 +27,27 @@ type EpisodeRowProps = {
 const CTA = { watched: 'Watch again', 'in-progress': 'Resume', unwatched: 'Play episode' } as const;
 
 /** Episode list row that expands inline into a transcript preview with actions. */
-export function EpisodeRow({ book, episode, entry, expanded, onToggle, onPlay, onReadTranscript }: EpisodeRowProps) {
+export function EpisodeRow({
+  book,
+  episode,
+  entry,
+  locked = false,
+  freeTier = false,
+  expanded,
+  onToggle,
+  onPlay,
+  onReadTranscript,
+}: EpisodeRowProps) {
   const status = episodeStatus(entry);
   const label = episodeLabel(episode, book);
+  const tier = locked ? 'Premium · ' : freeTier ? 'Free · ' : '';
   const meta =
-    status === 'watched'
+    tier +
+    (status === 'watched'
       ? `Watched · ${label}`
       : status === 'in-progress'
         ? `${minutesLeft(episode, entry?.positionSec ?? 0)} · ${label}`
-        : label;
+        : label);
   const highlighted = status !== 'unwatched';
 
   return (
@@ -44,7 +60,7 @@ export function EpisodeRow({ book, episode, entry, expanded, onToggle, onPlay, o
         onPress={onToggle}
         className="flex-row gap-3.5 py-3.5"
       >
-        <EpisodeThumb episode={episode} progress={episodeFraction(episode, entry)} />
+        <EpisodeThumb episode={episode} progress={episodeFraction(episode, entry)} locked={locked} />
         <VStack className="min-w-0 flex-1 gap-1">
           <HStack className="items-center gap-1.5">
             {status === 'watched' ? <Icon name="check" size={14} className="text-brand" /> : null}
@@ -72,6 +88,10 @@ export function EpisodeRow({ book, episode, entry, expanded, onToggle, onPlay, o
             </Text>
             <Text className="font-inter text-[12px] text-muted-foreground">{label}</Text>
           </HStack>
+          {/* Locked episodes come without a transcript; the summary stands in for the preview */}
+          {locked ? (
+            <Text className="font-inter text-[14px] leading-[21px] text-secondary-foreground">{episode.summary}</Text>
+          ) : null}
           {episode.transcript.slice(0, 3).map((line) => (
             <HStack key={line.startSec} className="gap-3">
               <Text className="w-10 font-inter-semibold text-[14px] leading-[21px] text-brand tabular-nums">
@@ -83,7 +103,13 @@ export function EpisodeRow({ book, episode, entry, expanded, onToggle, onPlay, o
             </HStack>
           ))}
           <HStack className="mt-1 gap-2">
-            <BrandButton label={CTA[status]} icon="play" height={44} onPress={onPlay} className="flex-1" />
+            <BrandButton
+              label={locked ? 'Unlock with Premium' : CTA[status]}
+              icon="play"
+              height={44}
+              onPress={onPlay}
+              className="flex-1"
+            />
             <BrandButton label="Read transcript" variant="outline" height={44} onPress={onReadTranscript} className="flex-1" />
           </HStack>
         </VStack>

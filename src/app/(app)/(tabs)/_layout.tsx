@@ -3,8 +3,19 @@ import { styled } from 'nativewind';
 import type { ReactNode } from 'react';
 import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
 
+import { useWideLayout } from '@/hooks/use-wide-layout';
+
 function TintedTabsBase({ style, children }: { style?: StyleProp<TextStyle>; children: ReactNode }) {
-  return <NativeTabs tintColor={StyleSheet.flatten(style)?.color}>{children}</NativeTabs>;
+  const { wide, landscape } = useWideLayout();
+  return (
+    <NativeTabs
+      tintColor={StyleSheet.flatten(style)?.color}
+      // Open display in landscape (iPhone Duo): tabs move into the sidebar. Unset elsewhere so phones keep the tab bar.
+      preferredPlacement={wide && landscape ? 'sidebar' : undefined}
+    >
+      {children}
+    </NativeTabs>
+  );
 }
 
 /** NativeTabs whose selected color comes from a theme class, so it follows light/dark mode. */

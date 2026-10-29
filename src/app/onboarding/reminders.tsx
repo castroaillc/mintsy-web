@@ -11,7 +11,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { REMINDER_TIMES, type ReminderTimeId } from '@/data/interests';
-import { findEpisode } from '@/data/mock';
+import { useCatalog } from '@/lib/catalog';
 import { useNotificationPermission } from '@/hooks/use-notification-permission';
 import { useOnboarding } from '@/lib/onboarding';
 import { scheduleDailyReminder } from '@/lib/reminders';
@@ -19,9 +19,13 @@ import { episodeLabel } from '@/lib/series';
 
 const NEXT = '/onboarding/first-series';
 
-/** Mock lock-screen notification shown above the step. */
+/** Mock lock-screen notification shown above the step, previewing a real episode from the catalog. */
 function NotificationPreview() {
-  const { book, episode } = findEpisode('psychology-of-money-5')!;
+  const { books } = useCatalog();
+  // The first playable book's second episode (or its first, for one-episode books) reads like a "next up"
+  const book = books.find((b) => b.episodes.length > 0);
+  const episode = book?.episodes[1] ?? book?.episodes[0];
+  if (!book || !episode) return null;
   return (
     <Box
       accessibilityElementsHidden

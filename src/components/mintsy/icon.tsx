@@ -29,6 +29,13 @@ const ICONS = {
   settings: { ios: 'gearshape', android: 'settings' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right' },
   alert: { ios: 'exclamationmark.circle', android: 'error' },
+  close: { ios: 'xmark', android: 'close' },
+  lock: { ios: 'lock', android: 'lock' },
+  mail: { ios: 'envelope', android: 'mail' },
+  trash: { ios: 'trash', android: 'delete' },
+  checkCircle: { ios: 'checkmark.circle', android: 'check_circle' },
+  downloaded: { ios: 'arrow.down.circle.fill', android: 'download_done' },
+  offline: { ios: 'wifi.slash', android: 'wifi_off' },
 } satisfies Record<string, Extract<SymbolViewProps['name'], object>>;
 
 export type IconName = keyof typeof ICONS;

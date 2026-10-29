@@ -26,6 +26,7 @@ type IconButtonProps = {
   /** Corner radius; defaults to a circle. */
   radius?: number;
   selected?: boolean;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -38,6 +39,7 @@ export function IconButton({
   iconSize = 20,
   radius,
   selected,
+  disabled,
   className = '',
 }: IconButtonProps) {
   const styles = VARIANTS[variant];
@@ -46,10 +48,11 @@ export function IconButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={selected === undefined ? undefined : { selected }}
+      accessibilityState={selected === undefined && !disabled ? undefined : { selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={{ width: outer, height: outer, borderRadius: radius ?? outer / 2 }}
-      className={`items-center justify-center active:opacity-70 ${styles.box} ${className}`}
+      className={`items-center justify-center active:opacity-70 ${disabled ? 'opacity-40' : ''} ${styles.box} ${className}`}
     >
       <Icon name={icon} size={iconSize} className={styles.icon} />
     </Pressable>

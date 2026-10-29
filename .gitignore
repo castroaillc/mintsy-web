@@ -43,3 +43,6 @@ example
 /android
 
 .env
+
+# end-to-end test output (screenshots, Maestro logs)
+e2e/artifacts/

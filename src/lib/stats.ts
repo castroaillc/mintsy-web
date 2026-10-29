@@ -1,15 +1,38 @@
-import { BOOKS, findEpisode, type ProgressMap } from '@/data/mock';
+import type { Book, ProgressMap } from '@/data/types';
+import { findEpisodeIn } from '@/lib/catalog';
+import { dayKey, type WatchActivity } from '@/lib/progress';
 import { inProgressEpisode, nextEpisode, watchedCount } from '@/lib/series';
 
-/** Mock until the API tracks daily activity: minutes watched over the last 7 days, oldest first. */
-const MOCK_WEEK_MINUTES = [18, 15, 22, 6, 16, 15, 0];
-const MOCK_STREAK_DAYS = 5;
+/** A day counts toward the streak once this much has been watched. */
+const STREAK_MIN_SEC = 60;
 
-export function learningStats(progress: ProgressMap) {
+function daysBefore(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+/**
+ * Consecutive days with at least a minute watched, ending today, or yesterday when nothing's been
+ * watched yet today (the streak isn't broken until the day is over).
+ * Activity is in memory (see ProgressProvider) until the API stores it.
+ */
+export function streakDays(activity: WatchActivity, today = new Date()) {
+  const watched = (date: Date) => (activity[dayKey(date)] ?? 0) >= STREAK_MIN_SEC;
+  let offset = watched(today) ? 0 : 1;
+  let streak = 0;
+  while (watched(daysBefore(today, offset))) {
+    streak += 1;
+    offset += 1;
+  }
+  return streak;
+}
+
+export function learningStats(books: Book[], progress: ProgressMap, activity: WatchActivity) {
   let episodesWatched = 0;
   let seconds = 0;
   for (const [episodeId, entry] of Object.entries(progress)) {
-    const found = findEpisode(episodeId);
+    const found = findEpisodeIn(books, episodeId);
     if (!found) continue;
     if (entry.completed) {
       episodesWatched += 1;
@@ -18,7 +41,7 @@ export function learningStats(progress: ProgressMap) {
       seconds += entry.positionSec;
     }
   }
-  return { streakDays: MOCK_STREAK_DAYS, episodesWatched, timeLearning: formatHoursMinutes(seconds) };
+  return { streakDays: streakDays(activity), episodesWatched, timeLearning: formatHoursMinutes(seconds) };
 }
 
 /** 3720 → "1h 2m" */
@@ -30,18 +53,18 @@ export function formatHoursMinutes(totalSec: number) {
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-/** Last 7 days ending today, labelled by weekday. */
-export function weekActivity(today = new Date()) {
-  return MOCK_WEEK_MINUTES.map((minutes, i) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() - (MOCK_WEEK_MINUTES.length - 1 - i));
-    return { minutes, label: DAY_LETTERS[date.getDay()], isToday: i === MOCK_WEEK_MINUTES.length - 1 };
+/** Time watched on each of the last 7 days ending today, oldest first, labelled by weekday. */
+export function weekActivity(activity: WatchActivity, today = new Date()) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = daysBefore(today, 6 - i);
+    const seconds = activity[dayKey(date)] ?? 0;
+    return { seconds, minutes: seconds / 60, label: DAY_LETTERS[date.getDay()], isToday: i === 6 };
   });
 }
 
 /** Books started but not finished, most recently relevant first. */
-export function booksInProgress(progress: ProgressMap) {
-  return BOOKS.filter((book) => {
+export function booksInProgress(books: Book[], progress: ProgressMap) {
+  return books.filter((book) => {
     const watched = watchedCount(book, progress);
     return watched < book.episodes.length && (watched > 0 || !!inProgressEpisode(book, progress));
   }).map((book) => ({
@@ -51,6 +74,7 @@ export function booksInProgress(progress: ProgressMap) {
   }));
 }
 
-export function finishedBooks(progress: ProgressMap) {
-  return BOOKS.filter((book) => watchedCount(book, progress) === book.episodes.length);
+export function finishedBooks(books: Book[], progress: ProgressMap) {
+  // A book with no episodes yet can't have been finished
+  return books.filter((book) => book.episodes.length > 0 && watchedCount(book, progress) === book.episodes.length);
 }

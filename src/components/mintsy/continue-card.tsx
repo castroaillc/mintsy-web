@@ -5,23 +5,25 @@ import { ProgressBar } from '@/components/mintsy/progress-bar';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import type { Book, Episode, EpisodeProgress } from '@/data/mock';
+import type { Book, Episode, EpisodeProgress } from '@/data/types';
 import { episodeFraction, episodeLabel, minutesLeft } from '@/lib/series';
 
 type ContinueCardProps = {
   book: Book;
   episode: Episode;
   entry: EpisodeProgress | undefined;
+  /** Premium-only for this viewer: a lock replaces the play badge and the card opens the paywall. */
+  locked?: boolean;
   onPress: () => void;
 };
 
 /** 236×133 "Continue watching" card with a progress bar along the bottom. */
-export function ContinueCard({ book, episode, entry, onPress }: ContinueCardProps) {
+export function ContinueCard({ book, episode, entry, locked, onPress }: ContinueCardProps) {
   const label = `${episodeLabel(episode, book)} · ${minutesLeft(episode, entry?.positionSec ?? 0)}`;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Resume ${book.title}, ${episode.title}. ${label}`}
+      accessibilityLabel={`${locked ? 'Unlock with Premium' : 'Resume'} ${book.title}, ${episode.title}. ${label}`}
       onPress={onPress}
       className="w-[236px] gap-2.5 active:opacity-80"
     >
@@ -36,7 +38,7 @@ export function ContinueCard({ book, episode, entry, onPress }: ContinueCardProp
           {episode.title}
         </Text>
         <Box className="absolute bottom-3.5 right-3 h-[38px] w-[38px] items-center justify-center rounded-full bg-scrim/70">
-          <Icon name="play" size={14} className="text-on-scrim" />
+          <Icon name={locked ? 'lock' : 'play'} size={14} className="text-on-scrim" />
         </Box>
         <ProgressBar
           value={episodeFraction(episode, entry)}

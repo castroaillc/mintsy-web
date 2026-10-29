@@ -4,7 +4,7 @@ import { Icon } from '@/components/mintsy/icon';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import type { TranscriptLine } from '@/data/mock';
+import type { TranscriptLine } from '@/data/types';
 import { formatTime } from '@/lib/series';
 
 /** Fixed so line offsets reported to the parent can include it. */

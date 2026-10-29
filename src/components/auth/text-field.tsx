@@ -54,6 +54,8 @@ export function TextField({
       >
         <InputField
           {...inputProps}
+          // Stable selector for end-to-end tests: "Confirm new password" → input-confirm-new-password
+          testID={inputProps.testID ?? `input-${label.toLowerCase().replace(/\s+/g, '-')}`}
           accessibilityLabel={label}
           editable={!isReadOnly}
           secureTextEntry={isPassword && !revealed}

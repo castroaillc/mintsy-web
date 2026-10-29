@@ -8,7 +8,7 @@ type BrandButtonProps = {
   label: string;
   onPress?: () => void;
   icon?: IconName;
-  /** 44 (compact), 48 or 52 (hero). */
+  /** 44 (compact), 48, 52 (hero) or 56 (paywall CTA). */
   height?: number;
   /** `outline` is the quiet secondary action next to a brand button. */
   variant?: 'brand' | 'outline';
@@ -17,6 +17,8 @@ type BrandButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Selector for end-to-end tests. */
+  testID?: string;
 };
 
 export function BrandButton({
@@ -29,12 +31,14 @@ export function BrandButton({
   loading,
   disabled,
   className = '',
+  testID,
 }: BrandButtonProps) {
   const brand = variant === 'brand';
   const inactive = disabled || loading;
-  const textSize = height >= 52 ? 'text-[16px]' : height >= 48 ? 'text-[15px]' : 'text-[14px]';
+  const textSize = height >= 56 ? 'text-[17px]' : height >= 52 ? 'text-[16px]' : height >= 48 ? 'text-[15px]' : 'text-[14px]';
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled, busy: !!loading }}

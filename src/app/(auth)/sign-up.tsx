@@ -5,10 +5,8 @@ import { AuthScreen } from '@/components/auth/auth-screen';
 import { FormAlert } from '@/components/auth/form-alert';
 import { TextField } from '@/components/auth/text-field';
 import { BrandButton } from '@/components/mintsy/brand-button';
+import { MIN_PASSWORD_LENGTH, newPasswordError } from '@/lib/account';
 import { authClient } from '@/lib/auth-client';
-
-// Better Auth's default minimum password length
-const MIN_PASSWORD_LENGTH = 8;
 
 export default function SignUpScreen() {
   const [name, setName] = useState('');
@@ -16,8 +14,6 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
-
-  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
 
   async function onSubmit() {
     setError(undefined);
@@ -54,6 +50,7 @@ export default function SignUpScreen() {
         placeholder="you@example.com"
         autoCapitalize="none"
         autoComplete="email"
+        autoCorrect={false}
         keyboardType="email-address"
         textContentType="emailAddress"
         returnKeyType="next"
@@ -67,11 +64,12 @@ export default function SignUpScreen() {
         autoComplete="new-password"
         textContentType="newPassword"
         helper={`Use at least ${MIN_PASSWORD_LENGTH} characters.`}
-        error={passwordTooShort ? `Use at least ${MIN_PASSWORD_LENGTH} characters.` : undefined}
+        error={newPasswordError(password)}
       />
       {error ? <FormAlert message={error} /> : null}
       <BrandButton
         label="Create account"
+        testID="signup-submit"
         height={54}
         loading={loading}
         disabled={!name.trim() || !email.trim() || password.length < MIN_PASSWORD_LENGTH}

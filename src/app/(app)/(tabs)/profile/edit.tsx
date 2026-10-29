@@ -101,8 +101,17 @@ export default function EditProfileScreen() {
               value={session?.user.email ?? ''}
               placeholder="you@example.com"
               isReadOnly
-              // TODO: email change flow (authClient.changeEmail) once confirmation emails are set up
-              helper="If you change it, we’ll send a link to confirm the new address."
+              helper="Changing it sends a confirmation link to the new address."
+              labelAccessory={
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Change email"
+                  onPress={() => router.push('/profile/change-email')}
+                  hitSlop={{ top: 12, bottom: 12, left: 8 }}
+                >
+                  <Text className="font-inter-medium text-[14px] text-brand">Change</Text>
+                </Pressable>
+              }
             />
 
             <VStack className="gap-2.5">

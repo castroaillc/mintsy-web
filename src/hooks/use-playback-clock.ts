@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const TICK_MS = 250;
 export const SPEEDS = [1, 1.25, 1.5, 2] as const;
 
-type PlaybackClockOptions = {
+export type PlaybackClockOptions = {
   durationSec: number;
   startSec?: number;
   autoPlay?: boolean;
@@ -65,3 +65,5 @@ export function usePlaybackClock({
     cycleSpeed: () => setSpeedIndex((i) => (i + 1) % SPEEDS.length),
   };
 }
+
+export type PlaybackClock = ReturnType<typeof usePlaybackClock>;

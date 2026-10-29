@@ -1,6 +1,6 @@
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
-import { EPISODE_TINTS } from '@/data/mock';
+import { EPISODE_TINTS } from '@/data/types';
 
 /** Initial on a tinted circle with a brand ring. Photos come later. */
 export function Avatar({ name, size = 76 }: { name?: string; size?: number }) {

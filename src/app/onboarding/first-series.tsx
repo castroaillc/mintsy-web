@@ -6,15 +6,19 @@ import { OnboardingShell, SecondaryAction } from '@/components/mintsy/onboarding
 import { RadioCard } from '@/components/mintsy/radio-card';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useCatalog } from '@/lib/catalog';
 import { useOnboarding } from '@/lib/onboarding';
 import { recommendForInterests } from '@/lib/recommend';
-import { formatRuntime, totalRuntime } from '@/lib/series';
+import { countLabel, formatRuntime, totalRuntime } from '@/lib/series';
 
 export default function FirstSeriesStep() {
   const { data, complete } = useOnboarding();
-  const picks = recommendForInterests(data.interests);
-  const [selectedId, setSelectedId] = useState(picks[0].book.id);
-  const selected = picks.find((p) => p.book.id === selectedId)!.book;
+  const catalog = useCatalog();
+  const picks = recommendForInterests(catalog.books.filter((b) => b.episodes.length > 0), data.interests);
+  const [selectedId, setSelectedId] = useState(picks[0]?.book.id);
+  // Falls back to the top pick if a catalog refresh dropped the selected book
+  const selected = (picks.find((p) => p.book.id === selectedId) ?? picks[0])?.book;
+  const firstEpisode = selected?.episodes[0];
 
   // Finishing flips the root guard to the app; the app layout then opens the episode
   return (
@@ -26,23 +30,20 @@ export default function FirstSeriesStep() {
       footerDivider={false}
       footer={
         <>
-          <BrandButton
-            label="Start Episode 1"
-            icon="play"
-            height={54}
-            onPress={() => complete(selected.episodes[0].id)}
-          />
+          {firstEpisode ? (
+            <BrandButton label="Start Episode 1" icon="play" height={54} onPress={() => complete(firstEpisode.id)} />
+          ) : null}
           <SecondaryAction label="Browse all series instead" onPress={() => complete()} />
         </>
       }
     >
       <VStack accessibilityRole="radiogroup" accessibilityLabel="First series" className="mt-6 gap-3">
         {picks.map(({ book, reason }) => {
-          const meta = `${book.episodes.length} episodes · ${formatRuntime(totalRuntime(book))}`;
+          const meta = `${countLabel(book.episodes.length, 'episode')} · ${formatRuntime(totalRuntime(book))}`;
           return (
             <RadioCard
               key={book.id}
-              checked={book.id === selectedId}
+              checked={book.id === selected?.id}
               onPress={() => setSelectedId(book.id)}
               accessibilityLabel={`${book.title} by ${book.author}. ${reason}. ${meta}`}
               className="p-3"

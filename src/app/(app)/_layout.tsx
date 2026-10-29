@@ -36,6 +36,9 @@ export default function AppLayout() {
         <Stack.Screen name="profile" />
         {/* Covers the tab bar; the player's chevron button dismisses it */}
         <Stack.Screen name="player/[episodeId]" options={{ presentation: 'fullScreenModal' }} />
+        {/* Premium: the paywall (close button top left) and, after a purchase, Welcome (replaces the paywall) */}
+        <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="premium-welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       </Stack>
     </ProgressProvider>
   );

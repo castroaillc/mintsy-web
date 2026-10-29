@@ -31,7 +31,13 @@ export function SectionRow({ title, actionLabel, onAction, children }: SectionRo
           </Pressable>
         ) : null}
       </HStack>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 px-5">
+      <ScrollView
+        // Selector for end-to-end tests: "Recently added" → rail-recently-added
+        testID={`rail-${title.toLowerCase().replace(/\s+/g, '-')}`}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-3 px-5"
+      >
         {children}
       </ScrollView>
     </VStack>

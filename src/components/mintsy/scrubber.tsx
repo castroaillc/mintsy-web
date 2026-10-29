@@ -10,10 +10,18 @@ type ScrubberProps = {
   positionSec: number;
   durationSec: number;
   onSeek: (sec: number) => void;
+  /** `overlay` sits on video (default); `surface` sits on the page background (tabletop player). */
+  tone?: 'overlay' | 'surface';
 };
 
+const TONES = {
+  overlay: { track: 'bg-on-scrim/25', thumb: 'bg-on-scrim', time: 'text-on-scrim' },
+  surface: { track: 'bg-input', thumb: 'bg-foreground', time: 'text-muted-foreground' },
+} as const;
+
 /** Draggable seek bar with current time / duration. Tap or drag anywhere on the track. */
-export function Scrubber({ positionSec, durationSec, onSeek }: ScrubberProps) {
+export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay' }: ScrubberProps) {
+  const colors = TONES[tone];
   const [width, setWidth] = useState(0);
   const [dragSec, setDragSec] = useState<number | null>(null);
 
@@ -47,18 +55,18 @@ export function Scrubber({ positionSec, durationSec, onSeek }: ScrubberProps) {
           onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
           className="h-7 justify-center"
         >
-          <Box className="h-1 rounded-sm bg-on-scrim/25">
+          <Box className={`h-1 rounded-sm ${colors.track}`}>
             <Box style={{ width: `${pct}%` }} className="h-1 rounded-sm bg-brand" />
           </Box>
           <Box
             style={{ left: `${pct}%` }}
-            className={`absolute -ml-[7px] h-3.5 w-3.5 rounded-full bg-on-scrim ${dragSec !== null ? 'scale-125' : ''}`}
+            className={`absolute -ml-[7px] h-3.5 w-3.5 rounded-full ${colors.thumb} ${dragSec !== null ? 'scale-125' : ''}`}
           />
         </Box>
       </GestureDetector>
       <HStack className="justify-between">
-        <Text className="font-inter-medium text-[12px] text-on-scrim tabular-nums">{formatTime(shown)}</Text>
-        <Text className="font-inter-medium text-[12px] text-on-scrim tabular-nums">{formatTime(durationSec)}</Text>
+        <Text className={`font-inter-medium text-[12px] tabular-nums ${colors.time}`}>{formatTime(shown)}</Text>
+        <Text className={`font-inter-medium text-[12px] tabular-nums ${colors.time}`}>{formatTime(durationSec)}</Text>
       </HStack>
     </Box>
   );
