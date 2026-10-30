@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,11 +68,16 @@ function shareBook(book: Book) {
 function BookDetail({ book }: { book: Book }) {
   const insets = useSafeAreaInsets();
   const { wide } = useWideLayout();
-  const { progress } = useProgress();
+  const { progress, refreshBook } = useProgress();
   const { isPremium } = usePremium();
   const isLocked = useIsLocked();
   const openEpisode = useOpenEpisode();
   const listRef = useRef<FlatList<Episode>>(null);
+
+  // The latest from the API (episodes may have been watched on the web)
+  useEffect(() => {
+    refreshBook(book.id);
+  }, [book.id, refreshBook]);
 
   const total = book.episodes.length;
   const avgMinutes = averageEpisodeMinutes(book);

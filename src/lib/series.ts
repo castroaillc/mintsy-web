@@ -53,6 +53,26 @@ export function inProgressEpisode(book: Book, progress: ProgressMap) {
   return book.episodes.findLast((e) => episodeStatus(progress[e.id]) === 'in-progress');
 }
 
+/**
+ * Where Continue watching picks up in a book, by the API's rule (`continueWatching`): the most recently saved
+ * episode if it isn't completed, otherwise the next one that isn't (then earlier ones). Undefined when nothing
+ * has been watched or every episode is completed.
+ */
+export function continueEpisode(book: Book, progress: ProgressMap) {
+  const started = book.episodes.filter((e) => progress[e.id]);
+  if (started.length === 0) return undefined;
+  const savedAt = (e: Episode) => progress[e.id]?.updatedAt ?? '';
+  const latest = started.reduce((a, b) => (savedAt(b) > savedAt(a) ? b : a));
+  if (!progress[latest.id]?.completed) return latest;
+  const i = book.episodes.indexOf(latest);
+  return [...book.episodes.slice(i + 1), ...book.episodes.slice(0, i)].find((e) => !progress[e.id]?.completed);
+}
+
+/** Every episode completed (a book with no episodes yet can't have been finished). */
+export function isBookFinished(book: Book, progress: ProgressMap) {
+  return book.episodes.length > 0 && watchedCount(book, progress) === book.episodes.length;
+}
+
 /** Where the book's primary Play/Resume button should start. */
 export function nextEpisode(book: Book, progress: ProgressMap) {
   const resume = inProgressEpisode(book, progress);

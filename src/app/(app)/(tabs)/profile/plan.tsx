@@ -12,7 +12,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { READABLE_MAX_WIDTH, useWideLayout } from '@/hooks/use-wide-layout';
 import { loadOffer, planName } from '@/lib/offering';
-import { openPaywall, useManageSubscription, usePremium } from '@/lib/premium';
+import { isWebStore, openPaywall, useManageSubscription, usePremium } from '@/lib/premium';
 
 function longDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -26,11 +26,13 @@ export default function PlanDetailsScreen() {
   const [restoring, setRestoring] = useState(false);
 
   const name = planName(premium.productId);
-  const storeName = premium.store === 'APP_STORE' ? 'App Store' : premium.store === 'PLAY_STORE' ? 'Google Play Store' : null;
+  const storeName = premium.store === 'app_store' ? 'App Store' : premium.store === 'play_store' ? 'Google Play Store' : null;
+  // Bought on the web: App Store rules allow no link, button or price for it here, only where to manage it
+  const web = isWebStore(premium.store);
 
   // The price comes from the store via the offering; match it to the subscribed product
   useEffect(() => {
-    if (!premium.isPremium || !premium.available) return;
+    if (!premium.isPremium || !premium.available || web) return;
     let cancelled = false;
     loadOffer()
       .then((offer) => {
@@ -41,7 +43,7 @@ export default function PlanDetailsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [premium.isPremium, premium.available, premium.productId]);
+  }, [premium.isPremium, premium.available, premium.productId, web]);
 
   const manage = useManageSubscription();
 
@@ -68,7 +70,7 @@ export default function PlanDetailsScreen() {
   const rows: { label: string; value: string }[] = premium.isPremium
     ? [
         { label: 'Plan', value: name ? `Premium · ${name}` : 'Premium' },
-        ...(price ? [{ label: 'Price', value: price }] : []),
+        ...(price && !web ? [{ label: 'Price', value: price }] : []),
         ...(dateRow ? [dateRow] : []),
       ]
     : [{ label: 'Plan', value: 'Free' }];
@@ -101,7 +103,7 @@ export default function PlanDetailsScreen() {
 
             {premium.isPremium ? (
               <SettingsSection>
-                <SettingsLinkRow role="link" label="Manage subscription" onPress={manage} />
+                {web ? null : <SettingsLinkRow role="link" label="Manage subscription" onPress={manage} />}
                 <SettingsLinkRow label="Restore purchases" value={restoring ? 'Restoring…' : undefined} onPress={restoring ? () => {} : restore} />
               </SettingsSection>
             ) : (
@@ -114,7 +116,11 @@ export default function PlanDetailsScreen() {
               </VStack>
             )}
 
-            {premium.isPremium && storeName ? (
+            {premium.isPremium && web ? (
+              <Text className="px-1 font-inter text-[13px] leading-[19px] text-faint">
+                You subscribed on the web. Manage or cancel at app.getmintsy.com
+              </Text>
+            ) : premium.isPremium && storeName ? (
               <Text className="px-1 font-inter text-[13px] leading-[19px] text-faint">
                 Billed by the {storeName}. Cancel at least 24 hours before the end of the period to avoid renewal.
               </Text>

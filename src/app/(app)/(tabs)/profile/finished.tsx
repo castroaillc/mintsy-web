@@ -6,14 +6,11 @@ import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { SafeAreaView } from '@/components/safe-area-view';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
-import { useCatalog } from '@/lib/catalog';
 import { useProgress } from '@/lib/progress';
-import { finishedBooks } from '@/lib/stats';
 
 export default function FinishedScreen() {
-  const { progress } = useProgress();
-  const catalog = useCatalog();
-  const books = finishedBooks(catalog.books, progress);
+  // From the API (finishedBookIds), most recently finished first
+  const { finishedBooks: books } = useProgress();
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">

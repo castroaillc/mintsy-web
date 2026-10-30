@@ -63,12 +63,14 @@ export type Book = {
 /** Episodes 1…FREE_EPISODES of every book are free; the rest need Premium. Mirrors the backend's constant. */
 export const FREE_EPISODES = 3;
 
+/** The viewer's place in one episode (the API's `EpisodeProgress`, trimmed to what the UI needs). */
 export type EpisodeProgress = {
   positionSec: number;
   completed: boolean;
-  /** ISO 8601; when the episode was last watched to the end (local only). */
-  completedAt?: string;
+  /** ISO 8601; when this was last saved (server time once synced, device time for changes not sent yet). */
+  updatedAt?: string;
 };
+/** Keyed by episode id (`<bookId>-<number>`). */
 export type ProgressMap = Record<string, EpisodeProgress>;
 
 export const CATEGORIES = ['All', 'Finance', 'Business', 'Psychology', 'Productivity', 'History', 'Health'] as const;

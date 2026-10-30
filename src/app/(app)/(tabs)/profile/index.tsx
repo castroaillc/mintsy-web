@@ -19,8 +19,8 @@ import { useCatalog } from '@/lib/catalog';
 import { useOnboarding } from '@/lib/onboarding';
 import { usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
-import { episodeLabel } from '@/lib/series';
-import { booksInProgress, finishedBooks, learningStats, weekActivity } from '@/lib/stats';
+import { episodeLabel, watchedCount } from '@/lib/series';
+import { learningStats, weekActivity } from '@/lib/stats';
 
 const CHART_HEIGHT = 76;
 /** Bars never scale to less than this, so a single short day doesn't fill the chart. */
@@ -36,7 +36,7 @@ function memberSince(createdAt: Date | string | undefined) {
 export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const { data: onboarding } = useOnboarding();
-  const { progress, activity } = useProgress();
+  const { progress, activity, continueWatching, finishedBooks: finished } = useProgress();
   const catalog = useCatalog();
   const { isPremium } = usePremium();
 
@@ -48,8 +48,11 @@ export default function ProfileScreen() {
   const metGoal = week.filter((d) => metDay(d.minutes)).length;
   // Scale to the busiest day or the goal, whichever is larger; never zero, so empty weeks don't divide by it
   const chartMax = Math.max(CHART_MIN_SCALE_MINUTES, goal, ...week.map((d) => d.minutes));
-  const inProgress = booksInProgress(catalog.books, progress);
-  const finished = finishedBooks(catalog.books, progress);
+  const inProgress = continueWatching.map(({ book, episode }) => ({
+    book,
+    episode,
+    fraction: watchedCount(book, progress) / book.episodes.length,
+  }));
   const since = memberSince(user?.createdAt);
 
   return (

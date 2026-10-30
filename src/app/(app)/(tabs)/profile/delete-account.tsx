@@ -16,10 +16,12 @@ import { authClient } from '@/lib/auth-client';
 import { useDownloads } from '@/lib/downloads';
 import { setFlash } from '@/lib/flash';
 import { clearOnboardingData } from '@/lib/onboarding';
-import { logOutPurchases, useManageSubscription, usePremium } from '@/lib/premium';
+import { isWebStore, logOutPurchases, useManageSubscription, usePremium } from '@/lib/premium';
 import { unregisterPushNotifications } from '@/lib/push';
+import { useProgress } from '@/lib/progress';
 import { cancelDailyReminder } from '@/lib/reminders';
 import { providerLabel, signInWith, useLinkedAccounts } from '@/lib/social-auth';
+import { deleteUserFiles } from '@/lib/user-files';
 
 const DELETED = [
   'Your profile, name and email',
@@ -54,6 +56,7 @@ export default function DeleteAccountScreen() {
   const premium = usePremium();
   const manageSubscription = useManageSubscription();
   const downloads = useDownloads();
+  const progress = useProgress();
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string>();
   const [error, setError] = useState<string>();
@@ -112,6 +115,9 @@ export default function DeleteAccountScreen() {
     // The account is gone: clear everything it left on this device, then let the guard return to Welcome
     setFlash('welcome', 'Your account has been deleted. Thanks for learning with mintsy.');
     downloads.removeAll();
+    // The API already deleted the watch progress; drop the cache and unsent saves, then the user's whole folder
+    progress.discardLocal();
+    if (userId) deleteUserFiles(userId);
     await Promise.all([
       logOutPurchases(),
       cancelDailyReminder().catch(() => {}),
@@ -159,11 +165,20 @@ export default function DeleteAccountScreen() {
               Deleting your account doesn’t cancel your Premium subscription
             </Text>
           </HStack>
-          <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
-            Your subscription is billed by the {premium.store === 'PLAY_STORE' ? 'Google Play Store' : 'App Store'}. To stop
-            future charges, cancel it there first.
-          </Text>
-          <BrandButton label="Manage subscription" variant="outline" height={48} onPress={manageSubscription} />
+          {isWebStore(premium.store) ? (
+            // Bought on the web: say where to cancel, with no link or button (App Store rules)
+            <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
+              You subscribed on the web. To stop future charges, cancel it first at app.getmintsy.com
+            </Text>
+          ) : (
+            <>
+              <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
+                Your subscription is billed by the {premium.store === 'play_store' ? 'Google Play Store' : 'App Store'}. To stop
+                future charges, cancel it there first.
+              </Text>
+              <BrandButton label="Manage subscription" variant="outline" height={48} onPress={manageSubscription} />
+            </>
+          )}
         </VStack>
       ) : null}
 

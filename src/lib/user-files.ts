@@ -1,9 +1,9 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 /**
- * Small per-user JSON files on this device (`<documents>/users/<userId>/<name>.json`): watch progress,
- * finished series, ratings and recent searches. Nothing here reaches the API. Deleting an account removes
- * the user's folder (see deleteUserFiles).
+ * Small per-user JSON files on this device (`<documents>/users/<userId>/<name>.json`): the watch progress
+ * cache (the API's copy plus saves not sent yet, see progress.tsx), seconds watched per day, ratings and
+ * recent searches. Deleting an account removes the user's folder (see deleteUserFiles).
  */
 // Built on demand, never at import: expo-file-system objects can't be created on web (static export)
 const root = () => new Directory(Paths.document, 'users');

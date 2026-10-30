@@ -269,7 +269,7 @@ function EndOfFreeUpsell({ book, episode, onDismiss }: PlayerProps & { onDismiss
 
 function Player({ book, episode, clock, video }: PlayerProps & { clock: PlaybackClock; video: VideoPlayer | null }) {
   const insets = useSafeAreaInsets();
-  const { progress, setPosition } = useProgress();
+  const { progress, setPosition, saveNow, sync } = useProgress();
   const prefs = usePreferences();
   const { isPremium } = usePremium();
   const goTo = useGoToEpisode();
@@ -286,11 +286,23 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const prev = book.episodes[index - 1];
   const next = book.episodes[index + 1];
 
-  // Persist whole seconds so Browse and Book stay current
+  // Track whole seconds so Browse and Book stay current; the API gets them about every 10 s while playing
   const wholeSec = Math.floor(clock.positionSec);
   useEffect(() => {
     if (wholeSec > 0 && wholeSec < episode.durationSec) setPosition(episode.id, wholeSec);
   }, [wholeSec, episode.id, episode.durationSec, setPosition]);
+  // Save right away on pause, and on leaving the player (then reload Continue watching for Home)
+  useEffect(() => {
+    if (!clock.playing) saveNow();
+  }, [clock.playing, saveNow]);
+  useEffect(() => () => void sync(), [sync]);
+
+  /** Seeks and saves the new position at once. */
+  const seekTo = (sec: number) => {
+    clock.seek(sec);
+    const target = Math.floor(Math.min(episode.durationSec, Math.max(0, sec)));
+    if (target < episode.durationSec) setPosition(episode.id, target, { saveNow: true });
+  };
 
   const [tab, setTab] = useState<Tab>('transcript');
   const [captions, setCaptions] = useState(prefs.captionsByDefault);
@@ -322,7 +334,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   }, [activeIndex, following, tab, split, viewportHeight]);
 
   const seekToLine = (sec: number) => {
-    clock.seek(sec);
+    seekTo(sec);
     setFollowing(true);
   };
 
@@ -405,9 +417,9 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         disabled={!prev}
         onPress={() => prev && goTo(prev)}
       />
-      <IconButton icon="back10" variant="surface" size={buttonSize} accessibilityLabel="Back 10 seconds" onPress={() => clock.skip(-10)} />
+      <IconButton icon="back10" variant="surface" size={buttonSize} accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
       {playButton(playSize, playSize > 80 ? 30 : 24)}
-      <IconButton icon="forward10" variant="surface" size={buttonSize} accessibilityLabel="Forward 10 seconds" onPress={() => clock.skip(10)} />
+      <IconButton icon="forward10" variant="surface" size={buttonSize} accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
       <IconButton
         icon="next"
         variant="surface"
@@ -666,9 +678,9 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
       </HStack>
 
       <HStack style={{ right: insets.right + 20 }} className="absolute bottom-11 items-center gap-3.5">
-        <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => clock.skip(-10)} />
+        <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
         {playButton(60, 22)}
-        <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => clock.skip(10)} />
+        <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
       </HStack>
 
       <Box style={{ left: insets.left + 16, right: insets.right + 16 }} className="absolute bottom-0">

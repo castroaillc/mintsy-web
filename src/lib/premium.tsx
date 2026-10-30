@@ -20,15 +20,32 @@ export type BackendPremium = {
   /** "trial" | "normal" | "intro" */
   periodType: string | null;
   productId: string | null;
+  /** Where it was bought: "app_store", "rc_billing" (web), "stripe", "play_store", "promotional", … Missing on older backends. */
+  store?: string | null;
 };
 
-const PREMIUM_FIELDS = 'active expiresAt willRenew periodType productId';
+const PREMIUM_FIELDS = 'active expiresAt willRenew periodType productId store';
 const ME_PREMIUM_QUERY = `#graphql
   query MePremium { me { premium { ${PREMIUM_FIELDS} } } }
 `;
 const REFRESH_PREMIUM_MUTATION = `#graphql
   mutation RefreshPremium { refreshPremium { ${PREMIUM_FIELDS} } }
 `;
+
+/** Backends that predate `Premium.store` reject the field; ask again without it. */
+async function premiumRequest<T>(query: string): Promise<T> {
+  try {
+    return await graphql<T>(query);
+  } catch (err) {
+    if (!/\bstore\b/.test((err as Error).message)) throw err;
+    return graphql<T>(query.replace(' store }', ' }'));
+  }
+}
+
+/** Subscriptions bought on the web (app.getmintsy.com): managed there, never from the app. */
+export function isWebStore(store: string | null) {
+  return store === 'rc_billing' || store === 'stripe';
+}
 
 // ── RevenueCat setup ────────────────────────────────────────────────
 
@@ -91,7 +108,10 @@ type PremiumContextValue = {
   productId: string | null;
   /** Store page where the subscription is managed, if the store gave one. */
   managementURL: string | null;
-  /** Store the active entitlement was bought in (RevenueCat's value, e.g. "APP_STORE", "PLAY_STORE"). */
+  /**
+   * Store the subscription was bought in, lower case: "app_store", "play_store", "rc_billing" / "stripe" (web),
+   * "promotional", … From RevenueCat on the device, else the backend's `Premium.store`.
+   */
   store: string | null;
   /** True until the first entitlement check for the signed-in user finishes. */
   loading: boolean;
@@ -132,7 +152,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   /** Pushes the device's entitlement to the backend, then refetches the catalog so unlocked episodes get URLs. */
   const syncBackend = useCallback(async () => {
     try {
-      const data = await graphql<{ refreshPremium: BackendPremium }>(REFRESH_PREMIUM_MUTATION);
+      const data = await premiumRequest<{ refreshPremium: BackendPremium }>(REFRESH_PREMIUM_MUTATION);
       setBackend(data.refreshPremium);
     } catch (err) {
       console.warn('refreshPremium failed', err);
@@ -168,7 +188,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
                 return null;
               })
           : Promise.resolve(null),
-        graphql<{ me: { premium: BackendPremium } | null }>(ME_PREMIUM_QUERY)
+        premiumRequest<{ me: { premium: BackendPremium } | null }>(ME_PREMIUM_QUERY)
           .then((d) => d.me?.premium ?? null)
           .catch(() => null),
       ]);
@@ -265,7 +285,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       periodType: ent ? lower(ent.periodType) : lower(server?.periodType),
       productId: ent ? ent.productIdentifier : (server?.productId ?? null),
       managementURL: info?.managementURL ?? null,
-      store: ent?.store ?? null,
+      store: ent ? lower(ent.store) : lower(server?.store),
       loading: !!userId && loading,
       available,
       purchase,
@@ -341,7 +361,7 @@ export function useManageSubscription() {
   const premium = usePremium();
   return useCallback(async () => {
     try {
-      if (Platform.OS === 'ios' && premium.available && (premium.store === 'APP_STORE' || !premium.managementURL)) {
+      if (Platform.OS === 'ios' && premium.available && (premium.store === 'app_store' || !premium.managementURL)) {
         await Purchases.showManageSubscriptions();
         await premium.refresh();
         return;

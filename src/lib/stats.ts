@@ -1,7 +1,6 @@
 import type { Book, ProgressMap } from '@/data/types';
 import { findEpisodeIn } from '@/lib/catalog';
 import { dayKey, type WatchActivity } from '@/lib/progress';
-import { inProgressEpisode, nextEpisode, watchedCount } from '@/lib/series';
 
 /** A day counts toward the streak once this much has been watched. */
 const STREAK_MIN_SEC = 60;
@@ -15,7 +14,7 @@ function daysBefore(date: Date, days: number) {
 /**
  * Consecutive days with at least a minute watched, ending today, or yesterday when nothing's been
  * watched yet today (the streak isn't broken until the day is over).
- * Activity is in memory (see ProgressProvider) until the API stores it.
+ * Activity is kept on the device (see ProgressProvider) until the API stores it.
  */
 export function streakDays(activity: WatchActivity, today = new Date()) {
   const watched = (date: Date) => (activity[dayKey(date)] ?? 0) >= STREAK_MIN_SEC;
@@ -60,21 +59,4 @@ export function weekActivity(activity: WatchActivity, today = new Date()) {
     const seconds = activity[dayKey(date)] ?? 0;
     return { seconds, minutes: seconds / 60, label: DAY_LETTERS[date.getDay()], isToday: i === 6 };
   });
-}
-
-/** Books started but not finished, most recently relevant first. */
-export function booksInProgress(books: Book[], progress: ProgressMap) {
-  return books.filter((book) => {
-    const watched = watchedCount(book, progress);
-    return watched < book.episodes.length && (watched > 0 || !!inProgressEpisode(book, progress));
-  }).map((book) => ({
-    book,
-    episode: nextEpisode(book, progress).episode,
-    fraction: watchedCount(book, progress) / book.episodes.length,
-  }));
-}
-
-export function finishedBooks(books: Book[], progress: ProgressMap) {
-  // A book with no episodes yet can't have been finished
-  return books.filter((book) => book.episodes.length > 0 && watchedCount(book, progress) === book.episodes.length);
 }

@@ -23,7 +23,7 @@ import { useCatalog } from '@/lib/catalog';
 import { useIsLocked, useOpenEpisode, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { useSaved } from '@/lib/saved';
-import { averageEpisodeMinutes, countLabel, inProgressEpisode } from '@/lib/series';
+import { averageEpisodeMinutes, countLabel } from '@/lib/series';
 
 function matchesQuery(book: Book, query: string) {
   const q = query.trim().toLowerCase();
@@ -37,7 +37,7 @@ function openBook(book: Book) {
 
 export default function BrowseScreen() {
   const { data: session } = authClient.useSession();
-  const { progress } = useProgress();
+  const { continueWatching, sync } = useProgress();
   const { books, status, retry, retrying } = useCatalog();
   // Re-reads Premium (purchases made elsewhere, renewals, expiry) and then refetches the catalog
   const { refresh } = usePremium();
@@ -50,8 +50,8 @@ export default function BrowseScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    refresh().finally(() => setRefreshing(false));
-  }, [refresh]);
+    Promise.all([refresh(), sync()]).finally(() => setRefreshing(false));
+  }, [refresh, sync]);
 
   const visible = books.filter(
     (b) => (category === 'All' || b.category === category) && matchesQuery(b, query),
@@ -63,10 +63,8 @@ export default function BrowseScreen() {
   // New books are appended with the next-highest `order`, so the newest are at the end
   const newest = books.slice(-4).reverse();
 
-  const continueList = visible.flatMap((book) => {
-    const episode = inProgressEpisode(book, progress);
-    return episode ? [{ book, episode }] : [];
-  });
+  // From the API (shared with the web app), newest activity first; may include a locked next episode (opens the paywall)
+  const continueList = continueWatching.filter((item) => visible.includes(item.book));
 
   const topCategory = category === 'All' ? 'Finance' : category;
   // Titles stay factual: there are no rankings or publish dates to back "Top" or "this week" claims
@@ -170,12 +168,12 @@ export default function BrowseScreen() {
 
         {continueList.length > 0 ? (
           <SectionRow title="Continue watching">
-            {continueList.map(({ book, episode }) => (
+            {continueList.map(({ book, episode, entry }) => (
               <ContinueCard
                 key={episode.id}
                 book={book}
                 episode={episode}
-                entry={progress[episode.id]}
+                entry={entry}
                 locked={isLocked(episode)}
                 onPress={() => openEpisode(episode)}
               />
