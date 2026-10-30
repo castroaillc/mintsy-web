@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Paywall</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D18}
+.dk{container-type:inline-size}
+.dk a{color:inherit;text-decoration:none}
+.dk button,.dk input{font-family:inherit}
+.dk input::placeholder{color:#7A7394}
+.dk-shell{display:flex;min-height:900px}
+.dk-nav{flex:none;width:248px;box-sizing:border-box;padding:24px 16px;border-right:1px solid #2A2740;background:#13111E;display:flex;flex-direction:column;gap:28px}
+.dk-navlist{display:flex;flex-direction:column;gap:4px}
+.dk-main{flex:1;min-width:0}
+.dk-pad{padding:32px 48px 64px}
+.dk .dk-navitem:hover{background:#201D2E;color:#F4F2F8}
+.dk .dk-btn:hover{background:#FF8E7D}
+.dk .dk-ghost:hover{border-color:#57516F;background:#1B1929}
+.dk .dk-card:hover{border-color:#45405E}
+.dk .dk-row:hover{background:#1B1929}
+.dk .dk-link:hover{color:#FF8E7D}
+.dk .dk-cover:hover{transform:translateY(-3px)}
+.dk-cover{transition:transform .15s ease}
+@media (prefers-reduced-motion: reduce){.dk-cover{transition:none}.dk .dk-cover:hover{transform:none}}
+@container (max-width: 860px){
+  .dk-shell{flex-direction:column}
+  .dk-nav{width:auto;flex-direction:row;align-items:center;justify-content:space-between;padding:10px 16px;border-right:0;border-bottom:1px solid #2A2740;gap:12px}
+  .dk-navlist{flex-direction:row;gap:2px}
+  .dk-navlabel,.dk-hide-sm{display:none !important}
+  .dk-pad{padding:24px 20px 48px}
+}
+@container (max-width: 520px){ .dk-pad{padding:20px 16px 40px} }
+</style>
+</helmet>
+<div class="dk" style="width: 100%; min-width: 0; min-height: 900px; background: #0E0D18; color: #F4F2F8; font-family: Inter, system-ui, sans-serif">
+<div style="min-height: 900px; display: flex; flex-direction: column">
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 32px; border-bottom: 1px solid #2A2740"><a href="DeskHome.dc.html" aria-label="mintsy"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.03em; line-height: 1">mintsy<span style="color: #FF6B57">.</span></span></a><a class="dk-link" href="DeskBookFree.dc.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ACA6C2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a></header>
+<div style="flex: 1; display: flex; justify-content: center; padding: 48px 24px 64px">
+<div style="width: 100%; max-width: 1040px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+<section style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 14px; background: #181626; border: 1px solid #2A2740; align-self: flex-start"><div style="flex: none; width: 40px; aspect-ratio: 2 / 3; border-radius: 4px; background: #E7DFCF"></div><div><div style="font-size: 13px; font-weight: 600; color: #FF6B57">3 free episodes watched</div><div style="font-size: 14px">Episode 4 of 20 · Confounding Compounding is next</div></div></div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">Keep going with mintsy<span style="color: #FF6B57">.</span> Premium</h1>
+<p style="margin: 0; font-size: 17px; line-height: 1.55; color: #CFCBDE">Every episode of every book. Free accounts get the first 3 episodes of each series.</p>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 12px; font-size: 16px; line-height: 1.45"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M5 12l5 5L20 7"></path></svg><span><b style="font-weight: 600">All episodes, every book.</b> No more stopping at Episode 3.</span></div>
+<div style="display: flex; gap: 12px; font-size: 16px; line-height: 1.45"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M5 12l5 5L20 7"></path></svg><span><b style="font-weight: 600">Full transcripts and key takeaways</b> for every chapter.</span></div>
+<div style="display: flex; gap: 12px; font-size: 16px; line-height: 1.45"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M5 12l5 5L20 7"></path></svg><span><b style="font-weight: 600">Works everywhere.</b> Web, iPhone and iPad, plus offline downloads in the app.</span></div>
+<div style="display: flex; gap: 12px; font-size: 16px; line-height: 1.45"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M5 12l5 5L20 7"></path></svg><span><b style="font-weight: 600">New series every week.</b></span></div>
+</div></section>
+<section style="flex: 1 1 380px; min-width: 0; padding: 28px; border-radius: 22px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 14px">
+<div role="radiogroup" aria-label="Plan" style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{plans}}" as="p" hint-placeholder-count="2">
+<button role="radio" aria-checked="{{p.on}}" onClick="{{p.pick}}" style="position: relative; display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 2px solid {{p.ring}}; background: {{p.bg}}; color: #F4F2F8; text-align: left; cursor: pointer">
+<span style="flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid {{p.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{p.dot}}"></span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 600">{{p.name}}</span><span style="font-size: 14px; color: #ACA6C2">{{p.sub}}</span></span>
+<span style="font-size: 17px; font-weight: 700">{{p.price}}</span>
+<sc-if value="{{p.best}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: -11px; right: 16px; padding: 3px 10px; border-radius: 999px; background: #FF6B57; color: #1A1424; font-size: 11px; font-weight: 700; letter-spacing: 0.4px">BEST VALUE · SAVE [X]%</span></sc-if>
+</button></sc-for></div>
+<a class="dk-btn" href="DeskPremiumSuccess.dc.html" style="width: 100%; box-sizing: border-box; height: 48px; padding: 0 20px; border-radius: 12px; background: #FF6B57; color: #1A1424; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600; white-space: nowrap">Start [TRIAL LENGTH] free trial</a>
+<p style="margin: 0; font-size: 13px; line-height: 1.55; color: #9690AE">{{fineprint}} Secure checkout. Renews automatically until you cancel in Settings › Subscription. <a class="dk-link" href="[TERMS URL]" style="text-decoration: underline">Terms</a> · <a class="dk-link" href="[PRIVACY URL]" style="text-decoration: underline">Privacy Policy</a></p>
+<div style="padding-top: 12px; border-top: 1px solid #2A2740; font-size: 14px; color: #ACA6C2">Already subscribed on iPhone? You’re all set: Premium follows your account. <a class="dk-link" href="DeskSignIn.dc.html" style="color: #FF6B57; font-weight: 600">Sign in with that account</a></div>
+<a class="dk-link" href="DeskHome.dc.html" style="text-align: center; font-size: 14px; font-weight: 600; color: #ACA6C2">Not now, keep browsing free episodes</a>
+</section></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { plan: 'year' };
+  }
+  renderVals() {
+    const all = [
+      { id: 'year', name: 'Yearly', sub: 'Just [MONTHLY EQUIV]/month, billed yearly', price: '[YEARLY PRICE]', best: true, fine: 'Free for [TRIAL LENGTH], then [YEARLY PRICE]/year.' },
+      { id: 'month', name: 'Monthly', sub: 'Billed every month', price: '[MONTHLY PRICE]', best: false, fine: 'Free for [TRIAL LENGTH], then [MONTHLY PRICE]/month.' }
+    ];
+    const plans = all.map((p) => {
+      const on = this.state.plan === p.id;
+      return Object.assign({}, p, { on, ring: on ? '#FF6B57' : '#3D3956', bg: on ? 'rgba(255,107,87,0.08)' : 'transparent', dot: on ? '#FF6B57' : 'transparent', pick: () => this.setState({ plan: p.id }) });
+    });
+    return { plans, fineprint: all.find((p) => p.id === this.state.plan).fine };
+  }
+}
+</script>
+</body>
+</html>

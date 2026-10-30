@@ -1,0 +1,351 @@
+{
+  "title": "Book Video Series App",
+  "boards": {
+    "DeskHome.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1782,
+      "title": "Desktop · Home",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskHomeFirstRun.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1372,
+      "title": "Desktop · Home, first run",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskSearch.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1157,
+      "title": "Desktop · Search results",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskCategory.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 999,
+      "title": "Desktop · Category, see all",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskLibrary.dc.html": {
+      "x": 6080,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · My List",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskStates.dc.html": {
+      "x": 7600,
+      "y": 0,
+      "w": 1440,
+      "h": 1363,
+      "title": "Desktop · States: loading, empty, offline, error, toasts",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskBook.dc.html": {
+      "x": 0,
+      "y": 2202,
+      "w": 1440,
+      "h": 1480,
+      "title": "Desktop · Series page",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskBookFree.dc.html": {
+      "x": 1520,
+      "y": 2202,
+      "w": 1440,
+      "h": 1478,
+      "title": "Desktop · Series page, free user",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskBookTranscripts.dc.html": {
+      "x": 3040,
+      "y": 2202,
+      "w": 1440,
+      "h": 1272,
+      "title": "Desktop · Series page, Transcripts tab",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskBookAbout.dc.html": {
+      "x": 4560,
+      "y": 2202,
+      "w": 1440,
+      "h": 979,
+      "title": "Desktop · Series page, About tab",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskPlayer.dc.html": {
+      "x": 6080,
+      "y": 2202,
+      "w": 1440,
+      "h": 1054,
+      "title": "Desktop · Episode player + transcript",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskPlayerUpNext.dc.html": {
+      "x": 7600,
+      "y": 2202,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Episode ends, up next",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskPlayerUpsell.dc.html": {
+      "x": 9120,
+      "y": 2202,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Episode 3 ends (free user)",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskSeriesComplete.dc.html": {
+      "x": 10640,
+      "y": 2202,
+      "w": 1440,
+      "h": 1230,
+      "title": "Desktop · Series complete",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskTranscript.dc.html": {
+      "x": 12160,
+      "y": 2202,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Transcript reader",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskWelcome.dc.html": {
+      "x": 0,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Welcome",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskSignUp.dc.html": {
+      "x": 1520,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Create account",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskSignIn.dc.html": {
+      "x": 3040,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Sign in",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskSignInError.dc.html": {
+      "x": 4560,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Sign in, wrong password",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskForgot.dc.html": {
+      "x": 6080,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Forgot password",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskCheckEmail.dc.html": {
+      "x": 7600,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Check your email",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskResetPassword.dc.html": {
+      "x": 9120,
+      "y": 4102,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Set new password",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskOnbInterests.dc.html": {
+      "x": 0,
+      "y": 5422,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Onboarding 1 · Interests",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskOnbTime.dc.html": {
+      "x": 1520,
+      "y": 5422,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Onboarding 2 · Daily time",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskOnbReminders.dc.html": {
+      "x": 3040,
+      "y": 5422,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Onboarding 3 · Reminders",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskOnbFirstBook.dc.html": {
+      "x": 4560,
+      "y": 5422,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Onboarding 4 · First series",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskProfile.dc.html": {
+      "x": 0,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Profile, free",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskProfilePremium.dc.html": {
+      "x": 1520,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Profile, Premium",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskProfileEdit.dc.html": {
+      "x": 3040,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Edit profile",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskSettings.dc.html": {
+      "x": 4560,
+      "y": 6742,
+      "w": 1440,
+      "h": 1240,
+      "title": "Desktop · Settings",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskChangePassword.dc.html": {
+      "x": 6080,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Change password",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskDeleteAccount.dc.html": {
+      "x": 7600,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Delete account",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskPlanDetails.dc.html": {
+      "x": 9120,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Subscription (bought on web, trial)",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskPlanDetailsAppStore.dc.html": {
+      "x": 10640,
+      "y": 6742,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Subscription (bought in App Store)",
+      "expand": "fill",
+      "page": "p3"
+    },
+    "DeskPaywall.dc.html": {
+      "x": 0,
+      "y": 8402,
+      "w": 1440,
+      "h": 900,
+      "title": "Desktop · Paywall (web checkout)",
+      "expand": "fill",
+      "page": "p3",
+      "is_interactive": true
+    },
+    "DeskPremiumSuccess.dc.html": {
+      "x": 1520,
+      "y": 8402,
+      "w": 1440,
+      "h": 996,
+      "title": "Desktop · Welcome to Premium",
+      "expand": "fill",
+      "page": "p3"
+    }
+  }
+}

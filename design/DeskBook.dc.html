@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Series page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D18}
+.dk{container-type:inline-size}
+.dk a{color:inherit;text-decoration:none}
+.dk button,.dk input{font-family:inherit}
+.dk input::placeholder{color:#7A7394}
+.dk-shell{display:flex;min-height:900px}
+.dk-nav{flex:none;width:248px;box-sizing:border-box;padding:24px 16px;border-right:1px solid #2A2740;background:#13111E;display:flex;flex-direction:column;gap:28px}
+.dk-navlist{display:flex;flex-direction:column;gap:4px}
+.dk-main{flex:1;min-width:0}
+.dk-pad{padding:32px 48px 64px}
+.dk .dk-navitem:hover{background:#201D2E;color:#F4F2F8}
+.dk .dk-btn:hover{background:#FF8E7D}
+.dk .dk-ghost:hover{border-color:#57516F;background:#1B1929}
+.dk .dk-card:hover{border-color:#45405E}
+.dk .dk-row:hover{background:#1B1929}
+.dk .dk-link:hover{color:#FF8E7D}
+.dk .dk-cover:hover{transform:translateY(-3px)}
+.dk-cover{transition:transform .15s ease}
+@media (prefers-reduced-motion: reduce){.dk-cover{transition:none}.dk .dk-cover:hover{transform:none}}
+@container (max-width: 860px){
+  .dk-shell{flex-direction:column}
+  .dk-nav{width:auto;flex-direction:row;align-items:center;justify-content:space-between;padding:10px 16px;border-right:0;border-bottom:1px solid #2A2740;gap:12px}
+  .dk-navlist{flex-direction:row;gap:2px}
+  .dk-navlabel,.dk-hide-sm{display:none !important}
+  .dk-pad{padding:24px 20px 48px}
+}
+@container (max-width: 520px){ .dk-pad{padding:20px 16px 40px} }
+</style>
+</helmet>
+<div class="dk" style="width: 100%; min-width: 0; min-height: 900px; background: #0E0D18; color: #F4F2F8; font-family: Inter, system-ui, sans-serif">
+<div class="dk-shell"><nav class="dk-nav" aria-label="Main"><a href="DeskHome.dc.html" aria-label="mintsy home" style="padding: 4px 12px"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.03em; line-height: 1">mintsy<span style="color: #FF6B57">.</span></span></a><div class="dk-navlist"><a class="dk-navitem" href="DeskHome.dc.html" aria-current="page" aria-label="Home" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: #201D2E; color: #F4F2F8; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg><span class="dk-navlabel">Home</span></a><a class="dk-navitem" href="DeskSearch.dc.html" aria-label="Search" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg><span class="dk-navlabel">Search</span></a><a class="dk-navitem" href="DeskLibrary.dc.html" aria-label="My List" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg><span class="dk-navlabel">My List</span></a><a class="dk-navitem" href="DeskProfile.dc.html" aria-label="Profile" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg><span class="dk-navlabel">Profile</span></a></div><div class="dk-hide-sm" style="margin-top: auto; display: flex; flex-direction: column; gap: 16px"><sc-if value="{{navFree}}" hint-placeholder-val="{{ false }}"><div style="padding: 16px; border-radius: 14px; background: #3F2A30; border: 1px solid #5A2A2E; display: flex; flex-direction: column; gap: 10px"><div style="font-size: 14px; font-weight: 600">Unlock every episode</div><div style="font-size: 13px; line-height: 1.45; color: #CFCBDE">The first 3 episodes of every book are free.</div><a class="dk-btn" href="DeskPaywall.dc.html" style="width: 100%; box-sizing: border-box; height: 40px; padding: 0 20px; border-radius: 12px; background: #FF6B57; color: #1A1424; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; white-space: nowrap">Try Premium</a></div></sc-if><sc-if value="{{navPremium}}" hint-placeholder-val="{{ true }}"><a class="dk-card" href="DeskPlayer.dc.html" style="padding: 12px; border-radius: 14px; background: #181626; border: 1px solid #2A2740; display: flex; gap: 12px; align-items: center"><div style="flex: none; width: 44px; height: 44px; border-radius: 10px; background: #2B2850; display: flex; align-items: center; justify-content: center; color: #F4F2F8"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg></div><div style="min-width: 0"><div style="font-size: 12px; font-weight: 600; color: #FF6B57">Continue · Episode 4 of 20</div><div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Confounding Compounding</div></div></a></sc-if><a class="dk-navitem" href="DeskProfile.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px"><div style="flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #FF6B57; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700">S</div><div><div style="font-size: 14px; font-weight: 600">Steve</div><div style="font-size: 12px; color: #9690AE">{{navPlanLine}}</div></div></a></div></nav><main class="dk-main"><div class="dk-pad" style="display: flex; flex-direction: column; gap: 28px">
+<a class="dk-link" href="DeskHome.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #ACA6C2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>Home</a>
+<div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+<aside style="flex: 1 1 320px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div style="border-radius: 20px; background: #2B2850; display: flex; align-items: center; justify-content: center; padding: 36px">
+<div style="width: 170px"><div style="aspect-ratio: 2 / 3; border-radius: 8px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-shadow: 0 14px 30px rgba(0,0,0,0.4)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; line-height: 1.08">The Psychology of Money</div><div style="font-size: 14px; font-weight: 500">Morgan Housel</div></div></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">The Psychology of Money</h1><div style="font-size: 15px; color: #ACA6C2">Morgan Housel</div></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span style="padding: 6px 10px; border-radius: 8px; background: #201D2E; font-size: 13px; color: #DAD6E6">20 episodes</span><span style="padding: 6px 10px; border-radius: 8px; background: #201D2E; font-size: 13px; color: #DAD6E6">1 hr 41 min</span><span style="padding: 6px 10px; border-radius: 8px; background: #201D2E; font-size: 13px; color: #DAD6E6">Finance</span><span style="padding: 6px 10px; border-radius: 8px; background: #201D2E; font-size: 13px; color: #DAD6E6">Transcripts</span>
+</div>
+<a class="dk-btn" href="{{resumeHref}}" style="height: 52px; border-radius: 12px; background: #FF6B57; color: #1A1424; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>{{resumeLabel}}</a>
+<div style="display: flex; gap: 10px">
+<a class="dk-ghost" href="DeskLibrary.dc.html" style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #3D3956; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>My List</a>
+<a class="dk-ghost" href="DeskTranscript.dc.html" style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #3D3956; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"></path></svg>Full transcript</a>
+<a class="dk-ghost" href="#" aria-label="Share" style="flex: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid #3D3956; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"></path></svg></a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><div style="display: flex; justify-content: space-between; font-size: 13px; color: #ACA6C2"><span>{{progressLabel}}</span><span>{{progressPct}}</span></div><div style="height: 4px; border-radius: 2px; background: #332F4A"><div style="width: {{progressPct}}; height: 4px; border-radius: 2px; background: #FF6B57"></div></div></div>
+<p style="margin: 0; font-size: 15px; line-height: 1.6; color: #CFCBDE">Why doing well with money has less to do with how smart you are and more to do with how you behave. Every chapter, distilled into a 5-minute episode with a full transcript.</p>
+</aside>
+<section style="flex: 2 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div role="tablist" aria-label="Series sections" style="display: flex; gap: 28px; border-bottom: 1px solid #2A2740">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="height: 48px; padding: 0; border: 0; border-bottom: 2px solid {{t.line}}; background: transparent; color: {{t.fg}}; font-size: 15px; font-weight: {{t.weight}}; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+<sc-if value="{{showEpisodes}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 8px">
+<sc-for list="{{ranges}}" as="r" hint-placeholder-count="2">
+<button onClick="{{r.pick}}" aria-pressed="{{r.on}}" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid {{r.bd}}; background: {{r.bg}}; color: {{r.fg}}; font-size: 13px; font-weight: 600; cursor: pointer">{{r.label}}</button>
+</sc-for>
+</div>
+<sc-for list="{{eps}}" as="e" hint-placeholder-count="10">
+<div style="border-radius: 14px; border: 1px solid {{e.border}}; background: {{e.cardBg}}">
+<button onClick="{{e.toggle}}" aria-expanded="{{e.open}}" style="width: 100%; display: flex; gap: 16px; align-items: center; padding: 12px; border: 0; background: transparent; color: #F4F2F8; text-align: left; cursor: pointer">
+<div style="position: relative; flex: none; width: 128px; aspect-ratio: 16 / 9; border-radius: 10px; background: {{e.bg}}; overflow: hidden">
+<div style="position: absolute; left: 10px; top: 6px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px">{{e.n}}</div>
+<div style="position: absolute; right: 6px; bottom: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(14,13,24,0.78); font-size: 11px; font-weight: 600">{{e.dur}}</div>
+<sc-if value="{{e.locked}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; inset: 0; background: rgba(14,13,24,0.55); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v10H6zM8 11V8a4 4 0 0 1 8 0v3"></path></svg></div></sc-if>
+<div style="position: absolute; left: 0; bottom: 0; height: 3px; width: {{e.pct}}; background: #FF6B57"></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 600; color: {{e.metaColor}}">{{e.meta}}</div>
+<div style="font-size: 16px; font-weight: 600">{{e.title}}</div>
+<div style="font-size: 14px; line-height: 1.45; color: #ACA6C2">{{e.summary}}</div>
+</div>
+</button>
+<sc-if value="{{e.open}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px 14px 156px">
+<a class="dk-btn" href="{{e.ctaHref}}" style="height: 40px; padding: 0 16px; border-radius: 10px; background: #FF6B57; color: #1A1424; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600">{{e.cta}}</a>
+<sc-if value="{{e.unlocked}}" hint-placeholder-val="{{ true }}"><a class="dk-ghost" href="DeskTranscript.dc.html" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #3D3956; display: inline-flex; align-items: center; font-size: 14px; font-weight: 600">Read transcript</a></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{showTranscripts}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column">
+<a class="dk-link" href="DeskTranscript.dc.html" style="display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid #332F4A; background: #1B1929; color: #7A7394; font-size: 15px; margin-bottom: 12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>Search all 20 transcripts</a>
+<sc-for list="{{transcripts}}" as="t" hint-placeholder-count="8">
+<a class="dk-row" href="{{t.href}}" style="display: flex; align-items: center; gap: 16px; padding: 14px 12px; border-top: {{t.border}}; border-radius: 10px; color: {{t.fg}}">
+<div style="flex: none; width: 28px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: {{t.numColor}}">{{t.n}}</div>
+<div style="flex: 1; min-width: 0; font-size: 15px; font-weight: 600">{{t.title}}</div>
+<div style="font-size: 13px; color: #9690AE">{{t.meta}}</div>
+<sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9690AE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v10H6zM8 11V8a4 4 0 0 1 8 0v3"></path></svg></sc-if>
+</a>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{showAbout}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 28px; max-width: 720px">
+<div style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">About the book</h2><p style="margin: 0; font-size: 16px; line-height: 1.65; color: #CFCBDE">Doing well with money isn’t necessarily about what you know. It’s about how you behave. In 20 short episodes, this series walks through the stories and ideas that explain why smart people make strange money decisions, and how to make better ones.</p></div>
+<div style="display: flex; flex-direction: column; gap: 12px"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">What you’ll learn</h2>
+<sc-for list="{{learn}}" as="l" hint-placeholder-count="4"><div style="display: flex; gap: 12px; font-size: 15px; line-height: 1.5; color: #DAD6E6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M5 12l5 5L20 7"></path></svg><span>{{l}}</span></div></sc-for></div>
+<div style="display: flex; gap: 16px; padding: 20px; border-radius: 16px; background: #181626; border: 1px solid #2A2740">
+<div style="flex: none; width: 56px; height: 56px; border-radius: 50%; background: #2B2850; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px">MH</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><div style="font-size: 16px; font-weight: 600">Morgan Housel</div><div style="font-size: 14px; line-height: 1.55; color: #ACA6C2">[AUTHOR BIO]</div></div></div>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{details}}" as="d" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: {{d.border}}; font-size: 15px"><span style="color: #ACA6C2">{{d.label}}</span><span style="font-weight: 500; text-align: right">{{d.value}}</span></div></sc-for>
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #9690AE">[LICENSING NOTE: series adapted with permission from the publisher]</p>
+</div>
+</sc-if>
+</section>
+</div>
+</div></main></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 1480}, "plan": {"editor": "enum", "options": ["premium", "free"], "default": "premium"}, "startTab": {"editor": "enum", "options": ["episodes", "transcripts", "about"], "default": "episodes"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { range: 0, open: 4, tab: null };
+  }
+  renderVals() {
+    const accent = '#FF6B57';
+    const chapters = [
+      ['No One’s Crazy', 'Your money habits come from your own experiences, which is why everyone’s choices make sense to them.', '4:52'],
+      ['Luck & Risk', 'Results are never just effort. Luck and risk shape outcomes more than we like to admit.', '5:06'],
+      ['Never Enough', 'Knowing when to stop wanting more may be the hardest financial skill of all.', '4:48'],
+      ['Confounding Compounding', 'Modest returns held for a very long time beat big returns you can’t sustain.', '5:12'],
+      ['Getting Wealthy vs. Staying Wealthy', 'Getting rich takes risk. Staying rich takes humility, frugality and a little paranoia.', '5:03'],
+      ['Tails, You Win', 'A small number of outliers drive most results, in investing and in careers.', '4:57'],
+      ['Freedom', 'The highest dividend money pays is control over your own time.', '4:41'],
+      ['Man in the Car Paradox', 'People notice the car, not the driver. Wealth rarely earns the admiration we hope for.', '4:55'],
+      ['Wealth Is What You Don’t See', 'Being rich is income. Being wealthy is the money you chose not to spend.', '5:01'],
+      ['Save Money', 'You don’t need a reason to save. Savings buy options in a future you can’t predict.', '4:50'],
+      ['Reasonable > Rational', 'A plan you can actually stick with beats a perfect one you’ll abandon.', '5:08'],
+      ['Surprise!', 'History is a weak guide when the events that matter most have no precedent.', '4:46'],
+      ['Room for Error', 'Build in a margin of safety so the plan survives being wrong.', '5:10'],
+      ['You’ll Change', 'Your goals will shift over time, so avoid plans that lock in who you are today.', '4:58'],
+      ['Nothing’s Free', 'Volatility is the fee for market returns, not a fine for doing something wrong.', '5:04'],
+      ['You & Me', 'Be careful taking cues from people who are playing a different game than you.', '4:53'],
+      ['The Seduction of Pessimism', 'Pessimism sounds smarter than optimism, yet optimism tends to win over time.', '5:00'],
+      ['When You’ll Believe Anything', 'We are most easily convinced by the stories we need to be true.', '4:49'],
+      ['All Together Now', 'The book’s lessons condensed into a handful of practical rules.', '5:14'],
+      ['Confessions', 'How the author applies these ideas to his own money.', '4:44']
+    ];
+    const tints = ['#2B2850', '#2C3245', '#3F2A30', '#3A2B30'];
+    const free = (this.props.plan ?? 'premium') === 'free';
+    const progress = free ? { 1: 100, 2: 100, 3: 100 } : { 1: 100, 2: 100, 3: 100, 4: 40 };
+    const start = this.state.range === 0 ? 0 : 10;
+    const eps = chapters.slice(start, start + 10).map((c, i) => {
+      const n = start + i + 1;
+      const pct = progress[n] || 0;
+      const watched = pct === 100;
+      const inProgress = pct > 0 && pct < 100;
+      const open = this.state.open === n;
+      const locked = free && n > 3;
+      return {
+        n, title: c[0], summary: c[1], dur: c[2], bg: tints[i % tints.length], pct: pct + '%', open, locked, unlocked: !locked,
+        border: open ? '#3D3956' : 'transparent', cardBg: open ? '#181626' : 'transparent',
+        ctaHref: locked ? 'DeskPaywall.dc.html' : 'DeskPlayer.dc.html',
+        meta: (locked ? 'Premium · ' : free ? 'Free · ' : '') + (watched ? 'Watched · Episode ' + n + ' of 20' : inProgress ? '3 min left · Episode ' + n + ' of 20' : 'Episode ' + n + ' of 20'),
+        metaColor: watched || inProgress ? accent : '#ACA6C2',
+        cta: locked ? 'Unlock with Premium' : inProgress ? 'Resume' : watched ? 'Watch again' : 'Play episode',
+        toggle: () => this.setState({ open: open ? 0 : n })
+      };
+    });
+    const pill = (on) => ({ bg: on ? '#F4F2F8' : '#1B1929', fg: on ? '#1A1424' : '#DAD6E6', bd: on ? '#F4F2F8' : '#332F4A' });
+    const ranges = ['Episodes 1–10', 'Episodes 11–20'].map((label, i) => Object.assign({ label, on: this.state.range === i, pick: () => this.setState({ range: i }) }, pill(this.state.range === i)));
+    const tab = this.state.tab || this.props.startTab || 'episodes';
+    const tabs = [['episodes', 'Episodes'], ['transcripts', 'Transcripts'], ['about', 'About the book']].map(([id, label]) => {
+      const on = tab === id;
+      return { label, on, line: on ? accent : 'transparent', fg: on ? '#F4F2F8' : '#ACA6C2', weight: on ? 600 : 500, pick: () => this.setState({ tab: id }) };
+    });
+    const transcripts = chapters.map((c, i) => {
+      const n = i + 1;
+      const locked = free && n > 3;
+      return { n, title: c[0], locked, meta: locked ? 'Premium · 2 min read' : (free ? 'Free · ' : '') + '2 min read', href: locked ? 'DeskPaywall.dc.html' : 'DeskTranscript.dc.html', fg: locked ? '#ACA6C2' : '#F4F2F8', numColor: locked ? '#7A7394' : accent, border: i ? '1px solid #2A2740' : '0' };
+    });
+    const learn = ['Why people make money decisions that look crazy to everyone else', 'How luck and risk shape outcomes, and how to plan for both', 'Why time, not returns, does most of the work in compounding', 'How to define “enough” and build room for error into your plans'];
+    const details = [['Episodes', '20 · about 5 min each'], ['Total runtime', '1 hr 41 min'], ['Category', 'Finance'], ['Based on the book', 'The Psychology of Money (2020)'], ['Transcripts', 'English']].map(([label, value], i) => ({ label, value, border: i ? '1px solid #2A2740' : '0' }));
+    return {
+      eps, ranges, tabs, transcripts, learn, details,
+      showEpisodes: tab === 'episodes', showTranscripts: tab === 'transcripts', showAbout: tab === 'about',
+      resumeLabel: free ? 'Unlock Episode 4 with Premium' : 'Resume Episode 4 of 20',
+      resumeHref: free ? 'DeskPaywall.dc.html' : 'DeskPlayer.dc.html',
+      progressLabel: '3 of 20 episodes watched', progressPct: free ? '15%' : '17%',
+      navFree: free, navPremium: !free, navPlanLine: free ? 'Free plan' : 'Premium · Yearly'
+    };
+  }
+}
+</script>
+</body>
+</html>

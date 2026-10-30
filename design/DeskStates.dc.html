@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D18}
+.dk{container-type:inline-size}
+.dk a{color:inherit;text-decoration:none}
+.dk button,.dk input{font-family:inherit}
+.dk input::placeholder{color:#7A7394}
+.dk-shell{display:flex;min-height:900px}
+.dk-nav{flex:none;width:248px;box-sizing:border-box;padding:24px 16px;border-right:1px solid #2A2740;background:#13111E;display:flex;flex-direction:column;gap:28px}
+.dk-navlist{display:flex;flex-direction:column;gap:4px}
+.dk-main{flex:1;min-width:0}
+.dk-pad{padding:32px 48px 64px}
+.dk .dk-navitem:hover{background:#201D2E;color:#F4F2F8}
+.dk .dk-btn:hover{background:#FF8E7D}
+.dk .dk-ghost:hover{border-color:#57516F;background:#1B1929}
+.dk .dk-card:hover{border-color:#45405E}
+.dk .dk-row:hover{background:#1B1929}
+.dk .dk-link:hover{color:#FF8E7D}
+.dk .dk-cover:hover{transform:translateY(-3px)}
+.dk-cover{transition:transform .15s ease}
+@media (prefers-reduced-motion: reduce){.dk-cover{transition:none}.dk .dk-cover:hover{transform:none}}
+@container (max-width: 860px){
+  .dk-shell{flex-direction:column}
+  .dk-nav{width:auto;flex-direction:row;align-items:center;justify-content:space-between;padding:10px 16px;border-right:0;border-bottom:1px solid #2A2740;gap:12px}
+  .dk-navlist{flex-direction:row;gap:2px}
+  .dk-navlabel,.dk-hide-sm{display:none !important}
+  .dk-pad{padding:24px 20px 48px}
+}
+@container (max-width: 520px){ .dk-pad{padding:20px 16px 40px} }
+</style>
+</helmet>
+<div class="dk" style="width: 100%; min-width: 0; min-height: 900px; background: #0E0D18; color: #F4F2F8; font-family: Inter, system-ui, sans-serif">
+<div class="dk-shell"><nav class="dk-nav" aria-label="Main"><a href="DeskHome.dc.html" aria-label="mintsy home" style="padding: 4px 12px"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.03em; line-height: 1">mintsy<span style="color: #FF6B57">.</span></span></a><div class="dk-navlist"><a class="dk-navitem" href="DeskHome.dc.html" aria-current="page" aria-label="Home" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: #201D2E; color: #F4F2F8; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg><span class="dk-navlabel">Home</span></a><a class="dk-navitem" href="DeskSearch.dc.html" aria-label="Search" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg><span class="dk-navlabel">Search</span></a><a class="dk-navitem" href="DeskLibrary.dc.html" aria-label="My List" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg><span class="dk-navlabel">My List</span></a><a class="dk-navitem" href="DeskProfile.dc.html" aria-label="Profile" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: transparent; color: #ACA6C2; font-size: 15px; font-weight: 600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg><span class="dk-navlabel">Profile</span></a></div><div class="dk-hide-sm" style="margin-top: auto; display: flex; flex-direction: column; gap: 16px"><a class="dk-card" href="DeskPlayer.dc.html" style="padding: 12px; border-radius: 14px; background: #181626; border: 1px solid #2A2740; display: flex; gap: 12px; align-items: center"><div style="flex: none; width: 44px; height: 44px; border-radius: 10px; background: #2B2850; display: flex; align-items: center; justify-content: center; color: #F4F2F8"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg></div><div style="min-width: 0"><div style="font-size: 12px; font-weight: 600; color: #FF6B57">Continue · Episode 4 of 20</div><div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Confounding Compounding</div></div></a><a class="dk-navitem" href="DeskProfile.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px"><div style="flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #FF6B57; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700">S</div><div><div style="font-size: 14px; font-weight: 600">Steve</div><div style="font-size: 12px; color: #9690AE">Premium · Yearly</div></div></a></div></nav><main class="dk-main"><div class="dk-pad" style="display: flex; flex-direction: column; gap: 24px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">States</h1>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr)); gap: 20px">
+<section style="padding: 24px; border-radius: 18px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 16px"><div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #ACA6C2">Loading · Home skeleton</div><div style="width: 60%; height: 44px; border-radius: 12px; background: #201D2E"></div><div style="width: 100%; height: 180px; border-radius: 18px; background: #201D2E"></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px"><div style="aspect-ratio: 2 / 3; border-radius: 8px; background: #201D2E"></div><div style="aspect-ratio: 2 / 3; border-radius: 8px; background: #201D2E"></div><div style="aspect-ratio: 2 / 3; border-radius: 8px; background: #201D2E"></div><div style="aspect-ratio: 2 / 3; border-radius: 8px; background: #201D2E"></div></div></section>
+<section style="padding: 24px; border-radius: 18px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 14px"><div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #ACA6C2">Empty · No search results</div>
+<div style="height: 48px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #332F4A; background: #1B1929; display: flex; align-items: center; gap: 10px; color: #F4F2F8"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ACA6C2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>quantum knitting</div>
+<div style="padding: 24px 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">No results for “quantum knitting”</h2><div style="font-size: 15px; color: #ACA6C2">Try a book title, an author, or a topic.</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px"><span style="padding: 8px 14px; border-radius: 999px; background: #201D2E; font-size: 14px">Money</span><span style="padding: 8px 14px; border-radius: 999px; background: #201D2E; font-size: 14px">Habits</span><span style="padding: 8px 14px; border-radius: 999px; background: #201D2E; font-size: 14px">Morgan Housel</span></div>
+<div style="font-size: 14px; color: #ACA6C2; margin-top: 6px">Can’t find a book? <a class="dk-link" href="#" style="color: #FF6B57; font-weight: 600">Request it</a></div></div></section>
+<section style="padding: 24px; border-radius: 18px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 14px"><div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #ACA6C2">Offline</div>
+<div role="status" style="display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #1B2230; color: #C8D6F2; font-size: 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5-2.7M19 13a10 10 0 0 0-2.5-1.8M12 20h.01"></path></svg>You’re offline. Reconnect to keep watching; your place is saved.</div>
+<div style="opacity: 0.45; display: flex; flex-direction: column; gap: 12px"><div style="width: 100%; height: 140px; border-radius: 16px; background: #201D2E"></div><div style="width: 70%; height: 20px; border-radius: 8px; background: #201D2E"></div></div>
+<div style="font-size: 14px; color: #ACA6C2">Want episodes offline? Download them in the mintsy iPhone app.</div></section>
+<section style="padding: 24px; border-radius: 18px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 14px"><div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #ACA6C2">Error · Series failed to load</div>
+<div style="padding: 24px 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+<div style="width: 52px; height: 52px; border-radius: 16px; background: #2A1719; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFB4AE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3zM12 10v4M12 17h.01"></path></svg></div>
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.15">Couldn’t load this series</h2><div style="font-size: 15px; color: #ACA6C2">Something went wrong on our side. Your progress is safe.</div>
+<div style="display: flex; gap: 10px; margin-top: 6px"><a class="dk-ghost" href="#" style="box-sizing: border-box; height: 40px; padding: 0 20px; border-radius: 12px; background: #F4F2F8; color: #1A1424; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; white-space: nowrap">Try again</a><a class="dk-ghost" href="DeskHome.dc.html" style="box-sizing: border-box; height: 40px; padding: 0 20px; border-radius: 12px; background: transparent; color: #F4F2F8; border: 1px solid #3D3956; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; white-space: nowrap">Go to Home</a></div>
+<div style="font-size: 12px; color: #7A7394">Error ref: [ERROR CODE]</div></div></section>
+<section style="padding: 24px; border-radius: 18px; background: #181626; border: 1px solid #2A2740; display: flex; flex-direction: column; gap: 14px"><div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #ACA6C2">Toasts</div>
+<div role="status" style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; border-radius: 14px; background: #F4F2F8; color: #1A1424"><span style="flex: 1; font-size: 15px; font-weight: 600">Saved to My List</span><button style="height: 36px; padding: 0 12px; border: 0; background: transparent; color: #B8321F; font-size: 15px; font-weight: 700; cursor: pointer">Undo</button></div>
+<div role="status" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; background: #FF6B57; color: #1A1424"><span style="flex: 1; font-size: 15px; font-weight: 600">15 minutes today · 6-day streak</span></div>
+<div role="alert" style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; border-radius: 14px; background: #3A1A1C; color: #FFD9D6"><span style="flex: 1; font-size: 15px; font-weight: 600">Couldn’t save. Check your connection.</span><button style="height: 36px; padding: 0 12px; border: 0; background: transparent; color: #FFB4AE; font-size: 15px; font-weight: 700; cursor: pointer">Retry</button></div>
+<div style="font-size: 13px; line-height: 1.5; color: #9690AE">Desktop: bottom-left of the content area, max width 400px, one at a time, 4 s (6 s with an action).</div></section>
+</div></div></main></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 1363}}'>
+class Component extends DCLogic {
+  renderVals() {
+return {};
+  }
+}
+</script>
+</body>
+</html>

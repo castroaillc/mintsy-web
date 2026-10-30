@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding, first series</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0D18}
+.dk{container-type:inline-size}
+.dk a{color:inherit;text-decoration:none}
+.dk button,.dk input{font-family:inherit}
+.dk input::placeholder{color:#7A7394}
+.dk-shell{display:flex;min-height:900px}
+.dk-nav{flex:none;width:248px;box-sizing:border-box;padding:24px 16px;border-right:1px solid #2A2740;background:#13111E;display:flex;flex-direction:column;gap:28px}
+.dk-navlist{display:flex;flex-direction:column;gap:4px}
+.dk-main{flex:1;min-width:0}
+.dk-pad{padding:32px 48px 64px}
+.dk .dk-navitem:hover{background:#201D2E;color:#F4F2F8}
+.dk .dk-btn:hover{background:#FF8E7D}
+.dk .dk-ghost:hover{border-color:#57516F;background:#1B1929}
+.dk .dk-card:hover{border-color:#45405E}
+.dk .dk-row:hover{background:#1B1929}
+.dk .dk-link:hover{color:#FF8E7D}
+.dk .dk-cover:hover{transform:translateY(-3px)}
+.dk-cover{transition:transform .15s ease}
+@media (prefers-reduced-motion: reduce){.dk-cover{transition:none}.dk .dk-cover:hover{transform:none}}
+@container (max-width: 860px){
+  .dk-shell{flex-direction:column}
+  .dk-nav{width:auto;flex-direction:row;align-items:center;justify-content:space-between;padding:10px 16px;border-right:0;border-bottom:1px solid #2A2740;gap:12px}
+  .dk-navlist{flex-direction:row;gap:2px}
+  .dk-navlabel,.dk-hide-sm{display:none !important}
+  .dk-pad{padding:24px 20px 48px}
+}
+@container (max-width: 520px){ .dk-pad{padding:20px 16px 40px} }
+</style>
+</helmet>
+<div class="dk" style="width: 100%; min-width: 0; min-height: 900px; background: #0E0D18; color: #F4F2F8; font-family: Inter, system-ui, sans-serif">
+<div style="min-height: 900px; display: flex; flex-direction: column"><header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 32px; border-bottom: 1px solid #2A2740"><a href="DeskWelcome.dc.html" aria-label="mintsy"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.03em; line-height: 1">mintsy<span style="color: #FF6B57">.</span></span></a><div style="flex: 0 1 320px; display: flex; flex-direction: column; gap: 8px"><div style="font-size: 13px; font-weight: 600; color: #ACA6C2; text-align: center">Step 4 of 4</div><div style="display: flex; gap: 6px"><div style="flex: 1; height: 4px; border-radius: 2px; background: #FF6B57"></div><div style="flex: 1; height: 4px; border-radius: 2px; background: #FF6B57"></div><div style="flex: 1; height: 4px; border-radius: 2px; background: #FF6B57"></div><div style="flex: 1; height: 4px; border-radius: 2px; background: #FF6B57"></div></div></div><a class="dk-link" href="DeskHome.dc.html" style="font-size: 15px; font-weight: 600; color: #ACA6C2">Skip</a></header><div style="flex: 1; display: flex; justify-content: center; padding: 56px 24px 64px"><div style="width: 100%; max-width: 880px; display: flex; flex-direction: column; gap: 32px"><div style="display: flex; flex-direction: column; gap: 8px"><h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance">Start your first series</h1><p style="margin: 0; font-size: 16px; line-height: 1.55; color: #ACA6C2">Picked from your interests. You can add more later.</p></div><div role="radiogroup" aria-label="First series" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{b.on}}" onClick="{{b.pick}}" style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 18px; border: 2px solid {{b.ring}}; background: {{b.bg}}; color: #F4F2F8; text-align: left; cursor: pointer">
+<div style="align-self: center; width: 130px; aspect-ratio: 2 / 3; border-radius: 8px; background: {{b.cbg}}; color: {{b.cfg}}; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 14px 30px rgba(0,0,0,0.4)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.08">{{b.title}}</div><div style="font-size: 10px; font-weight: 500">{{b.author}}</div></div>
+<div style="font-size: 12px; font-weight: 600; color: #FF6B57">{{b.tag}}</div>
+<div style="font-size: 17px; font-weight: 600">{{b.title}}</div>
+<div style="font-size: 14px; color: #ACA6C2">{{b.author}} · {{b.meta}}</div>
+</button></sc-for></div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px"><a class="dk-btn" href="DeskPlayer.dc.html" style="box-sizing: border-box; height: 48px; padding: 0 20px; border-radius: 12px; background: #FF6B57; color: #1A1424; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600; white-space: nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>Start Episode 1</a><a class="dk-link" href="DeskHomeFirstRun.dc.html" style="font-size: 15px; font-weight: 600; color: #ACA6C2">Browse all series instead</a></div></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1440, "height": 900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { pick: 0 };
+  }
+  renderVals() {
+    const all = [
+      { title: 'The Psychology of Money', author: 'Morgan Housel', tag: 'Because you picked Finance', meta: '20 episodes · 1 hr 41 min', cbg: '#E7DFCF', cfg: '#1C1C1C' },
+      { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', tag: 'Because you picked Psychology', meta: '38 episodes · 3 hr 10 min', cbg: '#F0EEE9', cfg: '#1C1C1C' },
+      { title: 'Atomic Habits', author: 'James Clear', tag: 'Because you picked Productivity', meta: '20 episodes · 1 hr 40 min', cbg: '#D3CFF0', cfg: '#1C1C1C' }
+    ];
+    const books = all.map((b, i) => {
+      const on = this.state.pick === i;
+      return Object.assign({}, b, { on, ring: on ? '#FF6B57' : '#2A2740', bg: on ? 'rgba(255,107,87,0.08)' : '#181626', pick: () => this.setState({ pick: i }) });
+    });
+    return { books };
+  }
+}
+</script>
+</body>
+</html>
