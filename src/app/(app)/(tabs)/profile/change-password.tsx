@@ -15,6 +15,7 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { RESET_PASSWORD_URL } from '@/lib/deep-links';
 import { setFlash } from '@/lib/flash';
+import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
 
 /** Settings › Change password (not designed; follows the Settings look). Signs out other devices. */
 export default function ChangePasswordScreen() {
@@ -42,6 +43,10 @@ export default function ChangePasswordScreen() {
       setSendingReset(false);
     }
   }
+
+  const accounts = useLinkedAccounts();
+  // Apple / Google-only accounts have no password; Settings hides this screen for them
+  const socialOnly = !accounts.loading && !accounts.hasPassword;
 
   const canSubmit = current.length > 0 && password.length >= MIN_PASSWORD_LENGTH && confirm === password;
 
@@ -72,6 +77,15 @@ export default function ChangePasswordScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (socialOnly) {
+    const provider = providerLabel(accounts.socialProvider);
+    return (
+      <AccountFormScreen title="Change password" intro={`You sign in with ${provider}. Your account doesn’t have a password, so there’s nothing to change here.`}>
+        <BrandButton label="Done" height={54} onPress={() => router.back()} />
+      </AccountFormScreen>
+    );
   }
 
   return (

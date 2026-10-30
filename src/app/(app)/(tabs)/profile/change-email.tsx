@@ -13,6 +13,7 @@ import { authErrorMessage, isValidEmail } from '@/lib/account';
 import { authClient } from '@/lib/auth-client';
 import { EMAIL_CHANGED_URL } from '@/lib/deep-links';
 import { setFlash } from '@/lib/flash';
+import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
 
 /**
  * Settings › Email and Edit profile › Email (not designed; follows the Settings look).
@@ -30,6 +31,10 @@ export default function ChangeEmailScreen() {
   const trimmed = email.trim();
   const same = trimmed.toLowerCase() === currentEmail.toLowerCase();
   const canSubmit = isValidEmail(trimmed) && !same;
+
+  const accounts = useLinkedAccounts();
+  // Apple / Google-only accounts have no password; Settings hides this screen for them
+  const socialOnly = !accounts.loading && !accounts.hasPassword;
 
   async function onSubmit() {
     if (!canSubmit || loading) return;
@@ -74,6 +79,15 @@ export default function ChangeEmailScreen() {
         </VStack>
         <BrandButton label="Done" height={54} onPress={() => router.back()} className="mt-2" />
         <BrandButton label="Use a different email" variant="outline" height={48} onPress={() => setSentTo(undefined)} />
+      </AccountFormScreen>
+    );
+  }
+
+  if (socialOnly) {
+    const provider = providerLabel(accounts.socialProvider);
+    return (
+      <AccountFormScreen title="Change email" intro={`You sign in with ${provider}. Your email comes from your ${provider} account, so it can’t be changed here.`}>
+        <BrandButton label="Done" height={54} onPress={() => router.back()} />
       </AccountFormScreen>
     );
   }

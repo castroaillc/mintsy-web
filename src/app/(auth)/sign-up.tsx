@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AuthFooterLink } from '@/components/auth/auth-footer-link';
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { FormAlert } from '@/components/auth/form-alert';
+import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { TextField } from '@/components/auth/text-field';
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { MIN_PASSWORD_LENGTH, newPasswordError } from '@/lib/account';
@@ -14,9 +15,11 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [socialError, setSocialError] = useState<string>();
 
   async function onSubmit() {
     setError(undefined);
+    setSocialError(undefined);
     setLoading(true);
     const { error } = await authClient.signUp.email({
       name: name.trim(),
@@ -34,6 +37,8 @@ export default function SignUpScreen() {
       subtitle="It only takes a minute."
       footer={<AuthFooterLink prompt="Already have an account?" action="Sign in" href="/sign-in" />}
     >
+      <SocialSignIn divider="below" onError={setSocialError} />
+      {socialError ? <FormAlert message={socialError} /> : null}
       <TextField
         label="Name"
         value={name}

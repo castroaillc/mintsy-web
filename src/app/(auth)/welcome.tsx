@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
 import { FormAlert } from '@/components/auth/form-alert';
+import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { Icon } from '@/components/mintsy/icon';
@@ -32,6 +33,7 @@ export default function WelcomeScreen() {
   // "Your account has been deleted" and similar, after leaving the app
   const notice = useFlash('welcome');
   useEffect(() => () => clearFlash('welcome'), []);
+  const [socialError, setSocialError] = useState<string>();
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -94,6 +96,15 @@ export default function WelcomeScreen() {
         </VStack>
 
         <VStack className="mt-7 gap-3">
+          {/* Apple first, at least as prominent as Google (App Store guideline 4.8) */}
+          <SocialSignIn
+            divider="below"
+            onError={(message) => {
+              setSocialError(message);
+              if (message) clearFlash('welcome');
+            }}
+          />
+          {socialError ? <FormAlert message={socialError} /> : null}
           <BrandButton label="Create account" height={54} onPress={() => router.push('/sign-up')} />
           <BrandButton label="Sign in" variant="outline" height={54} onPress={() => router.push('/sign-in')} />
           <Text className="mt-1.5 text-center font-inter text-[12px] leading-[18px] text-faint">

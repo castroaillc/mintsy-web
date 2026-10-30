@@ -5,6 +5,7 @@ import { Pressable } from 'react-native';
 import { AuthFooterLink } from '@/components/auth/auth-footer-link';
 import { AuthScreen } from '@/components/auth/auth-screen';
 import { FormAlert } from '@/components/auth/form-alert';
+import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { TextField } from '@/components/auth/text-field';
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { Text } from '@/components/ui/text';
@@ -18,6 +19,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [socialError, setSocialError] = useState<string>();
   // "Password updated" after a reset
   const notice = useFlash('sign-in');
   useEffect(() => () => clearFlash('sign-in'), []);
@@ -25,6 +27,7 @@ export default function SignInScreen() {
   async function onSubmit() {
     if (!email || !password || loading) return;
     setError(undefined);
+    setSocialError(undefined);
     clearFlash('sign-in');
     setLoading(true);
     const { error } = await authClient.signIn.email({ email: email.trim(), password });
@@ -44,6 +47,14 @@ export default function SignInScreen() {
       footer={<AuthFooterLink prompt="New to mintsy?" action="Create account" href="/sign-up" />}
     >
       {notice ? <FormAlert tone="success" message={notice} /> : null}
+      <SocialSignIn
+        divider="below"
+        onError={(message) => {
+          setSocialError(message);
+          if (message) clearFlash('sign-in');
+        }}
+      />
+      {socialError ? <FormAlert message={socialError} /> : null}
       <TextField
         label="Email"
         value={email}

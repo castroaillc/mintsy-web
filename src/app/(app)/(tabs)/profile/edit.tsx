@@ -15,12 +15,16 @@ import { VStack } from '@/components/ui/vstack';
 import { DAILY_GOALS, INTERESTS, type DailyGoal, type Interest } from '@/data/interests';
 import { authClient } from '@/lib/auth-client';
 import { useOnboarding } from '@/lib/onboarding';
+import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
 
 const GOAL_OPTIONS = DAILY_GOALS.map((g) => ({ label: g.short, value: g.minutes }));
 
 export default function EditProfileScreen() {
   const { data: session } = authClient.useSession();
   const { data, update } = useOnboarding();
+  // Apple / Google-only accounts can't change their email here (it comes from the provider)
+  const accounts = useLinkedAccounts();
+  const socialOnly = !accounts.loading && !accounts.hasPassword;
 
   const [name, setName] = useState(session?.user.name ?? '');
   const [goal, setGoal] = useState<DailyGoal>(data.dailyGoal);
@@ -101,16 +105,22 @@ export default function EditProfileScreen() {
               value={session?.user.email ?? ''}
               placeholder="you@example.com"
               isReadOnly
-              helper="Changing it sends a confirmation link to the new address."
+              helper={
+                socialOnly
+                  ? `You sign in with ${providerLabel(accounts.socialProvider)}.`
+                  : 'Changing it sends a confirmation link to the new address.'
+              }
               labelAccessory={
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel="Change email"
-                  onPress={() => router.push('/profile/change-email')}
-                  hitSlop={{ top: 12, bottom: 12, left: 8 }}
-                >
-                  <Text className="font-inter-medium text-[14px] text-brand">Change</Text>
-                </Pressable>
+                socialOnly ? undefined : (
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel="Change email"
+                    onPress={() => router.push('/profile/change-email')}
+                    hitSlop={{ top: 12, bottom: 12, left: 8 }}
+                  >
+                    <Text className="font-inter-medium text-[14px] text-brand">Change</Text>
+                  </Pressable>
+                )
               }
             />
 

@@ -63,3 +63,20 @@ export function SettingsToggleRow({ label, hint, value, onChange, disabled }: To
 export function SettingsContentRow({ children }: { children: ReactNode }) {
   return <Box className="px-4 py-3">{children}</Box>;
 }
+
+/** 56pt read-only row: a label and value with an optional note under it (e.g. "You sign in with Apple"). */
+export function SettingsInfoRow({ label, value, hint }: { label: string; value?: string; hint?: string }) {
+  return (
+    <HStack accessible className="min-h-14 items-center justify-between gap-3 px-4 py-2">
+      <VStack className="shrink-0 gap-[3px]">
+        <Text className="font-inter text-[15px] text-foreground">{label}</Text>
+        {hint ? <Text className="font-inter text-[13px] text-faint">{hint}</Text> : null}
+      </VStack>
+      {value ? (
+        <Text numberOfLines={1} className="shrink font-inter text-[14px] text-muted-foreground">
+          {value}
+        </Text>
+      ) : null}
+    </HStack>
+  );
+}

@@ -8,7 +8,12 @@ import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { Spinner } from '@/components/mintsy/spinner';
 import { SafeAreaView } from '@/components/safe-area-view';
 import { SegmentedControl } from '@/components/settings/segmented-control';
-import { SettingsContentRow, SettingsLinkRow, SettingsToggleRow } from '@/components/settings/settings-rows';
+import {
+  SettingsContentRow,
+  SettingsInfoRow,
+  SettingsLinkRow,
+  SettingsToggleRow,
+} from '@/components/settings/settings-rows';
 import { SettingsSection } from '@/components/settings/settings-section';
 import type { ModeType } from '@/components/ui/gluestack-ui-provider';
 import { Text } from '@/components/ui/text';
@@ -27,6 +32,7 @@ import { setPreferences, usePreferences } from '@/lib/preferences';
 import { openPaywall, usePremium } from '@/lib/premium';
 import { registerForPushNotifications, sendTestPush, unregisterPushNotifications } from '@/lib/push';
 import { cancelDailyReminder, scheduleDailyReminder } from '@/lib/reminders';
+import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
 import { openHelpCenter, sendFeedback } from '@/lib/support';
 import { useThemeMode } from '@/lib/theme-mode';
 
@@ -46,6 +52,10 @@ export default function SettingsScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [sendingPush, setSendingPush] = useState(false);
   const downloads = useDownloads();
+  // Apple / Google-only accounts have no password, and their email comes from the provider
+  const accounts = useLinkedAccounts();
+  const socialOnly = !accounts.loading && !accounts.hasPassword;
+  const signInNote = `You sign in with ${providerLabel(accounts.socialProvider)}`;
   // "Password changed", "Email updated" etc. from the account screens
   const notice = useFlash('settings');
   useEffect(() => () => clearFlash('settings'), []);
@@ -144,11 +154,15 @@ export default function SettingsScreen() {
 
         <VStack className="mt-[26px] gap-[26px]">
           <SettingsSection title="Account">
-            <SettingsLinkRow
-              label="Email"
-              value={session?.user.email}
-              onPress={() => router.push('/profile/change-email')}
-            />
+            {socialOnly ? (
+              <SettingsInfoRow label="Email" value={session?.user.email} hint={signInNote} />
+            ) : (
+              <SettingsLinkRow
+                label="Email"
+                value={session?.user.email}
+                onPress={() => router.push('/profile/change-email')}
+              />
+            )}
             <SettingsLinkRow
               role="link"
               label="Subscription"
@@ -161,7 +175,9 @@ export default function SettingsScreen() {
               }
               onPress={() => (premium.isPremium ? router.push('/profile/plan') : openPaywall())}
             />
-            <SettingsLinkRow role="link" label="Change password" onPress={() => router.push('/profile/change-password')} />
+            {socialOnly ? null : (
+              <SettingsLinkRow role="link" label="Change password" onPress={() => router.push('/profile/change-password')} />
+            )}
             <SettingsLinkRow
               role="link"
               label="Daily goal"
