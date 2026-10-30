@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-/** Profile stack, pushed over the tabs from the Browse header: profile → edit (sheet), settings, finished. */
+/** Profile tab stack: profile → edit (sheet), settings, finished, downloads, account screens. */
 export default function ProfileStack() {
   return (
     <Stack screenOptions={{ headerShown: false }}>

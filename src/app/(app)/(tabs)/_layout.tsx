@@ -36,9 +36,9 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>My List</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'bookmark', selected: 'bookmark.fill' }} md="bookmark" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="downloads">
-        <NativeTabs.Trigger.Label>Downloads</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'arrow.down.circle', selected: 'arrow.down.circle.fill' }} md="download" />
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
       </NativeTabs.Trigger>
     </TintedTabs>
   );
