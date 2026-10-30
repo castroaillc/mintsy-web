@@ -18,7 +18,7 @@ export interface EntitlementDoc {
   /** Billing-issue grace period end, if any; access continues until then. */
   graceExpiresAt?: Date | null;
   willRenew: boolean;
-  /** "app_store" | "play_store" | ... (lowercased). */
+  /** Where it was bought, lowercased RevenueCat store: "app_store" | "rc_billing" (Web Billing) | "stripe" | "play_store" | ... */
   store: string | null;
   updatedAt: Date;
   /** event_timestamp_ms of the newest webhook applied; older events are ignored. */
@@ -32,6 +32,8 @@ export interface Premium {
   willRenew: boolean;
   periodType: string | null;
   productId: string | null;
+  /** EntitlementDoc.store: app_store, rc_billing, stripe, play_store, promotional, ... Null if never subscribed. */
+  store: string | null;
 }
 
 export const entitlements = db.collection<EntitlementDoc>("entitlements");
@@ -53,6 +55,7 @@ export const NOT_PREMIUM: Premium = {
   willRenew: false,
   periodType: null,
   productId: null,
+  store: null,
 };
 
 /** Doc → GraphQL. `active` also respects the dates, so a stale stored flag can't outlive expiry. */
@@ -66,6 +69,7 @@ export function toPremium(doc: EntitlementDoc | null, now = Date.now()): Premium
     willRenew: doc.willRenew,
     periodType: doc.periodType,
     productId: doc.productId,
+    store: doc.store ?? null,
   };
 }
 

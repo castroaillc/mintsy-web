@@ -9,6 +9,14 @@ import {
   sendPushToUser,
   unregisterPushToken,
 } from "../push.js";
+import {
+  continueWatching,
+  CONTINUE_WATCHING_MAX,
+  finishedBookIds,
+  progressForBook,
+  setProgress,
+  type ProgressView,
+} from "../progress.js";
 import { listSaved, setSaved, type SavedKind } from "../saved.js";
 import { EMPTY_RESULT, keyIdeas, normalizeQuery, searchCatalog, type EpisodeMatch } from "../search.js";
 import type { Context } from "./context.js";
@@ -26,6 +34,39 @@ export const typeDefs = `#graphql
     savedBookIds: [ID!]!
     "Episode ids (<bookId>-<number>) the user saved, most recently saved first. May include ids no longer in the catalog."
     savedEpisodeIds: [ID!]!
+    """
+    Continue watching: one entry per book, the book with the most recent activity first. Each is the book's
+    most recently watched episode if it isn't completed, otherwise the next episode that isn't completed
+    (positionSec 0 if never started). That next episode may be locked (episode.locked): show an upsell.
+    Books where every published episode is completed are left out. limit: 0-50.
+    """
+    continueWatching(limit: Int = 10): [EpisodeProgress!]!
+    "Every episode of the book with stored progress, by episode number. Empty if none."
+    progress(bookId: ID!): [EpisodeProgress!]!
+    "Published books whose every published episode is completed, most recently finished first."
+    finishedBookIds: [ID!]!
+  }
+
+  "The viewer's place in one episode."
+  type EpisodeProgress {
+    "Same as episodeId."
+    id: ID!
+    "Episode id: <bookId>-<number> (the same ids as Episode.id and savedEpisodeIds)."
+    episodeId: ID!
+    bookId: ID!
+    episodeNumber: Int!
+    "Seconds watched, between 0 and durationSec."
+    positionSec: Int!
+    "The episode's duration in seconds."
+    durationSec: Int!
+    "Watched to the end: position reached 95% of the duration, or setProgress(completed: true)."
+    completed: Boolean!
+    "When this was last saved (ISO 8601, server time)."
+    updatedAt: String!
+    "The episode, or null if it's no longer published."
+    episode: Episode
+    "The book, or null if it's no longer published."
+    book: Book
   }
 
   enum SavedKind {
@@ -44,6 +85,8 @@ export const typeDefs = `#graphql
     periodType: String
     "Store product id of the subscription, e.g. the yearly or monthly product."
     productId: String
+    "Where it was bought (lowercased RevenueCat store): app_store, rc_billing (web), stripe, play_store, promotional, ... Null if never subscribed. Manage the subscription where it was bought."
+    store: String
   }
 
   type TranscriptLine {
@@ -133,6 +176,15 @@ export const typeDefs = `#graphql
     refreshPremium: Premium!
     "Saves (saved: true) or removes (saved: false) a book or episode in the viewer's My List. Idempotent; re-saving keeps the original position. At most 500 per kind. Returns the updated viewer."
     setSaved(kind: SavedKind!, id: ID!, saved: Boolean!): User!
+    """
+    Saves the viewer's place in a published episode (idempotent; call every ~10 s while playing, and on
+    pause, seek and exit). positionSec is clamped to [0, durationSec]. completed: true / false sets it
+    (false = mark as not watched); omitted or null keeps it, and a position at 95% of the duration or more
+    sets it. Last write wins by server time, except that a backwards move arriving within 2 s of the
+    previous save is ignored as out of order (the stored progress is returned).
+    Errors: UNAUTHENTICATED; BAD_USER_INPUT "Unknown episode"; FORBIDDEN "Premium required" (locked episode).
+    """
+    setProgress(episodeId: ID!, positionSec: Int!, completed: Boolean): EpisodeProgress!
   }
 `;
 
@@ -183,6 +235,13 @@ export const resolvers = {
     episodes: (book: BookDoc) => book.episodes.map((e) => episodeWithId(book, e)),
     keyIdeas: async (book: BookDoc, _args: unknown, ctx: Context) => keyIdeas(book, await lockCheck(ctx)),
   },
+  EpisodeProgress: {
+    id: (p: ProgressView) => p.episodeId,
+    durationSec: (p: ProgressView) => p.episode?.durationSec ?? p.durationSec,
+    updatedAt: (p: ProgressView) => p.updatedAt.toISOString(),
+    episode: (p: ProgressView) => (p.book && p.episode ? episodeWithId(p.book, p.episode) : null),
+    book: (p: ProgressView) => p.book,
+  },
   EpisodeMatch: {
     id: (m: EpisodeMatch) => `${m.book._id}-${m.episode.number}-${m.startSec}`,
     bookId: (m: EpisodeMatch) => m.book._id,
@@ -204,6 +263,24 @@ export const resolvers = {
     savedEpisodeIds: (user: { id: string }, _args: unknown, ctx: Context) => {
       viewerOnly(user, ctx);
       return listSaved(user.id, "episode");
+    },
+    continueWatching: (user: { id: string }, args: { limit?: number | null }, ctx: Context) => {
+      viewerOnly(user, ctx);
+      const limit = args.limit ?? 10;
+      if (limit < 0 || limit > CONTINUE_WATCHING_MAX) {
+        throw new GraphQLError(`limit must be between 0 and ${CONTINUE_WATCHING_MAX}`, {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+      return continueWatching(user.id, limit);
+    },
+    progress: (user: { id: string }, args: { bookId: string }, ctx: Context) => {
+      viewerOnly(user, ctx);
+      return progressForBook(user.id, args.bookId);
+    },
+    finishedBookIds: (user: { id: string }, _args: unknown, ctx: Context) => {
+      viewerOnly(user, ctx);
+      return finishedBookIds(user.id);
     },
   },
   Episode: {
@@ -263,6 +340,21 @@ export const resolvers = {
         throw new GraphQLError("My List is full (500 per kind)", { extensions: { code: "BAD_USER_INPUT" } });
       }
       return user;
+    },
+    setProgress: async (
+      _parent: unknown,
+      args: { episodeId: string; positionSec: number; completed?: boolean | null },
+      ctx: Context,
+    ) => {
+      const user = requireUser(ctx);
+      const result = await setProgress(user.id, args.episodeId, args.positionSec, args.completed, await lockCheck(ctx));
+      if (result === "unknown-episode") {
+        throw new GraphQLError("Unknown episode", { extensions: { code: "BAD_USER_INPUT" } });
+      }
+      if (result === "locked") {
+        throw new GraphQLError("Premium required", { extensions: { code: "FORBIDDEN" } });
+      }
+      return result;
     },
   },
 };

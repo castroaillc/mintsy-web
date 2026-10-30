@@ -82,6 +82,61 @@ else
   echo "My List: catalog is empty, skipping save/remove"
 fi
 
+echo "Watch progress: setProgress requires a session"
+curl -s -X POST "$BASE_URL/graphql" -H "$JSON" \
+  -d '{"query":"mutation { setProgress(episodeId: \"x-1\", positionSec: 1) { id } }"}' \
+  | grep -q UNAUTHENTICATED || fail "anonymous setProgress was not rejected"
+
+echo "Watch progress: unknown episode rejected"
+gql '{"query":"mutation { setProgress(episodeId: \"no-such-book-'$RANDOM'-1\", positionSec: 10) { id } }"}' \
+  | grep -q BAD_USER_INPUT || fail "setProgress accepted an unknown episode"
+
+echo "Watch progress: new user has nothing to continue"
+gql '{"query":"{ me { continueWatching { id } finishedBookIds } }"}' \
+  | grep -q '"continueWatching":\[\],"finishedBookIds":\[\]' || fail "new user has watch progress"
+
+if [ -n "$BOOK_ID" ]; then
+  echo "Watch progress: save a position in $BOOK_ID-1, then continue watching"
+  gql '{"query":"mutation { setProgress(episodeId: \"'"$BOOK_ID"'-1\", positionSec: 5) { episodeId positionSec completed } }"}' \
+    | grep -q '"setProgress":{"episodeId":"'"$BOOK_ID"'-1","positionSec":5,"completed":false}' || fail "setProgress did not save"
+  gql '{"query":"{ me { continueWatching(limit: 5) { episodeId positionSec } } }"}' \
+    | grep -q '"continueWatching":\[{"episodeId":"'"$BOOK_ID"'-1","positionSec":5}' || fail "continueWatching did not return the episode"
+  echo "Watch progress: finishing episode 1 moves continue watching to episode 2 (if published)"
+  gql '{"query":"mutation { setProgress(episodeId: \"'"$BOOK_ID"'-1\", positionSec: 999999) { completed } }"}' \
+    | grep -q '"completed":true' || fail "a position at the end did not complete the episode"
+  gql '{"query":"{ me { continueWatching { episodeId positionSec } finishedBookIds } }"}' \
+    | grep -Eq '"continueWatching":\[\{"episodeId":"'"$BOOK_ID"'-2","positionSec":0\}|"finishedBookIds":\["'"$BOOK_ID"'"\]' \
+    || fail "continueWatching did not move to the next episode"
+else
+  echo "Watch progress: catalog is empty, skipping save/continue"
+fi
+
+echo "me.premium.store is null for a new user"
+gql '{"query":"{ me { premium { store } } }"}' | grep -q '"store":null' || fail "premium.store missing"
+
+echo "web origin: trusted for sign-in and redirect URLs"
+code=$(status -X POST "$BASE_URL/api/auth/request-password-reset" -H "$JSON" -H "Origin: https://app.getmintsy.com" \
+  -H "X-Forwarded-Host: app.getmintsy.com" \
+  -d '{"email":"nobody-'$RANDOM'@example.com","redirectTo":"https://app.getmintsy.com/reset-password"}')
+[ "$code" = 200 ] || fail "web redirectTo returned $code, expected 200"
+code=$(status -X POST "$BASE_URL/api/auth/sign-in/email" -H "$JSON" -H "Origin: https://evil.example.com" \
+  -d "{\"email\":\"$EMAIL\",\"password\":\"password1234\"}")
+[ "$code" = 403 ] || fail "untrusted web Origin returned $code, expected 403"
+
+echo "list-accounts shows the password account"
+curl -s -b "$JAR" "$BASE_URL/api/auth/list-accounts" -H "expo-origin: mintsy://" \
+  | grep -q '"providerId":"credential"' || fail "list-accounts did not return the credential account"
+
+echo "social sign-in rejects a garbage ID token (404 when the provider isn't configured)"
+# Three calls: Better Auth rate-limits /sign-in/* to 3 per 10 s in production (the CI image)
+JWT=eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln
+for pair in google:garbage google:$JWT apple:$JWT; do
+  provider=${pair%%:*}; token=${pair#*:}
+  code=$(status -X POST "$BASE_URL/api/auth/sign-in/social" -H "$JSON" -H "expo-origin: mintsy://" \
+    -d '{"provider":"'"$provider"'","idToken":{"token":"'"$token"'","nonce":"n"}}')
+  [ "$code" = 401 ] || [ "$code" = 404 ] || fail "$provider sign-in with a garbage ID token returned $code"
+done
+
 echo "password reset request (unknown email answers the same)"
 curl -s -X POST "$BASE_URL/api/auth/request-password-reset" -H "$JSON" -H "expo-origin: mintsy://" \
   -d '{"email":"nobody-'$RANDOM'@example.com","redirectTo":"mintsy://reset-password"}' \

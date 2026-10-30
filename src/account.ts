@@ -1,6 +1,7 @@
 import { db } from "./db.js";
 import { entitlements } from "./entitlements.js";
 import { env } from "./env.js";
+import { deleteProgressForUser } from "./progress.js";
 import { deletePushTokensForUser } from "./push.js";
 import { deleteSavedForUser } from "./saved.js";
 
@@ -10,14 +11,15 @@ import { deleteSavedForUser } from "./saved.js";
  * Better Auth deletion so nothing written in between is left behind.
  */
 export async function deleteUserData(userId: string) {
-  const [pushTokens, entitlementDocs, saved, verifications] = await Promise.all([
+  const [pushTokens, entitlementDocs, saved, progress, verifications] = await Promise.all([
     deletePushTokensForUser(userId),
     entitlements.deleteMany({ userId }).then((r) => r.deletedCount),
     deleteSavedForUser(userId),
+    deleteProgressForUser(userId),
     // Pending reset-password / delete-account tokens point at the user id
     db.collection("verification").deleteMany({ value: userId }).then((r) => r.deletedCount),
   ]);
-  return { pushTokens, entitlements: entitlementDocs, saved, verifications };
+  return { pushTokens, entitlements: entitlementDocs, saved, progress, verifications };
 }
 
 /**
