@@ -82,6 +82,19 @@ else
   echo "My List: catalog is empty, skipping save/remove"
 fi
 
+echo "list-accounts shows the password account"
+curl -s -b "$JAR" "$BASE_URL/api/auth/list-accounts" -H "expo-origin: mintsy://" \
+  | grep -q '"providerId":"credential"' || fail "list-accounts did not return the credential account"
+
+echo "social sign-in rejects a garbage ID token (404 when the provider isn't configured)"
+for provider in google apple; do
+  for token in garbage eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln; do
+    code=$(status -X POST "$BASE_URL/api/auth/sign-in/social" -H "$JSON" -H "expo-origin: mintsy://" \
+      -d '{"provider":"'"$provider"'","idToken":{"token":"'"$token"'","nonce":"n"}}')
+    [ "$code" = 401 ] || [ "$code" = 404 ] || fail "$provider sign-in with a garbage ID token returned $code"
+  done
+done
+
 echo "password reset request (unknown email answers the same)"
 curl -s -X POST "$BASE_URL/api/auth/request-password-reset" -H "$JSON" -H "expo-origin: mintsy://" \
   -d '{"email":"nobody-'$RANDOM'@example.com","redirectTo":"mintsy://reset-password"}' \

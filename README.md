@@ -1,6 +1,6 @@
 # backend
 
-Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/password, OpenAPI plugin), MongoDB.
+Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/password, Sign in with Google / Apple, OpenAPI plugin), MongoDB.
 
 ## Setup
 
@@ -17,6 +17,8 @@ pnpm dev
 | --- | --- |
 | `POST /api/auth/sign-up/email` | Register `{ email, password, name }` |
 | `POST /api/auth/sign-in/email` | Log in `{ email, password }`; sets the session cookie |
+| `POST /api/auth/sign-in/social` | `{ provider: "google" \| "apple", idToken: { token, nonce? } }` (native ID token); sets the session cookie. See "Sign in with Google / Apple" |
+| `GET /api/auth/list-accounts` | The user's sign-in methods (`providerId`: `credential`, `google`, `apple`) |
 | `POST /api/auth/sign-out` | Log out |
 | `GET /api/auth/get-session` | Current session |
 | `POST /api/auth/request-password-reset` | Email a reset link `{ email, redirectTo }` (see "Account flows") |
@@ -25,7 +27,7 @@ pnpm dev
 | `POST /api/auth/change-password` | `{ currentPassword, newPassword, revokeOtherSessions }` |
 | `POST /api/auth/change-email` | `{ newEmail, callbackURL }`; emails a confirmation link to the new address |
 | `GET /api/auth/verify-email` | Email-change link target; redirects to `callbackURL` |
-| `POST /api/auth/delete-user` | `{ password }`; deletes the account and all its data immediately |
+| `POST /api/auth/delete-user` | `{ password }` (or `{}` for social-only users with a fresh session); deletes the account and all its data immediately |
 | `GET /api/auth/reference` | OpenAPI reference UI for all auth routes |
 | `POST /graphql` | GraphQL API (Apollo Sandbox on GET in dev); `books` / `book(id)` serve the catalog, `search(query)` searches it |
 | `POST /webhooks/revenuecat` | RevenueCat webhook (subscription events → `entitlements`); see "Premium" |
@@ -41,7 +43,10 @@ The GraphQL context carries the Better Auth session (`ctx.session`); see the `me
 
 ## Scripts
 
-`pnpm dev` · `pnpm build` · `pnpm start` · `pnpm typecheck` · `pnpm seed:catalog`
+`pnpm dev` · `pnpm build` · `pnpm start` · `pnpm typecheck` · `pnpm test` · `pnpm seed:catalog`
+
+`pnpm test` runs `test/*.test.ts` (node:test via tsx) against a local MongoDB replica set
+(`TEST_MONGODB_URI`, default `mongodb://localhost:27017/mintsy-test?directConnection=true`; it refuses non-local hosts).
 
 ## Catalog and episode videos
 
@@ -273,13 +278,66 @@ already belongs to an account, the response is the same but nothing is sent. Ope
 create a session (an `after` hook revokes the one Better Auth would create and keeps the token out of the
 deep link). Sign-up doesn't send verification emails.
 
-**Delete account** (App Store 5.1.1(v)). `authClient.deleteUser({ password })`; the password is always
-required (a `before` hook rejects requests without one, `PASSWORD_REQUIRED`; a wrong one is
-`INVALID_PASSWORD`). Deletion is immediate: `src/account.ts` removes the user's push tokens, entitlement,
+**Delete account** (App Store 5.1.1(v)). `authClient.deleteUser({ password })`. A `before` hook decides:
+
+- The user has a password (a `credential` account): the password is required (`400 PASSWORD_REQUIRED` without
+  one, `400 INVALID_PASSWORD` when wrong), however old the session is.
+- The user has no password (Google / Apple only): `deleteUser({})` works when the session was created less than
+  10 minutes ago; otherwise `403 REAUTH_REQUIRED`. The app then signs in with Google / Apple again (a new,
+  fresh session) and retries. (Sending a password here gets Better Auth's `400 CREDENTIAL_ACCOUNT_NOT_FOUND`.)
+
+Deletion is immediate on both paths: `src/account.ts` removes the user's push tokens, entitlement,
 saved items and pending verification tokens (before and again after Better Auth deletes the user, sessions
 and accounts), then calls RevenueCat `DELETE /v1/subscribers/{id}` when `REVENUECAT_SECRET_API_KEY` is set
 (failures are logged, not fatal). It logs `[audit] account deleted: user <id>` (no email). It does **not**
 cancel an App Store / Play subscription; the app tells the user to cancel in the store.
+
+## Sign in with Google / Apple
+
+The app uses the **native ID-token flow** (no browser redirect): it gets an ID token from
+`@react-native-google-signin/google-signin` or `expo-apple-authentication` and calls
+`authClient.signIn.social({ provider, idToken: { token, nonce?, accessToken? } })` →
+`POST /api/auth/sign-in/social`. The response and session cookie are the same as email sign-in
+(`{ redirect: false, token, user }`). Apple's `nonce` is the raw nonce (its SHA-256 went to Apple); Better Auth
+accepts the raw or hashed value. Apple only sends the user's name on the first authorization, so the app should
+pass it as `idToken.user: { name: { firstName, lastName } }` on that call.
+
+- **Config** (`src/auth.ts`, `src/env.ts`): a provider is only configured when its client ID is set; otherwise the
+  server logs a warning at startup and `sign-in/social` for it answers `404 PROVIDER_NOT_FOUND`. Local dev and CI
+  run without any of these.
+  - Google: `GOOGLE_CLIENT_ID` (web client) and/or `GOOGLE_IOS_CLIENT_ID` (comma-separated); ID tokens with any of
+    these audiences are accepted. `GOOGLE_CLIENT_SECRET` is only used by the browser redirect flow.
+  - Apple: `APPLE_CLIENT_ID` (Services ID). Accepted audiences: every bundle ID in `APPLE_APP_BUNDLE_IDENTIFIER`
+    (comma-separated, default `com.getmintsy.app,com.getmintsy.app.dev`) plus the Services ID.
+    `APPLE_CLIENT_SECRET` (the ES256 client-secret JWT) is only used by the browser redirect flow.
+    `https://appleid.apple.com` is a trusted origin while Apple is configured (form_post callback, web only).
+- **Errors:** a bad, expired or wrong-audience token is `401 INVALID_TOKEN`; a token without an email is
+  `401 USER_EMAIL_NOT_FOUND`; an existing account it can't link to is `401 OAUTH_LINK_ERROR`
+  (message `account not linked`).
+- **Account linking** (`account.accountLinking`, trusted providers `google`, `apple`): a sign-in whose email
+  matches an existing user is linked to that user, **only if the existing user's email is verified**
+  (Better Auth's `requireLocalEmailVerified`, default on, which stops someone pre-registering a password account
+  on another person's address and later sharing their Google/Apple account). Email sign-up here doesn't verify
+  addresses, so most password accounts get `OAUTH_LINK_ERROR` instead; they sign in with the password.
+  Apple private-relay addresses (`...@privaterelay.appleid.com`) never match, so they create a new user.
+- **Which methods a user has:** `authClient.listAccounts()` → `GET /api/auth/list-accounts`:
+  `[{ id, providerId: "credential" | "google" | "apple", accountId, userId, createdAt, updatedAt, scopes: string[] }]`.
+  No `credential` entry = no password (hide change email / change password).
+
+**One-time setup** (production values go to Cloud Run; client IDs and bundle IDs aren't secret, so plain env vars):
+
+- Google Cloud console → APIs & Services: configure the OAuth consent screen, then Credentials → Create OAuth
+  client ID, once as **Web application** (`GOOGLE_CLIENT_ID`, plus its secret `GOOGLE_CLIENT_SECRET`) and once as
+  **iOS** with bundle ID `com.getmintsy.app` (`GOOGLE_IOS_CLIENT_ID`). iOS clients are per bundle ID, so dev
+  builds (`com.getmintsy.app.dev`) need a second iOS client; `GOOGLE_IOS_CLIENT_ID` takes a comma-separated list.
+- Apple Developer → Identifiers: enable **Sign in with Apple** on the App IDs `com.getmintsy.app` and
+  `com.getmintsy.app.dev`; create a **Services ID** (`APPLE_CLIENT_ID`) with Sign in with Apple enabled
+  (domain `api.getmintsy.com`, return URL `https://api.getmintsy.com/api/auth/callback/apple`, only used by the
+  web flow). For the web flow only: Keys → create a key with Sign in with Apple and generate the client-secret
+  JWT from it (`APPLE_CLIENT_SECRET`, expires after at most 6 months).
+- Apple Developer → Services → **Sign in with Apple for Email Communication**: register the sending domain
+  (`getmintsy.com`, or the Resend subdomain) and/or the address in `EMAIL_FROM`, so password-reset and
+  email-change mail reaches `@privaterelay.appleid.com` addresses. The domain's SPF must pass (Resend's records).
 
 ## My List (saved books and episodes)
 
@@ -340,7 +398,7 @@ Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https:/
   3. **Deploy:** only on pushes to `main`, and only if steps 1 and 2 pass. It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
 - **Dependabot** opens weekly update PRs for npm packages and GitHub Actions, and they go through the same checks.
 - **Smoke test locally:** `scripts/smoke-test.sh http://localhost:4000`. It creates a throwaway user, so don't point it at production.
-- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (no web client). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`.
+- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (no web client). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, web redirect flow only).
 - **Production behavior** (`NODE_ENV=production`, set in the image):
   - The OpenAPI auth reference is disabled.
   - GraphQL introspection and Apollo Sandbox are off.
