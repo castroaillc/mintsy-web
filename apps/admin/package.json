@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
-    "start": "next start --hostname 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
+    "build": "node scripts/refuse-deploy.mjs && next build",
+    "start": "next start --hostname 127.0.0.1 --port 3001",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit"
   },
@@ -17,8 +17,8 @@
     "next": "16.4.3",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.8.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "server-only": "^0.0.1",
     "shadcn": "^4.23.0",
     "sonner": "^2.0.8",
@@ -35,5 +35,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@12.11.2"
+  "packageManager": "pnpm@12.15.0"
 }

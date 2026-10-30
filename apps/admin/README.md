@@ -3,8 +3,11 @@
 Internal content dashboard for mintsy. Staff use it to upload a book PDF, have the
 studio pipeline generate episodes, review and edit them, and publish them to the app.
 
-It runs **only on your machine** (`pnpm dev`, bound to `127.0.0.1`) and has **no sign-in**.
-There is no deployment config, on purpose.
+It runs **only on your machine** (`pnpm dev:admin` from the repo root, bound to
+`127.0.0.1:3001`) and has **no sign-in**. There is no deployment config, on purpose, and
+`pnpm build` refuses to run on Vercel (`scripts/refuse-deploy.mjs`).
+
+It lives in the `mintsy-web` monorepo at `apps/admin`, next to the web app (`apps/web`).
 
 > [!WARNING]
 > **Publish goes live in the app immediately.** The dashboard writes straight to the
@@ -61,8 +64,9 @@ Publishing rules (also enforced by the API):
 Needs Node 24+, pnpm, and a MongoDB you can reach locally.
 
 ```sh
+# from the mintsy-web repo root (one lockfile for both apps)
 pnpm install
-cp .env.example .env.local   # then edit
+cp apps/admin/.env.example apps/admin/.env.local   # then edit
 ```
 
 | Variable | Default | Meaning |
@@ -70,7 +74,7 @@ cp .env.example .env.local   # then edit
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017` | MongoDB connection string |
 | `MONGODB_DB` | `mintsy` | Database holding `books` and `studio_jobs` |
 | `MEDIA_BASE_URL` | `https://storage.googleapis.com/mintsy-media` | Public prefix for episode videos and thumbnails (`MEDIA_BASE_URL + "/" + path`) |
-| `UPLOAD_DIR` | `<project>/uploads` | Where PDFs are saved; the worker reads them from here, so it must be on the same machine |
+| `UPLOAD_DIR` | `apps/admin/uploads` (the app's working directory) | Where PDFs are saved; the worker reads them from here, so it must be on the same machine |
 
 For a throwaway local database:
 
@@ -84,8 +88,8 @@ docker run -d --name mintsy-admin-mongo -p 127.0.0.1:27018:27017 mongo:7
 Two terminals, both pointing at the same `MONGODB_URI` / `MONGODB_DB`:
 
 ```sh
-# 1. dashboard → http://127.0.0.1:3000
-cd mintsy-admin && pnpm dev
+# 1. dashboard → http://127.0.0.1:3001 (from the mintsy-web repo root)
+pnpm dev:admin
 
 # 2. studio worker (processes the queue one job at a time)
 cd studio && pnpm worker
@@ -105,10 +109,10 @@ cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGO
 
 | Script | What it does |
 |---|---|
-| `pnpm dev` | Dev server on 127.0.0.1:3000 |
+| `pnpm dev` | Dev server on 127.0.0.1:3001 (`pnpm dev:admin` from the repo root) |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
-| `pnpm build` | Production build (checks everything compiles) |
+| `pnpm build` | Production build (checks everything compiles; refuses to run on Vercel) |
 
 ## Code map
 

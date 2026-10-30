@@ -4,9 +4,9 @@
   "scripts": {
     "dev:web": "pnpm --filter mintsy-web dev",
     "dev:admin": "pnpm --filter mintsy-admin dev",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
-    "build": "pnpm -r build"
+    "lint": "pnpm -r --no-bail lint",
+    "typecheck": "pnpm -r --no-bail typecheck",
+    "build": "pnpm -r --no-bail build"
   },
   "packageManager": "pnpm@12.15.0"
 }
