@@ -241,7 +241,7 @@ function OfflineNotice({ retry, retrying }: { retry: () => void; retrying: boole
           Your downloaded episodes are ready to watch. Connect to browse everything else.
         </Text>
         <HStack className="gap-2.5">
-          <BrandButton label="Go to Downloads" height={44} onPress={() => router.navigate('/downloads')} className="flex-1" />
+          <BrandButton label="Go to Downloads" height={44} onPress={() => router.navigate('/profile/downloads')} className="flex-1" />
           <BrandButton label="Try again" variant="outline" height={44} loading={retrying} onPress={retry} className="flex-1" />
         </HStack>
       </VStack>

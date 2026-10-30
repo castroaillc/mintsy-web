@@ -195,7 +195,7 @@ export default function SettingsScreen() {
                 role="link"
                 label="Downloads"
                 value={`${downloads.items.length} · ${formatBytes(downloads.totalBytes)}`}
-                onPress={() => router.navigate('/downloads')}
+                onPress={() => router.navigate('/profile/downloads')}
               />
             ) : null}
           </SettingsSection>

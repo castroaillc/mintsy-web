@@ -186,7 +186,7 @@ export default function ProfileScreen() {
               role="link"
               label="Downloads"
               value="No episodes"
-              onPress={() => router.navigate('/downloads')}
+              onPress={() => router.navigate('/profile/downloads')}
             />
             <SettingsLinkRow
               role="link"

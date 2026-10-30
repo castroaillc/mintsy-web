@@ -136,7 +136,7 @@ function BookDetail({ book }: { book: Book }) {
       label={bookDownloading.fraction !== null ? `${Math.round(bookDownloading.fraction * 100)}%` : 'Downloading'}
       accessibilityLabel={`Downloading ${bookDownloading.title}. Opens Downloads`}
       selected
-      onPress={() => router.navigate('/downloads')}
+      onPress={() => router.navigate('/profile/downloads')}
     />
   ) : toDownload ? (
     <ActionTile
@@ -151,7 +151,7 @@ function BookDetail({ book }: { book: Book }) {
       label="Downloaded"
       accessibilityLabel="All episodes downloaded. Opens Downloads"
       selected
-      onPress={() => router.navigate('/downloads')}
+      onPress={() => router.navigate('/profile/downloads')}
     />
   );
 
