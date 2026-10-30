@@ -41,7 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: 'server',
+    output: 'static',
     favicon: './assets/images/favicon.png',
   },
   plugins: [

@@ -55,26 +55,29 @@ export type DownloadStatus = 'none' | 'queued' | 'downloading' | 'downloaded';
 
 // ── Files ───────────────────────────────────────────────────────────
 
-const ROOT = new Directory(Paths.document, 'downloads');
-const INDEX_FILE = new File(ROOT, 'index.json');
+// Built on demand, never at import: expo-file-system objects can't be created on web (static export)
+const root = () => new Directory(Paths.document, 'downloads');
+const indexFile = () => new File(root(), 'index.json');
 const EMPTY_INDEX: DownloadIndex = { version: 1, userId: null, items: [] };
 
 /** Episode ids are used as folder names; keep them filesystem-safe. */
 const folderName = (episodeId: string) => episodeId.replace(/[^\w.-]/g, '_');
-const episodeDir = (episodeId: string) => new Directory(ROOT, folderName(episodeId));
+const episodeDir = (episodeId: string) => new Directory(root(), folderName(episodeId));
 const videoFile = (episodeId: string) => new File(episodeDir(episodeId), 'video.mp4');
 const thumbFile = (episodeId: string) => new File(episodeDir(episodeId), 'thumb.jpg');
 
 /** Creates the downloads folder if needed and keeps it (and so everything in it) out of iCloud backup. */
 function ensureRoot() {
-  ROOT.create({ idempotent: true, intermediates: true });
-  excludeFromBackup(ROOT.uri);
+  const dir = root();
+  dir.create({ idempotent: true, intermediates: true });
+  excludeFromBackup(dir.uri);
 }
 
 function readIndex(): DownloadIndex {
   try {
-    if (!INDEX_FILE.exists) return EMPTY_INDEX;
-    const parsed = JSON.parse(INDEX_FILE.textSync()) as DownloadIndex;
+    const file = indexFile();
+    if (!file.exists) return EMPTY_INDEX;
+    const parsed = JSON.parse(file.textSync()) as DownloadIndex;
     if (parsed?.version !== 1 || !Array.isArray(parsed.items)) return EMPTY_INDEX;
     // Drop entries whose video went missing (e.g. the OS or a restore removed it)
     return { ...parsed, items: parsed.items.filter((r) => videoFile(r.episodeId).exists) };
@@ -87,8 +90,9 @@ function readIndex(): DownloadIndex {
 function writeIndex(index: DownloadIndex) {
   try {
     ensureRoot();
-    if (!INDEX_FILE.exists) INDEX_FILE.create();
-    INDEX_FILE.write(JSON.stringify(index));
+    const file = indexFile();
+    if (!file.exists) file.create();
+    file.write(JSON.stringify(index));
   } catch (err) {
     console.warn('Failed to write downloads index', err);
   }
@@ -106,9 +110,10 @@ function deleteEpisodeFiles(episodeId: string) {
 /** Removes folders the index doesn't know (downloads interrupted when the app was killed). */
 function removeOrphans(index: DownloadIndex, keep: Set<string>) {
   try {
-    if (!ROOT.exists) return;
+    const dir = root();
+    if (!dir.exists) return;
     const known = new Set([...index.items.map((r) => folderName(r.episodeId)), ...[...keep].map(folderName)]);
-    for (const entry of ROOT.list()) {
+    for (const entry of dir.list()) {
       if (entry instanceof Directory && !known.has(entry.name)) entry.delete();
     }
   } catch (err) {
@@ -238,7 +243,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   // before the backup exclusion existed (same location, so nothing moves)
   useEffect(() => {
     removeOrphans(index, new Set(jobs.current.keys()));
-    if (ROOT.exists) excludeFromBackup(ROOT.uri);
+    const dir = root();
+    if (dir.exists) excludeFromBackup(dir.uri);
     // Once at launch
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -251,7 +257,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     jobs.current.clear();
     setActive([]);
     try {
-      if (ROOT.exists) ROOT.delete();
+      const dir = root();
+      if (dir.exists) dir.delete();
     } catch (err) {
       console.warn('Failed to delete downloads', err);
     }

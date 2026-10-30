@@ -5,10 +5,11 @@ import { Directory, File, Paths } from 'expo-file-system';
  * finished series, ratings and recent searches. Nothing here reaches the API. Deleting an account removes
  * the user's folder (see deleteUserFiles).
  */
-const ROOT = new Directory(Paths.document, 'users');
+// Built on demand, never at import: expo-file-system objects can't be created on web (static export)
+const root = () => new Directory(Paths.document, 'users');
 
 const folderName = (userId: string) => userId.replace(/[^\w.-]/g, '_');
-const userDir = (userId: string) => new Directory(ROOT, folderName(userId));
+const userDir = (userId: string) => new Directory(root(), folderName(userId));
 const userFile = (userId: string, name: string) => new File(userDir(userId), `${name}.json`);
 
 export function readUserJson<T>(userId: string, name: string, fallback: T): T {
