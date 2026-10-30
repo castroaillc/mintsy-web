@@ -9,6 +9,7 @@ import { auth } from "./auth.js";
 import { ensureCatalogIndexes } from "./catalog.js";
 import { client } from "./db.js";
 import { ensureEntitlementIndexes } from "./entitlements.js";
+import { ensureProgressIndexes } from "./progress.js";
 import { ensurePushIndexes } from "./push.js";
 import { ensureSavedIndexes } from "./saved.js";
 import { revenueCatWebhook } from "./revenuecat-webhook.js";
@@ -22,11 +23,14 @@ async function main() {
   await ensureCatalogIndexes();
   await ensureEntitlementIndexes();
   await ensureSavedIndexes();
+  await ensureProgressIndexes();
 
   const app = express();
   const httpServer = http.createServer(app);
 
-  app.use(cors({ origin: env.corsOrigins, credentials: true }));
+  // The web app calls through its own origin (Next.js rewrites), so it doesn't need CORS; it's listed so
+  // direct browser calls from it work too. Native apps don't send CORS preflights.
+  app.use(cors({ origin: [...new Set([...env.corsOrigins, ...env.webOrigins])], credentials: true }));
 
   // Better Auth must be mounted before express.json()
   app.all("/api/auth/{*any}", toNodeHandler(auth));

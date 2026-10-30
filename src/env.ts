@@ -13,8 +13,18 @@ function list(value: string): string[] {
     .filter(Boolean);
 }
 
+const isProduction = process.env.NODE_ENV === "production";
+
+/**
+ * The web app (mintsy-web, Next.js). The browser only talks to its own origin: Next.js rewrites
+ * /api/auth/* and /graphql to this API, so session cookies are first-party on the web app's host.
+ * localhost:3000 (next dev) is only trusted outside production.
+ */
+const WEB_ORIGINS = ["https://app.getmintsy.com", ...(isProduction ? [] : ["http://localhost:3000"])];
+
 export const env = {
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction,
+  webOrigins: WEB_ORIGINS,
   port: Number(process.env.PORT ?? 4000),
   mongodbUri: required("MONGODB_URI"),
   // Optional: overrides the database name in MONGODB_URI
@@ -52,7 +62,7 @@ export const env = {
   appleClientSecret: process.env.APPLE_CLIENT_SECRET || undefined,
   // Native ID tokens carry the app's bundle ID as their audience; comma-separated, defaults to prod + dev builds
   appleAppBundleIdentifiers: list(process.env.APPLE_APP_BUNDLE_IDENTIFIER || "com.getmintsy.app,com.getmintsy.app.dev"),
-  corsOrigins:(process.env.CORS_ORIGINS ?? "")
+  corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),

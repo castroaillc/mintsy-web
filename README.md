@@ -29,7 +29,7 @@ pnpm dev
 | `GET /api/auth/verify-email` | Email-change link target; redirects to `callbackURL` |
 | `POST /api/auth/delete-user` | `{ password }` (or `{}` for social-only users with a fresh session); deletes the account and all its data immediately |
 | `GET /api/auth/reference` | OpenAPI reference UI for all auth routes |
-| `POST /graphql` | GraphQL API (Apollo Sandbox on GET in dev); `books` / `book(id)` serve the catalog, `search(query)` searches it |
+| `POST /graphql` | GraphQL API (Apollo Sandbox on GET in dev); `books` / `book(id)` serve the catalog, `search(query)` searches it, `setProgress` / `me.continueWatching` track watch progress |
 | `POST /webhooks/revenuecat` | RevenueCat webhook (subscription events → `entitlements`); see "Premium" |
 | `GET /health` | Health check |
 
@@ -101,7 +101,7 @@ with the Better Auth user id (`Purchases.logIn(user.id)`), so RevenueCat's `app_
 **GraphQL**
 
 ```graphql
-type Premium { active: Boolean!, expiresAt: String, willRenew: Boolean!, periodType: String, productId: String }
+type Premium { active: Boolean!, expiresAt: String, willRenew: Boolean!, periodType: String, productId: String, store: String }
 type User    { ..., premium: Premium! }
 type Episode { ..., locked: Boolean! }   # number > 3 && viewer isn't premium (signed out = not premium)
 type Mutation { ..., refreshPremium: Premium! }   # session required; refetch from RevenueCat, store, return
@@ -110,6 +110,13 @@ type Mutation { ..., refreshPremium: Premium! }   # session required; refetch fr
 A locked episode has `videoUrl: null`, `transcript: []` and `takeaways: []`; title, summary, duration and
 thumbnail stay. The viewer's entitlement is read once per request (`ctx.viewerPremium()`).
 `active` is false once `expiresAt` (or a billing grace period) has passed, even if the stored flag is stale.
+`store` is where it was bought, lowercased from RevenueCat: `app_store`, `rc_billing` (RevenueCat Web Billing on
+the web app), `stripe`, `play_store`, `promotional`, ...; clients send users to manage the subscription there.
+
+**Web Billing:** the web app sells through RevenueCat Web Billing with the same entitlement `premium` and
+`app_user_id` = Better Auth user id. Its webhook events (`store: "RC_BILLING"`, or `"STRIPE"` for the Stripe
+integration) go through the same webhook and code path as App Store events (trial, renewal, cancellation,
+billing issue, expiration); see `test/revenuecat-webhook.test.ts`.
 
 **Storage**
 
@@ -287,7 +294,7 @@ deep link). Sign-up doesn't send verification emails.
   fresh session) and retries. (Sending a password here gets Better Auth's `400 CREDENTIAL_ACCOUNT_NOT_FOUND`.)
 
 Deletion is immediate on both paths: `src/account.ts` removes the user's push tokens, entitlement,
-saved items and pending verification tokens (before and again after Better Auth deletes the user, sessions
+saved items, watch progress and pending verification tokens (before and again after Better Auth deletes the user, sessions
 and accounts), then calls RevenueCat `DELETE /v1/subscribers/{id}` when `REVENUECAT_SECRET_API_KEY` is set
 (failures are logged, not fatal). It logs `[audit] account deleted: user <id>` (no email). It does **not**
 cancel an App Store / Play subscription; the app tells the user to cancel in the store.
@@ -327,17 +334,68 @@ pass it as `idToken.user: { name: { firstName, lastName } }` on that call.
 **One-time setup** (production values go to Cloud Run; client IDs and bundle IDs aren't secret, so plain env vars):
 
 - Google Cloud console → APIs & Services: configure the OAuth consent screen, then Credentials → Create OAuth
-  client ID, once as **Web application** (`GOOGLE_CLIENT_ID`, plus its secret `GOOGLE_CLIENT_SECRET`) and once as
+  client ID, once as **Web application** (`GOOGLE_CLIENT_ID`, plus its secret `GOOGLE_CLIENT_SECRET`; authorized redirect
+  URIs `https://app.getmintsy.com/api/auth/callback/google` and, for dev, `http://localhost:3000/api/auth/callback/google`) and once as
   **iOS** with bundle ID `com.getmintsy.app` (`GOOGLE_IOS_CLIENT_ID`). iOS clients are per bundle ID, so dev
   builds (`com.getmintsy.app.dev`) need a second iOS client; `GOOGLE_IOS_CLIENT_ID` takes a comma-separated list.
 - Apple Developer → Identifiers: enable **Sign in with Apple** on the App IDs `com.getmintsy.app` and
   `com.getmintsy.app.dev`; create a **Services ID** (`APPLE_CLIENT_ID`) with Sign in with Apple enabled
-  (domain `api.getmintsy.com`, return URL `https://api.getmintsy.com/api/auth/callback/apple`, only used by the
-  web flow). For the web flow only: Keys → create a key with Sign in with Apple and generate the client-secret
+  (domain `app.getmintsy.com`, return URL `https://app.getmintsy.com/api/auth/callback/apple`, only used by the
+  web app's redirect flow; see "Web app"). For the web flow only: Keys → create a key with Sign in with Apple and generate the client-secret
   JWT from it (`APPLE_CLIENT_SECRET`, expires after at most 6 months).
 - Apple Developer → Services → **Sign in with Apple for Email Communication**: register the sending domain
   (`getmintsy.com`, or the Resend subdomain) and/or the address in `EMAIL_FROM`, so password-reset and
   email-change mail reaches `@privaterelay.appleid.com` addresses. The domain's SPF must pass (Resend's records).
+
+## Web app (app.getmintsy.com)
+
+The Next.js web app (`mintsy-web/`) never calls this API from the browser directly. Next.js rewrites
+`https://app.getmintsy.com/api/auth/:path*` → `https://api.getmintsy.com/api/auth/:path*` and
+`/graphql` → `https://api.getmintsy.com/graphql`, so the session cookie is a first-party, host-only cookie on
+`app.getmintsy.com` (`__Secure-better-auth.session_token`, `Secure`, `HttpOnly`, `SameSite=Lax`, no `Domain`).
+No `crossSubDomainCookies`.
+
+- **Base URL** (`src/auth.ts`): Better Auth's dynamic `baseURL` with `allowedHosts` = the `BETTER_AUTH_URL` host plus
+  the web hosts with the same scheme, `protocol` fixed to `BETTER_AUTH_URL`'s, `fallback` = `BETTER_AUTH_URL`, and
+  `advanced.trustedProxyHeaders: true`. A request with `X-Forwarded-Host: app.getmintsy.com` (sent by the proxy)
+  gets `https://app.getmintsy.com/api/auth` as its base URL, so OAuth redirect URIs, Apple's form_post redirect and
+  email links stay on the web host. Anything else (the iPhone app, the `*.run.app` URL, a forged host) uses
+  `BETTER_AUTH_URL` exactly as before; cookie names don't change.
+- **Trusted origins / CORS:** `https://app.getmintsy.com` always, `http://localhost:3000` outside production
+  (`env.webOrigins`), so `Origin` checks, `redirectTo: "https://app.getmintsy.com/reset-password"` and
+  `callbackURL: "https://app.getmintsy.com/profile/settings"` pass. They're also allowed by CORS on every route.
+- **Google / Apple on the web** use the redirect flow (`authClient.signIn.social({ provider, callbackURL })`), which
+  needs `GOOGLE_CLIENT_SECRET` / `APPLE_CLIENT_SECRET`. Redirect URIs to register:
+  `https://app.getmintsy.com/api/auth/callback/google` (Google web client; plus `http://localhost:3000/api/auth/callback/google`
+  for local dev) and `https://app.getmintsy.com/api/auth/callback/apple` (Apple Services ID, domain `app.getmintsy.com`;
+  Apple doesn't accept localhost). Apple POSTs the callback (`form_post`); Better Auth answers with a 302 to the same
+  URL as a GET on the web host, where the `SameSite=Lax` state cookie is sent.
+- Tested in `test/web-auth.test.ts`.
+
+## Watch progress
+
+```graphql
+type EpisodeProgress { id: ID!, episodeId: ID!, bookId: ID!, episodeNumber: Int!, positionSec: Int!, durationSec: Int!,
+                       completed: Boolean!, updatedAt: String!, episode: Episode, book: Book }
+type User     { ..., continueWatching(limit: Int = 10): [EpisodeProgress!]!, progress(bookId: ID!): [EpisodeProgress!]!,
+                finishedBookIds: [ID!]! }
+type Mutation { ..., setProgress(episodeId: ID!, positionSec: Int!, completed: Boolean): EpisodeProgress! }
+```
+
+Stored in `watch_progress` (`src/progress.ts`): `{ userId, episodeId, bookId, episodeNumber, positionSec, durationSec,
+completed, updatedAt }`, unique on `{ userId, episodeId }`, indexed on `{ userId, updatedAt: -1 }` and
+`{ userId, bookId, episodeNumber }`.
+
+- `setProgress` needs a session and a published episode (`BAD_USER_INPUT` "Unknown episode"); locked episodes are
+  `FORBIDDEN` "Premium required". `positionSec` is clamped to `[0, durationSec]`. `completed: true/false` sets it;
+  null keeps it, and a position ≥ 95% of the duration sets it (rewatching a finished episode keeps it finished).
+  Last write wins by server time, except that a backwards move within 2 s of the previous save is ignored as an
+  out-of-order delivery (completion changes always apply).
+- `continueWatching`: one entry per book, most recent activity first: the latest episode if unfinished, otherwise
+  the next unfinished one (position 0 if never started; it may be locked, `episode.locked: true`). Fully finished
+  books are skipped. `limit` 0-50.
+- `finishedBookIds`: published books whose every published episode is completed. A newly published episode makes
+  the book unfinished again and shows up in `continueWatching`.
 
 ## My List (saved books and episodes)
 
@@ -398,7 +456,7 @@ Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https:/
   3. **Deploy:** only on pushes to `main`, and only if steps 1 and 2 pass. It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
 - **Dependabot** opens weekly update PRs for npm packages and GitHub Actions, and they go through the same checks.
 - **Smoke test locally:** `scripts/smoke-test.sh http://localhost:4000`. It creates a throwaway user, so don't point it at production.
-- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (no web client). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, web redirect flow only).
+- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (the web app's origin is built in; see "Web app"). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, needed for the web app's redirect flow).
 - **Production behavior** (`NODE_ENV=production`, set in the image):
   - The OpenAPI auth reference is disabled.
   - GraphQL introspection and Apollo Sandbox are off.

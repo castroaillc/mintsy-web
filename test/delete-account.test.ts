@@ -42,6 +42,10 @@ async function signUp() {
   const userId = response.user.id;
   // Something the cleanup hooks must remove
   await db.collection("saved_items").insertOne({ userId, kind: "book", id: "some-book", savedAt: new Date() });
+  await db.collection("watch_progress").insertOne({
+    userId, episodeId: "some-book-1", bookId: "some-book", episodeNumber: 1,
+    positionSec: 42, durationSec: 100, completed: false, updatedAt: new Date(),
+  });
   return { userId, cookie, token: response.token! };
 }
 
@@ -84,6 +88,10 @@ async function savedCount(userId: string) {
   return db.collection("saved_items").countDocuments({ userId });
 }
 
+async function progressCount(userId: string) {
+  return db.collection("watch_progress").countDocuments({ userId });
+}
+
 describe("delete-user", () => {
   before(async () => {
     await client.connect();
@@ -102,9 +110,11 @@ describe("delete-user", () => {
   test("password user: deletes with the password, even from an old session", async () => {
     const { userId, cookie, token } = await signUp();
     await ageSession(token, 60);
+    assert.equal(await progressCount(userId), 1);
     assert.equal((await deleteUser(cookie, { password })).status, 200);
     assert.equal(await userExists(userId), false);
     assert.equal(await savedCount(userId), 0);
+    assert.equal(await progressCount(userId), 0, "watch_progress is deleted");
   });
 
   test("social-only user: deletes without a password from a fresh session", async () => {
@@ -114,6 +124,7 @@ describe("delete-user", () => {
     assert.equal((await deleteUser(cookie, {})).status, 200);
     assert.equal(await userExists(userId), false);
     assert.equal(await savedCount(userId), 0);
+    assert.equal(await progressCount(userId), 0, "watch_progress is deleted");
   });
 
   test("social-only user: an old session gets REAUTH_REQUIRED", async () => {
@@ -123,6 +134,7 @@ describe("delete-user", () => {
     assert.deepEqual(await deleteUser(cookie, {}), { status: 403, code: "REAUTH_REQUIRED" });
     assert.equal(await userExists(userId), true);
     assert.equal(await savedCount(userId), 1);
+    assert.equal(await progressCount(userId), 1);
     // Clean up
     await ageSession(token, 0);
     assert.equal((await deleteUser(cookie, {})).status, 200);

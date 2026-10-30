@@ -50,15 +50,46 @@ const socialProviders = {
       }
     : {}),
 };
+/**
+ * Base URL. The iPhone app calls the API host (BETTER_AUTH_URL) directly. The web app proxies /api/auth/*
+ * through its own origin (Next.js rewrites, which send X-Forwarded-Host: <web host>), so for those requests
+ * the base URL is the web origin: OAuth redirect URIs (/api/auth/callback/{provider}), Apple's form_post
+ * redirect, and email links then stay on the web host, where its cookies live. Any other host (the *.run.app
+ * URL, a LAN IP in dev) falls back to BETTER_AUTH_URL, which is the old static behaviour.
+ * `protocol` is fixed to BETTER_AUTH_URL's, so cookie names (__Secure- prefix on https) don't change.
+ */
+const apiUrl = new URL(env.betterAuthUrl);
+const webHosts = env.webOrigins
+  .map((origin) => new URL(origin))
+  .filter((url) => url.protocol === apiUrl.protocol)
+  .map((url) => url.host);
+const baseURL = {
+  allowedHosts: [apiUrl.host, ...webHosts],
+  fallback: apiUrl.origin,
+  protocol: apiUrl.protocol === "https:" ? ("https" as const) : ("http" as const),
+};
+
+/** True when an email link's final redirect (callbackURL) is a web page rather than an app deep link. */
+function linkOpensWebApp(url: string) {
+  try {
+    return /^https?:\/\//.test(new URL(url).searchParams.get("callbackURL") ?? "");
+  } catch {
+    return false;
+  }
+}
+
 if (!socialProviders.google) console.warn("  GOOGLE_CLIENT_ID / GOOGLE_IOS_CLIENT_ID not set: Sign in with Google is disabled");
 if (!socialProviders.apple) console.warn("  APPLE_CLIENT_ID not set: Sign in with Apple is disabled");
 
 export const auth = betterAuth({
-  baseURL: env.betterAuthUrl,
+  baseURL,
   secret: env.betterAuthSecret,
   database: mongodbAdapter(db, { client }),
   trustedOrigins: [
     ...env.corsOrigins,
+    // The web app (redirectTo / callbackURL such as https://app.getmintsy.com/reset-password, and the
+    // Origin header of requests proxied through it); http://localhost:3000 outside production only
+    ...env.webOrigins,
     // Mobile app deep-link schemes (mobile-app/app.config.ts): production and dev variants.
     // These also allow the redirectTo / callbackURL values mintsy://reset-password, mintsy://email-changed.
     "mintsy://",
@@ -90,7 +121,9 @@ export const auth = betterAuth({
           heading: "Reset your password",
           paragraphs: [
             "Someone (hopefully you) asked to reset the password for your mintsy account.",
-            "Open this link on the phone where mintsy is installed to choose a new password. It expires in 1 hour.",
+            linkOpensWebApp(url)
+              ? "Open this link to choose a new password. It expires in 1 hour."
+              : "Open this link on the phone where mintsy is installed to choose a new password. It expires in 1 hour.",
           ],
           action: { label: "Reset password", url },
           footer: "If you didn't ask for this, you can ignore this email. Your password won't change.",
@@ -211,6 +244,9 @@ export const auth = betterAuth({
     }),
   },
   advanced: {
+    // Read X-Forwarded-Host (only to pick one of baseURL.allowedHosts; anything else uses the fallback).
+    // The protocol is fixed in baseURL, so X-Forwarded-Proto is never used.
+    trustedProxyHeaders: true,
     // Don't make requests wait for email delivery: a reset request for a known email would otherwise
     // take measurably longer than one for an unknown email. Errors are logged by Better Auth.
     backgroundTasks: { handler: () => {} },
