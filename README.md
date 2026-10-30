@@ -58,3 +58,4 @@ GitHub, the Workload Identity binding trusts it, and the cutover is approved.
 **Web:** its Vercel project uses **Root Directory `apps/web`**; Vercel
 installs from the workspace root lockfile and builds just that app. There is no Vercel
 project for `apps/admin`, and there must never be one.
+# mintsy-web
