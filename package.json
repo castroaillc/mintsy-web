@@ -4,6 +4,8 @@
   "scripts": {
     "dev:web": "pnpm --filter mintsy-web dev",
     "dev:admin": "pnpm --filter mintsy-admin dev",
+    "dev:backend": "pnpm --filter mintsy-backend dev",
+    "test:backend": "pnpm --filter mintsy-backend test",
     "lint": "pnpm -r --no-bail lint",
     "typecheck": "pnpm -r --no-bail typecheck",
     "build": "pnpm -r --no-bail build"

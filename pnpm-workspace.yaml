@@ -4,3 +4,10 @@ packages:
 allowBuilds:
   sharp: false
   unrs-resolver: false
+  # apps/backend (tsx, Apollo Server)
+  esbuild: true
+  "@apollo/protobufjs": true
+
+# Keep each app's peer contexts separate, so the backend's better-auth does not
+# pick up next/react from apps/web (they would end up in the backend image).
+dedupePeerDependents: false

@@ -1,11 +1,18 @@
-# backend
+# mintsy-backend (`apps/backend`)
+
+Part of the `mintsy-web` pnpm monorepo: one lockfile at the repo root, shared with `apps/web` and
+`apps/admin`. Run the commands below from this folder (`apps/backend`), or from the repo root as
+`pnpm --filter mintsy-backend <script>` (`pnpm dev:backend`, `pnpm test:backend`).
+
+> Production still deploys from the standalone `castroaillc/mintsy-backend` repo until the cutover
+> to `castroaillc/mintsy-web` (see "Deploy (production)").
 
 Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/password, Sign in with Google / Apple, OpenAPI plugin), MongoDB.
 
 ## Setup
 
 ```sh
-pnpm install
+pnpm install                  # installs the whole workspace (run anywhere in the repo)
 cp .env.example .env          # set BETTER_AUTH_SECRET: openssl rand -base64 32
 docker compose up -d          # local MongoDB (single-node replica set)
 pnpm dev
@@ -52,7 +59,7 @@ The GraphQL context carries the Better Auth session (`ctx.session`); see the `me
 
 The book catalog lives in the `books` collection (one document per book, episodes embedded).
 **MongoDB is the source of truth.** The studio worker inserts draft books and episodes, and staff edit
-and publish them in the local admin dashboard (`mintsy-admin/`). Books and episodes carry
+and publish them in the local admin dashboard (`apps/admin/` in this monorepo). Books and episodes carry
 `status: "draft" | "published"` (missing = published, for docs that predate drafts).
 
 The public `books` / `book(id)` GraphQL queries go through `listPublishedBooks()` / `getPublishedBook()`
@@ -450,20 +457,21 @@ of each episode the viewer can unlock, in order, deduplicated, first 5. Free vie
 
 Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`).
 
-- **CI/CD** (`.github/workflows/ci-cd.yml`) runs on every push and pull request:
-  1. **Typecheck & build:** `pnpm typecheck` and `pnpm build`.
-  2. **Integration:** builds the production Docker image, runs it against a MongoDB replica set, and runs `scripts/smoke-test.sh` (sign-up, session, GraphQL `me`, origin and push-token checks).
-  3. **Deploy:** only on pushes to `main`, and only if steps 1 and 2 pass. It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
-- **Dependabot** opens weekly update PRs for npm packages and GitHub Actions, and they go through the same checks.
+- **CI/CD** (`.github/workflows/backend.yml` at the repo root) runs on pushes and pull requests that touch `apps/backend/**` or the workflow:
+  1. **Typecheck & build:** `pnpm typecheck` and `pnpm build`, after `pnpm install --frozen-lockfile --filter mintsy-backend...` at the root.
+  2. **Integration:** builds the production Docker image from the repo root (`docker build -f apps/backend/Dockerfile .`), runs it against a MongoDB replica set, and runs `scripts/smoke-test.sh` (sign-up, session, GraphQL `me`, origin and push-token checks).
+  3. **Deploy:** **disabled in this repo (`if: false`)** until `castroaillc/mintsy-web` exists on GitHub, the Workload Identity provider / `github-deployer` service-account binding trusts that repo, and the cutover is approved. Until then production deploys from `castroaillc/mintsy-backend`. Once enabled: only on pushes to `main`, and only if steps 1 and 2 pass. It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
+- **Dependabot** (`.github/dependabot.yml` at the repo root, whole workspace) opens weekly update PRs for npm packages and GitHub Actions, and they go through the same checks.
 - **Smoke test locally:** `scripts/smoke-test.sh http://localhost:4000`. It creates a throwaway user, so don't point it at production.
 - **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (the web app's origin is built in; see "Web app"). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, needed for the web app's redirect flow).
 - **Production behavior** (`NODE_ENV=production`, set in the image):
   - The OpenAPI auth reference is disabled.
   - GraphQL introspection and Apollo Sandbox are off.
   - `exp://` dev origins are not trusted.
-- **Local image test:**
+- **Local image test** (the build context is the repo root, because the lockfile lives there; `apps/backend/Dockerfile.dockerignore` limits it to the backend):
   ```sh
-  docker build -t mintsy-api:local .
+  # from the repo root
+  docker build -f apps/backend/Dockerfile -t mintsy-api:local .
   docker run -p 8090:8080 -e PORT=8080 \
     -e "MONGODB_URI=mongodb://host.docker.internal:27017/mintsy-test?directConnection=true" \
     -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) -e BETTER_AUTH_URL=http://localhost:8090 \

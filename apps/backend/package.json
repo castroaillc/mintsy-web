@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "mintsy-backend",
   "version": "1.0.0",
   "devDependencies": {
     "@types/cors": "^2.8.19",

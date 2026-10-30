@@ -1,9 +1,17 @@
-name: CI/CD
+name: Backend CI/CD
 
+# apps/backend only (GraphQL API + Better Auth). Installs at the repo root (one lockfile)
+# and builds the image from the root context.
 on:
   push:
     branches: ["**"]
+    paths:
+      - "apps/backend/**"
+      - ".github/workflows/backend.yml"
   pull_request:
+    paths:
+      - "apps/backend/**"
+      - ".github/workflows/backend.yml"
   workflow_dispatch:
 
 concurrency:
@@ -21,20 +29,27 @@ jobs:
   check:
     name: Typecheck & build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+      - uses: pnpm/action-setup@v6 # version from the root package.json "packageManager"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --filter mintsy-backend...
+        working-directory: .
       - run: pnpm typecheck
       - run: pnpm build
 
   integration:
     name: Docker image + auth smoke test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
     steps:
       - uses: actions/checkout@v4
 
@@ -55,7 +70,8 @@ jobs:
             "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })"
 
       - name: Build production image
-        run: docker build -t mintsy-api:ci .
+        working-directory: .
+        run: docker build -f apps/backend/Dockerfile -t mintsy-api:ci .
 
       - name: Run image
         run: |
@@ -76,7 +92,8 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --filter mintsy-backend...
+        working-directory: .
       - name: Tests (account deletion)
         run: pnpm test
         env:
@@ -89,7 +106,12 @@ jobs:
   deploy:
     name: Deploy to Cloud Run
     needs: [check, integration]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # DISABLED. Production still deploys from castroaillc/mintsy-backend. This job stays off
+    # until (1) the castroaillc/mintsy-web GitHub repo exists, (2) the Workload Identity
+    # provider / github-deployer service-account binding is updated to trust that repo, and
+    # (3) the user approves the cutover. Then restore:
+    #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -107,7 +129,7 @@ jobs:
       - name: Build and push image
         run: |
           gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-          docker build -t "$IMAGE:$GITHUB_SHA" .
+          docker build -f apps/backend/Dockerfile -t "$IMAGE:$GITHUB_SHA" .
           docker push "$IMAGE:$GITHUB_SHA"
 
       # Only swaps the image; env vars, secrets and scaling stay as configured on the service

@@ -1,0 +1,13 @@
+# Used by `docker build -f apps/backend/Dockerfile .` (repo-root context).
+# Allowlist: only the root manifests and what the backend build needs, so apps/web,
+# apps/admin, node_modules, .next, dist and env files never enter the image context.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/backend/package.json
+!apps/backend/tsconfig.json
+!apps/backend/src
+**/.env*
+**/node_modules
+**/dist
