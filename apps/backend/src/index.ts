@@ -14,6 +14,7 @@ import { ensurePushIndexes } from "./push.js";
 import { ensureSavedIndexes } from "./saved.js";
 import { revenueCatWebhook } from "./revenuecat-webhook.js";
 import { env } from "./env.js";
+import { versionHandler } from "./version.js";
 import { typeDefs, resolvers } from "./graphql/schema.js";
 import { createContext, type Context } from "./graphql/context.js";
 
@@ -43,6 +44,9 @@ async function main() {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  // Which build is running (package version, commit, build time, Cloud Run revision); public
+  app.get("/version", versionHandler);
 
   const apollo = new ApolloServer<Context>({
     typeDefs,

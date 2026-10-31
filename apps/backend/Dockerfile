@@ -24,6 +24,11 @@ WORKDIR /app
 COPY --from=build /out/package.json ./
 COPY --from=build /out/node_modules ./node_modules
 COPY --from=build /repo/apps/backend/dist ./dist
+# Reported by GET /version. CI passes --build-arg GIT_SHA=$GITHUB_SHA --build-arg BUILD_TIME=<UTC ISO>;
+# empty (unset) shows as null. Declared last so changing them doesn't invalidate the layers above.
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV GIT_SHA=$GIT_SHA BUILD_TIME=$BUILD_TIME
 USER node
 # Cloud Run provides PORT (8080); src/env.ts reads it
 EXPOSE 8080

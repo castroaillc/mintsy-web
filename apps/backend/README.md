@@ -39,6 +39,7 @@ pnpm dev
 | `POST /graphql` | GraphQL API (Apollo Sandbox on GET in dev); `books` / `book(id)` serve the catalog, `search(query)` searches it, `setProgress` / `me.continueWatching` track watch progress |
 | `POST /webhooks/revenuecat` | RevenueCat webhook (subscription events → `entitlements`); see "Premium" |
 | `GET /health` | Health check |
+| `GET /version` | Running build: `{ name, version, commit, buildTime, revision, env, startedAt, uptimeSeconds }`. `version` from package.json; `commit` / `buildTime` from the `GIT_SHA` / `BUILD_TIME` Docker build args (in dev `commit` is `git rev-parse --short HEAD` when available, else null); `revision` is Cloud Run's `K_REVISION` (null elsewhere); `env` is `NODE_ENV` (`development` when unset). Public, no database, `Cache-Control: no-store` |
 
 The GraphQL context carries the Better Auth session (`ctx.session`); see the `me` query in `src/graphql/schema.ts`.
 
@@ -471,7 +472,8 @@ Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https:/
 - **Local image test** (the build context is the repo root, because the lockfile lives there; `apps/backend/Dockerfile.dockerignore` limits it to the backend):
   ```sh
   # from the repo root
-  docker build -f apps/backend/Dockerfile -t mintsy-api:local .
+  docker build -f apps/backend/Dockerfile -t mintsy-api:local \
+    --build-arg GIT_SHA=$(git rev-parse HEAD) --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) .
   docker run -p 8090:8080 -e PORT=8080 \
     -e "MONGODB_URI=mongodb://host.docker.internal:27017/mintsy-test?directConnection=true" \
     -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) -e BETTER_AUTH_URL=http://localhost:8090 \

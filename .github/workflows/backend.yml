@@ -71,7 +71,11 @@ jobs:
 
       - name: Build production image
         working-directory: .
-        run: docker build -f apps/backend/Dockerfile -t mintsy-api:ci .
+        run: |
+          docker build -f apps/backend/Dockerfile -t mintsy-api:ci \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
 
       - name: Run image
         run: |
@@ -83,6 +87,8 @@ jobs:
             -e CORS_ORIGINS= \
             mintsy-api:ci
           for i in $(seq 1 30); do curl -sf http://localhost:8080/health && break; sleep 1; done
+          # The image reports the commit it was built from
+          curl -sf http://localhost:8080/version | tee /dev/stderr | grep -q "\"commit\":\"$GITHUB_SHA\""
 
       - name: Smoke test
         run: scripts/smoke-test.sh http://localhost:8080
@@ -106,12 +112,9 @@ jobs:
   deploy:
     name: Deploy to Cloud Run
     needs: [check, integration]
-    # DISABLED. Production still deploys from castroaillc/mintsy-backend. This job stays off
-    # until (1) the castroaillc/mintsy-web GitHub repo exists, (2) the Workload Identity
-    # provider / github-deployer service-account binding is updated to trust that repo, and
-    # (3) the user approves the cutover. Then restore:
-    #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    if: false
+    # Production (Cloud Run mintsy-api) deploys from this repo on pushes to main.
+    # Workload Identity (provider github-oidc) only trusts castroaillc/mintsy-web on refs/heads/main.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -129,7 +132,10 @@ jobs:
       - name: Build and push image
         run: |
           gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-          docker build -f apps/backend/Dockerfile -t "$IMAGE:$GITHUB_SHA" .
+          docker build -f apps/backend/Dockerfile -t "$IMAGE:$GITHUB_SHA" \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
           docker push "$IMAGE:$GITHUB_SHA"
 
       # Only swaps the image; env vars, secrets and scaling stay as configured on the service
@@ -145,3 +151,17 @@ jobs:
         run: |
           URL=$(gcloud run services describe "$SERVICE" --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
           curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/health"
+
+      - name: Version check (serving this commit)
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
+          for i in $(seq 1 10); do
+            BODY=$(curl --fail --silent --show-error "$URL/version" || true)
+            echo "$BODY"
+            if printf '%s' "$BODY" | grep -qF "\"commit\":\"$GITHUB_SHA\""; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::$URL/version does not report commit $GITHUB_SHA"
+          exit 1
