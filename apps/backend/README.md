@@ -9,6 +9,15 @@ Part of the `mintsy-web` pnpm monorepo: one lockfile at the repo root, shared wi
 
 Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/password, Sign in with Google / Apple, OpenAPI plugin), MongoDB.
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/README.md) and is published with GitBook Git Sync
+(`.gitbook.yaml`, project directory `apps/backend`). Start with [`docs/README.md`](docs/README.md); the
+table of contents is [`docs/SUMMARY.md`](docs/SUMMARY.md). It covers local setup, environment variables,
+architecture and MongoDB collections, the full GraphQL reference, authentication, Premium, push, media,
+the catalog and deployment. When you change the schema, update `docs/graphql-api/` too (see
+[`docs/graphql-api/changing-the-schema.md`](docs/graphql-api/changing-the-schema.md)).
+
 ## Setup
 
 ```sh
