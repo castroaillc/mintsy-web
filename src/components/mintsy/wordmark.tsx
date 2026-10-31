@@ -6,9 +6,11 @@ type WordmarkProps = {
   variant?: 'text' | 'tile';
   /** Font size of the wordmark, or the tile's edge length. */
   size?: number;
+  /** Text wordmark drawn on an always-dark tint (e.g. the wide welcome's cover pane). */
+  onTint?: boolean;
 };
 
-export function Wordmark({ variant = 'text', size }: WordmarkProps) {
+export function Wordmark({ variant = 'text', size, onTint }: WordmarkProps) {
   if (variant === 'tile') {
     const edge = size ?? 40;
     const font = Math.round(edge * 0.7);
@@ -35,7 +37,7 @@ export function Wordmark({ variant = 'text', size }: WordmarkProps) {
     <Text
       accessibilityRole="header"
       style={{ fontSize: font, letterSpacing: font >= 26 ? -0.6 : -0.5 }}
-      className="font-display text-foreground"
+      className={`font-display ${onTint ? 'text-on-tint' : 'text-foreground'}`}
     >
       mintsy<Text style={{ fontSize: font }} className="font-display text-brand">.</Text>
     </Text>
