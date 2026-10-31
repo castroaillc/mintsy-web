@@ -9,6 +9,10 @@ Workflow: `.github/workflows/backend.yml` at the repository root ("Backend CI/CD
 
 Superseded runs on the same branch are cancelled, except on `main`, where a deploy is never cancelled mid-way.
 
+{% hint style="warning" %}
+The path filter is `apps/backend/**`, which includes `apps/backend/docs/**`. A documentation-only push to `main` runs the whole workflow, including a production deploy of the current code.
+{% endhint %}
+
 ## Jobs
 
 | Job | Steps |

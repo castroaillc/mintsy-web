@@ -11,20 +11,22 @@ Production runs on **Google Cloud Run** and is served at **https://api.getmintsy
 | Media | `gs://mintsy-media` |
 
 {% hint style="danger" %}
-**Pushing to `main` deploys production.** The `deploy` job in `.github/workflows/backend.yml` runs on every push to `main` that touches `apps/backend/**` or the workflow, once the checks pass. Merging a pull request into `main` counts. Get approval before you push or merge to `main`.
+**Pushing to `main` deploys production.** The `deploy` job in `.github/workflows/backend.yml` runs on every push to `main` that touches `apps/backend/**` or the workflow, once the checks pass. That includes documentation-only changes under `apps/backend/docs/`, and merging a pull request into `main`. Get approval before you push or merge to `main`.
 {% endhint %}
 
 ## Which repository deploys production
 
 There are two repositories with backend code:
 
-* `castroaillc/mintsy-backend`: the original standalone backend repo, now **frozen**. Its `main` has been what production deploys from.
-* `castroaillc/mintsy-web`: this monorepo (`apps/backend`). The cutover moves production deploys here.
+* `castroaillc/mintsy-web`: this monorepo (`apps/backend`). **Production deploys from its `main`.**
+* `castroaillc/mintsy-backend`: the original standalone backend repo, now **frozen**. Production used to deploy from it.
 
-As of commit `7e3a2ff` ("backend: add GET /version and enable Cloud Run deploy from mintsy-web"), `main` of `castroaillc/mintsy-web` has the deploy job **enabled** (`if: github.event_name == 'push' && github.ref == 'refs/heads/main'`), and the workflow notes that Workload Identity only trusts `castroaillc/mintsy-web` on `refs/heads/main`. Before that commit the job was disabled with `if: false`. The "Deploy (production)" section of the backend `README.md` still describes the disabled state.
+Commit `7e3a2ff` ("backend: add GET /version and enable Cloud Run deploy from mintsy-web") enabled the deploy job (`if: github.event_name == 'push' && github.ref == 'refs/heads/main'`); before it, the job was disabled with `if: false`. The workflow notes that Workload Identity only trusts `castroaillc/mintsy-web` on `refs/heads/main`. Since 2026-10-31 the "Deploy to Cloud Run" job has completed successfully from `castroaillc/mintsy-web` `main`, and `GET https://api.getmintsy.com/version` reports `castroaillc/mintsy-web` commits.
+
+The "Deploy (production)" section of the backend `README.md` still describes the disabled state and needs updating.
 
 {% hint style="warning" %}
-TODO: confirm the cutover status: whether production now deploys only from `castroaillc/mintsy-web`, and whether `castroaillc/mintsy-backend` can still deploy. Until that's confirmed, treat a push to `main` in **either** repository as a production deploy.
+TODO: confirm that `castroaillc/mintsy-backend` can no longer deploy (its workflow disabled or its Workload Identity binding removed). Until then, a push to its `main` could still replace production with an older build.
 {% endhint %}
 
 ## What a deploy does
