@@ -1,0 +1,7 @@
+# GitBook Git Sync configuration for the mintsy backend docs.
+# In GitBook, set the project directory to apps/backend; paths below are relative to it.
+root: ./docs/
+
+structure:
+  readme: README.md
+  summary: SUMMARY.md
