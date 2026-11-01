@@ -26,9 +26,15 @@ importers:
       '@remotion/media':
         specifier: 4.0.539
         version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@remotion/noise':
+        specifier: 4.0.539
+        version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@remotion/renderer':
         specifier: 4.0.539
         version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@remotion/sfx':
+        specifier: 4.0.539
+        version: 4.0.539
       '@remotion/transitions':
         specifier: 4.0.539
         version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -709,6 +715,9 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
+  '@remotion/noise@4.0.539':
+    resolution: {integrity: sha512-eVCOdz0JdWikNLC4tfe/22VcaWMKZF4enZvhX8Cbekagd6lc6qe6vzXZRQC4LHabwFNEQbWQWX+Ic+mFGSKPMg==}
+
   '@remotion/openai-whisper@4.0.539':
     resolution: {integrity: sha512-XoTIiqZRpwR6Zc9OGQD5EGJBzDVpn11dVA81YCGU/LEL1tOYcsCiG1VLV5cuRA5TSWY1EJR1MRv8omI/s8rJNA==}
 
@@ -732,6 +741,9 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
+
+  '@remotion/sfx@4.0.539':
+    resolution: {integrity: sha512-LWMbjEKnyCepVnjqtzMcxSQ2d4bT4LgnejxNVc1mRH8K5r8FPfnoLjFtiPhdCLwRjn+5hnhYJ7g8gPnlUd9nQA==}
 
   '@remotion/shapes@4.0.539':
     resolution: {integrity: sha512-GE2F0v/VU+gOvL7OFs7/JEmki9vtesJSBtiBJBzh1b5oUCaiuheH2pwltvJCNRLcafd3z7k5FNUzda33p+X7jg==}
@@ -1818,6 +1830,9 @@ packages:
   signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
 
+  simplex-noise@4.0.1:
+    resolution: {integrity: sha512-zl/+bdSqW7HJOQ0oDbxrNYaF4F5ik0i7M6YOYmEoIJNtg16NpvWaTTM1Y7oV/7T0jFljawLgYPS81Uu2rsfo1A==}
+
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
@@ -2645,6 +2660,14 @@ snapshots:
       remotion: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       zod: 4.5.4
 
+  '@remotion/noise@4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      remotion: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      simplex-noise: 4.0.1
+    transitivePeerDependencies:
+      - react
+      - react-dom
+
   '@remotion/openai-whisper@4.0.539':
     dependencies:
       '@remotion/captions': 4.0.539
@@ -2692,6 +2715,8 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       remotion: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+
+  '@remotion/sfx@4.0.539': {}
 
   '@remotion/shapes@4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -3855,6 +3880,8 @@ snapshots:
   shebang-regex@3.0.0: {}
 
   signal-exit@3.0.7: {}
+
+  simplex-noise@4.0.1: {}
 
   sisteransi@1.0.5: {}
 

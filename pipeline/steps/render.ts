@@ -24,8 +24,10 @@ export async function render(bookId: string, epDir: string) {
   // scenes.json is in the collage format (beats) or the older text-card format (visual)
   const collage = voice.scenes.every((s) => "beats" in s);
   const compositionId = collage ? "CollageEpisode" : "Episode";
+  // Polish (spring motion, scene wipes, word captions, SFX, music ducking) is on unless STUDIO_POLISH=0
+  const polish = process.env.STUDIO_POLISH !== "0";
   const inputProps: CollageEpisodeProps | EpisodeProps = collage
-    ? { ...meta, scenes: voice.scenes as TimedCollageScene[] }
+    ? { ...meta, scenes: voice.scenes as TimedCollageScene[], polish }
     : { ...meta, author: book.author, tint: book.tint, scenes: voice.scenes as TimedScene[] };
   await copyBrandAssets(STUDIO_DIR, epDir);
   // For previewing in Studio: npx remotion studio --public-dir <epDir> --props <epDir>/props.json, then open the composition
@@ -55,16 +57,30 @@ export async function render(bookId: string, epDir: string) {
   await run("ffmpeg", ["-v", "error", "-y", "-i", raw, "-c", "copy", "-movflags", "+faststart", path.join(epDir, files.video)]);
   await rm(raw);
 
-  // Thumbnail: the second scene once its content has animated in, at 2× the app's 132pt thumbnail
-  const thumbFrame = INTRO_FRAMES + sceneFrames(voice.scenes[0].audioSec) + 45;
-  await renderStill({
-    serveUrl,
-    composition,
-    inputProps,
-    frame: Math.min(thumbFrame, composition.durationInFrames - 1),
-    output: path.join(epDir, files.thumbnail),
-    imageFormat: "jpeg",
-    scale: 264 / composition.width,
-  });
+  if (collage && polish) {
+    // Designed thumbnail (src/collage/covers.tsx) at 4× the app's 132pt thumbnail, sharp on 3× screens
+    const thumb = await selectComposition({ serveUrl, id: "CollageThumbnail", inputProps });
+    await renderStill({
+      serveUrl,
+      composition: thumb,
+      inputProps,
+      output: path.join(epDir, files.thumbnail),
+      imageFormat: "jpeg",
+      jpegQuality: 88,
+      scale: 528 / thumb.width,
+    });
+  } else {
+    // Thumbnail: the second scene once its content has animated in, at 2× the app's 132pt thumbnail
+    const thumbFrame = INTRO_FRAMES + sceneFrames(voice.scenes[0].audioSec) + 45;
+    await renderStill({
+      serveUrl,
+      composition,
+      inputProps,
+      frame: Math.min(thumbFrame, composition.durationInFrames - 1),
+      output: path.join(epDir, files.thumbnail),
+      imageFormat: "jpeg",
+      scale: 264 / composition.width,
+    });
+  }
   console.log(`  wrote ${files.video} and ${files.thumbnail}`);
 }

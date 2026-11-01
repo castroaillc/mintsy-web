@@ -192,6 +192,8 @@ export type TimedCollageScene = CollageScene & {
   audioSec: number;
   /** Seconds from scene start at which each cue phrase is spoken, keyed by cue text. */
   cueSec: Record<string, number>;
+  /** Spoken words with timings (seconds from scene start); missing in renders made before word timings. */
+  words?: { text: string; startSec: number; endSec: number }[];
 };
 
 export type CollageEpisodeProps = {
@@ -199,4 +201,6 @@ export type CollageEpisodeProps = {
   chapter: number;
   episodeTitle: string;
   scenes: TimedCollageScene[];
+  /** Motion/sound polish: spring transitions, camera drift, scene wipes, word captions, SFX, music ducking. */
+  polish?: boolean;
 };

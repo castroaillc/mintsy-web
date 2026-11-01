@@ -10,12 +10,13 @@ import type { Db, ObjectId } from "mongodb";
 
 import { runEpisode, type StepName } from "./episode";
 import { bookDir, episodeDir, files } from "./paths";
+import { renderCover, uploadCover } from "./steps/cover";
 import { type BookInfo, ingest } from "./steps/ingest";
 import { type CatalogEpisode, episodeFields, mediaPrefix, uploadMedia } from "./steps/publish";
 import type { Script } from "./steps/script";
 import { normalize, readJson, writeJson } from "./util";
 
-export type JobKind = "ingest" | "script" | "render";
+export type JobKind = "ingest" | "script" | "render" | "upload" | "cover";
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";
 export interface StudioJob {
   _id: ObjectId;
@@ -24,11 +25,15 @@ export interface StudioJob {
   chapter?: number;
   pdfPath?: string;
   regenerate?: boolean;
+  /** render: render locally only (work/<book>/ep-NN), no upload and no change to `books`. */
+  preview?: boolean;
+  /** cover: also upload it and set the book's coverPath (live at once if the book is published). */
+  upload?: boolean;
   scriptJson?: unknown;
   scenesJson?: unknown;
   status: JobStatus;
   log: string[];
-  result?: IngestResult | ScriptResult | RenderResult;
+  result?: JobResult;
   error?: string;
   createdAt: Date;
   startedAt?: Date;
@@ -48,6 +53,16 @@ export interface RenderResult {
   videoPath: string;
   thumbnailPath: string;
 }
+/** render with preview: true. */
+export interface PreviewResult {
+  durationSec: number;
+  preview: true;
+}
+export interface CoverResult {
+  /** Set when the job uploaded the cover. */
+  coverPath?: string;
+}
+export type JobResult = IngestResult | ScriptResult | RenderResult | PreviewResult | CoverResult;
 
 type ContentStatus = "draft" | "published";
 type EpisodeDoc = CatalogEpisode & { status?: ContentStatus; updatedAt?: Date };
@@ -61,6 +76,8 @@ interface BookDoc {
   description: string;
   order: number;
   episodes: EpisodeDoc[];
+  /** Rendered cover in the media bucket (cover job with upload). */
+  coverPath?: string;
   status?: ContentStatus;
   updatedAt?: Date;
 }
@@ -70,12 +87,14 @@ const DEFAULT_TINT = "#3B3426";
 
 export const DRY_RUN = process.env.STUDIO_WORKER_DRY_RUN === "1";
 
-export async function runJob(db: Db, job: StudioJob): Promise<IngestResult | ScriptResult | RenderResult> {
+export async function runJob(db: Db, job: StudioJob): Promise<JobResult> {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(job.bookId ?? "")) throw new Error(`Invalid bookId "${job.bookId}" (use lowercase letters, digits and dashes)`);
   if (job.kind === "ingest") return DRY_RUN ? dryIngest(db, job) : ingestJob(db, job);
+  if (job.kind === "cover") return DRY_RUN ? dryCover(db, job) : coverJob(db, job);
   const chapter = requireChapter(job);
   if (job.kind === "script") return DRY_RUN ? dryScript(job, chapter) : scriptJob(job, chapter);
   if (job.kind === "render") return DRY_RUN ? dryRender(db, job, chapter) : renderJob(db, job, chapter);
+  if (job.kind === "upload") return DRY_RUN ? dryUpload(db, job, chapter) : uploadJob(db, job, chapter);
   throw new Error(`Unknown job kind "${String(job.kind)}"`);
 }
 
@@ -158,6 +177,13 @@ async function ingestJob(db: Db, job: StudioJob): Promise<IngestResult> {
   const info = await ingest(job.pdfPath, job.bookId);
   console.log(`  ${info.title} by ${info.author}: ${info.chapters.length} chapters`);
   await insertDraftBook(db, job.bookId, info);
+  // A local cover to look at straight away; publishing it is a separate cover job
+  try {
+    console.log("cover:");
+    await renderCover(job.bookId, { title: info.title, author: info.author, category: info.category, coverTone: info.coverTone });
+  } catch (err) {
+    console.log(`  cover not rendered: ${err instanceof Error ? err.message : String(err)}`);
+  }
   return ingestResult(info);
 }
 
@@ -169,8 +195,8 @@ async function scriptJob(job: StudioJob, chapter: number): Promise<ScriptResult>
   };
 }
 
-async function renderJob(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
-  await ensureBook(db, job.bookId);
+async function renderJob(db: Db, job: StudioJob, chapter: number): Promise<RenderResult | PreviewResult> {
+  if (!job.preview) await ensureBook(db, job.bookId);
   const dir = episodeDir(job.bookId, chapter);
   await mkdir(dir, { recursive: true });
 
@@ -187,11 +213,45 @@ async function renderJob(db: Db, job: StudioJob, chapter: number): Promise<Rende
   if (job.scriptJson !== undefined || job.scenesJson !== undefined) console.log("wrote edited script/scenes");
 
   await runEpisode(job.bookId, chapter, from, "render");
+  if (job.preview) {
+    const { durationSec } = await episodeFields(chapter, dir);
+    console.log("preview: rendered locally; nothing uploaded");
+    return { durationSec, preview: true };
+  }
   console.log("upload:");
   const fields = await episodeFields(chapter, dir);
   const media = await uploadMedia(job.bookId, chapter, dir);
   await upsertDraftEpisode(db, job.bookId, { ...fields, ...media });
   return { durationSec: fields.durationSec, ...media };
+}
+
+/** Uploads the episode as it was last rendered (e.g. by a preview) and saves it as a draft. */
+async function uploadJob(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
+  await ensureBook(db, job.bookId);
+  const dir = episodeDir(job.bookId, chapter);
+  for (const f of [files.video, files.thumbnail, files.script, files.voice]) {
+    if (!existsSync(path.join(dir, f))) throw new Error(`No ${f} for chapter ${chapter}: render a preview first`);
+  }
+  console.log("upload:");
+  const fields = await episodeFields(chapter, dir);
+  const media = await uploadMedia(job.bookId, chapter, dir);
+  await upsertDraftEpisode(db, job.bookId, { ...fields, ...media });
+  return { durationSec: fields.durationSec, ...media };
+}
+
+/** Renders the book's cover from its current metadata in `books`; with upload, publishes it as coverPath. */
+async function coverJob(db: Db, job: StudioJob): Promise<CoverResult> {
+  await ensureBook(db, job.bookId);
+  const book = await booksOf(db).findOne({ _id: job.bookId }, { projection: { title: 1, author: 1, category: 1, coverTone: 1 } });
+  if (!book) throw new Error(`Book "${job.bookId}" is not in books`);
+  console.log("cover:");
+  await renderCover(job.bookId, { title: book.title, author: book.author, category: book.category, coverTone: book.coverTone });
+  if (!job.upload) return {};
+  console.log("upload:");
+  const coverPath = await uploadCover(job.bookId);
+  await booksOf(db).updateOne({ _id: job.bookId }, { $set: { coverPath, updatedAt: new Date() } });
+  console.log(`  set coverPath on "${job.bookId}"`);
+  return { coverPath };
 }
 
 async function narrationChanged(dir: string) {
@@ -270,12 +330,29 @@ async function dryScript(job: StudioJob, chapter: number): Promise<ScriptResult>
   return { script, scenes: fakeScenes(script) };
 }
 
-async function dryRender(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
+async function dryUpload(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
+  return (await dryRender(db, { ...job, preview: false }, chapter, ["upload"])) as RenderResult;
+}
+
+async function dryCover(db: Db, job: StudioJob): Promise<CoverResult> {
+  await fakeSteps(job.upload ? ["cover", "upload"] : ["cover"]);
+  if (!job.upload) return {};
+  const coverPath = `books/${job.bookId}/cover-dryrun.jpg`;
+  await booksOf(db).updateOne({ _id: job.bookId }, { $set: { coverPath, updatedAt: new Date() } });
+  return { coverPath };
+}
+
+async function dryRender(
+  db: Db,
+  job: StudioJob,
+  chapter: number,
+  steps = ["voice", "render 0%", "render 50%", "render 100%", "upload"],
+): Promise<RenderResult | PreviewResult> {
   if (!(await booksOf(db).findOne({ _id: job.bookId }, { projection: { _id: 1 } }))) {
     await insertDraftBook(db, job.bookId, fakeBook(job.bookId));
   }
   if (job.scriptJson !== undefined || job.scenesJson !== undefined) console.log("wrote edited script/scenes (dry run: not saved)");
-  await fakeSteps(["voice", "render 0%", "render 50%", "render 100%", "upload"]);
+  await fakeSteps(job.preview ? steps.filter((s) => s !== "upload") : steps);
   const edited = job.scriptJson as Partial<Script> | undefined;
   const script = { ...fakeScript(job.bookId, chapter), ...(edited && typeof edited === "object" ? edited : {}) };
   const hash = createHash("sha256").update(`${job._id.toHexString()}|${JSON.stringify(script)}`).digest("hex").slice(0, 8);
@@ -283,6 +360,7 @@ async function dryRender(db: Db, job: StudioJob, chapter: number): Promise<Rende
   const narration = Array.isArray(script.narration) ? script.narration : [];
   const transcript = narration.flatMap((p) => p.match(/[^.!?]+[.!?]+/g) ?? [p]).map((text, i) => ({ startSec: 4 + i * 6, text: text.trim() }));
   const durationSec = 4 + transcript.length * 6 + 2;
+  if (job.preview) return { durationSec, preview: true };
   const episode = {
     number: chapter,
     title: String(script.title),

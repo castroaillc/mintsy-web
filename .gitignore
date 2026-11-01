@@ -10,3 +10,6 @@ out
 work/
 .env
 brand/source/
+
+# Local TTS environment
+tts/.venv/

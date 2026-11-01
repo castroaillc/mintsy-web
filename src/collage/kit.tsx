@@ -102,7 +102,7 @@ export const Stripes: React.FC<{
 };
 
 /** Paper grain and a dark vignette, over everything. */
-export const PaperFinish: React.FC = () => {
+export const PaperFinish: React.FC<{ vignette?: number }> = ({ vignette = 0.55 }) => {
   const frame = useCurrentFrame();
   // Re-seed the grain a few times a second, like film
   const seed = Math.floor(frame / 4) % 8;
@@ -131,7 +131,7 @@ export const PaperFinish: React.FC = () => {
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(20,12,8,0.55) 100%)",
+            `radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(20,12,8,${vignette}) 100%)`,
         }}
       />
     </AbsoluteFill>

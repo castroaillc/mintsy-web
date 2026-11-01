@@ -4,6 +4,7 @@ import {
   calculateCollageMetadata,
   CollageEpisode,
 } from "./collage/CollageEpisode";
+import { BookCover, CollageThumbnail } from "./collage/covers";
 import { calculateEpisodeMetadata, Episode } from "./episode/Episode";
 import { FPS, HEIGHT, WIDTH } from "./episode/timing";
 import {
@@ -352,6 +353,35 @@ export const RemotionRoot: React.FC = () => {
               },
             },
           ],
+        }}
+      />
+      {/* Stills (renderStill): episode thumbnail 16:9 and book cover 2:3 */}
+      <Composition
+        id="CollageThumbnail"
+        component={CollageThumbnail}
+        durationInFrames={1}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{
+          bookTitle: "How to Live on 24 Hours a Day",
+          chapter: 1,
+          episodeTitle: "The Daily Miracle",
+          scenes: [],
+        }}
+      />
+      <Composition
+        id="BookCover"
+        component={BookCover}
+        durationInFrames={1}
+        fps={FPS}
+        width={1000}
+        height={1500}
+        defaultProps={{
+          title: "How to Live on 24 Hours a Day",
+          author: "Arnold Bennett",
+          category: "Productivity",
+          coverTone: "#E8DFCC",
         }}
       />
     </>

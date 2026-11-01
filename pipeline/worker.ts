@@ -15,6 +15,23 @@ const WORKER_ID = process.env.STUDIO_WORKER_ID || os.hostname();
 const POLL_MS = Number(process.env.STUDIO_WORKER_POLL_MS) || 2000;
 const LOG_LINES = 500;
 const FLUSH_MS = 1000;
+/** How often the worker writes its heartbeat to `studio_workers`. The admin treats a worker as gone after 15s. */
+const HEARTBEAT_MS = 5000;
+
+/** One doc per worker (`_id` = worker id) so the admin can tell whether anything is consuming this database's queue. */
+type StudioWorker = {
+  _id: string;
+  pid: number;
+  dryRun: boolean;
+  startedAt: Date;
+  lastSeenAt: Date;
+  currentJobId: StudioJob["_id"] | null;
+  /** Job features this worker understands; the admin won't queue a job a running worker would mishandle. */
+  capabilities: string[];
+};
+
+/** Bump when the worker learns a job feature the admin must not send to older workers. */
+const CAPABILITIES = ["render-preview", "upload", "cover"];
 
 let stopping = false;
 let wake: (() => void) | undefined;
@@ -97,6 +114,7 @@ async function main() {
   const client = await new MongoClient(MONGODB_URI).connect();
   const jobs = client.db(MONGODB_DB).collection<StudioJob>("studio_jobs");
   await jobs.createIndex({ status: 1, createdAt: 1 });
+  const workers = client.db(MONGODB_DB).collection<StudioWorker>("studio_workers");
 
   // Jobs this machine left running (crash, killed terminal) can't be resumed
   const stale = await jobs.updateMany(
@@ -109,6 +127,32 @@ async function main() {
   if (stale.modifiedCount) console.log(`Marked ${stale.modifiedCount} stale running job(s) as failed`);
 
   let current: StudioJob | null = null;
+
+  const startedAt = new Date();
+  const beat = () =>
+    workers
+      .updateOne(
+        { _id: WORKER_ID },
+        {
+          $set: {
+            pid: process.pid,
+            dryRun: DRY_RUN,
+            startedAt,
+            lastSeenAt: new Date(),
+            currentJobId: current?._id ?? null,
+            capabilities: CAPABILITIES,
+          },
+        },
+        { upsert: true },
+      )
+      .catch((err: unknown) => console.error("could not write worker heartbeat:", err instanceof Error ? err.message : err));
+  await beat();
+  const heartbeat = setInterval(() => void beat(), HEARTBEAT_MS);
+  const signOff = () => {
+    clearInterval(heartbeat);
+    return workers.deleteOne({ _id: WORKER_ID }).catch(() => undefined);
+  };
+
   process.on("SIGINT", () => {
     if (!stopping) {
       stopping = true;
@@ -121,9 +165,10 @@ async function main() {
       console.log("\nAborting the current job");
       void jobs
         .updateOne({ _id: id, status: "running" }, { $set: { status: "failed", error: "Aborted (worker stopped)", finishedAt: new Date() } })
+        .then(signOff)
         .finally(() => client.close().finally(() => process.exit(130)));
     } else {
-      process.exit(130);
+      void signOff().finally(() => client.close().finally(() => process.exit(130)));
     }
   });
 
@@ -131,6 +176,7 @@ async function main() {
   console.log("Waiting for jobs; Ctrl-C to stop");
   while (!stopping) {
     current = await claim(jobs);
+    if (current) void beat();
     if (!current) {
       await idle(POLL_MS);
       continue;
@@ -138,6 +184,7 @@ async function main() {
     await work(jobs, current);
     current = null;
   }
+  await signOff();
   await client.close();
   console.log("Worker stopped");
 }
