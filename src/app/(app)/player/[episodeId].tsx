@@ -1,8 +1,8 @@
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useHinge } from 'expo-hinge';
 import { StatusBar } from 'expo-status-bar';
 import { VideoView, type VideoPlayer } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -34,6 +34,7 @@ import { useVideoClock } from '@/hooks/use-video-clock';
 import { READABLE_MAX_WIDTH, supportsArrangementView, useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { useDownloads } from '@/lib/downloads';
+import { followPhoneOrientation, lockPortrait } from '@/lib/orientation';
 import { usePreferences } from '@/lib/preferences';
 import { isEpisodeLocked, openPaywall, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
@@ -52,6 +53,9 @@ const PANEL_HEIGHT = 260;
 /** Clear band (pt) kept on each side of a half-folded device's fold; nothing tappable sits in it. */
 const FOLD_CLEARANCE = 24;
 
+/** Below this window height (pt), landscape means a phone on its side: the video fills the screen. */
+const SIDEWAYS_MAX_HEIGHT = 500;
+
 function close() {
   if (router.canGoBack()) router.back();
   else router.replace('/');
@@ -63,6 +67,14 @@ function goToEpisode(episode: Episode) {
 }
 
 export default function PlayerScreen() {
+  // Per screen, not per episode, so autoplaying the next episode doesn't snap back to portrait
+  useFocusEffect(
+    useCallback(() => {
+      followPhoneOrientation();
+      return lockPortrait;
+    }, []),
+  );
+
   return (
     <>
       {/* Video player: keep system bars horizontal (no iPhone Duo rail). Constant for this screen. */}
@@ -275,12 +287,13 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const goTo = useGoToEpisode();
 
   // Layout is picked per render so folding, rotating and Split View switch it without losing state
-  const { wide } = useWideLayout();
+  const { wide, landscape, height } = useWideLayout();
+  const sideways = landscape && height < SIDEWAYS_MAX_HEIGHT;
   const hinge = useHinge();
   const fold = useReservedRegions().find((r) => r.kind === 'division' && r.frame.width > r.frame.height);
   const tabletop = hinge?.status === 'partiallyOpen' && fold !== undefined;
   // Below iOS 27.1 ArrangementView has no container, so wide windows keep the phone layout there
-  const split = wide && supportsArrangementView();
+  const split = wide && !sideways && supportsArrangementView();
 
   const index = episode.number - 1;
   const prev = book.episodes[index - 1];
@@ -307,6 +320,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const [tab, setTab] = useState<Tab>('transcript');
   const [captions, setCaptions] = useState(prefs.captionsByDefault);
   const [expanded, setExpanded] = useState(false);
+  const fullScreen = expanded || sideways;
   const { isSaved, toggle } = useSaved();
   const saved = isSaved('EPISODE', episode.id);
   const activeIndex = activeLineIndex(episode, clock.positionSec);
@@ -386,11 +400,13 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         className={captions ? 'border-2 border-brand' : ''}
         onPress={() => setCaptions((c) => !c)}
       />
-      <IconButton
-        icon="fullscreen"
-        accessibilityLabel={expanded ? 'Exit full screen' : 'Full screen'}
-        onPress={() => setExpanded((x) => !x)}
-      />
+      {sideways ? null : (
+        <IconButton
+          icon="fullscreen"
+          accessibilityLabel={expanded ? 'Exit full screen' : 'Full screen'}
+          onPress={() => setExpanded((x) => !x)}
+        />
+      )}
     </HStack>
   );
 
@@ -503,7 +519,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
     ) : (
       <VStack className="gap-3 px-5 pt-4">
         {episode.takeaways.map((text, i) => (
-          <HStack key={text} className="gap-3.5 rounded-[14px] border border-border bg-card p-4">
+          <HStack key={i} className="gap-3.5 rounded-[14px] border border-border bg-card p-4">
             <Box className="h-7 w-7 items-center justify-center rounded-full bg-brand">
               <Text className="font-inter-semibold text-[13px] text-brand-foreground">{i + 1}</Text>
             </Box>
@@ -662,9 +678,11 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   // ── Phone (also folded, and wide windows below iOS 27.1) ──
   // Controls stay on screen, as in the mockup: close/captions/fullscreen top, transport bottom right.
   // The video tint runs edge to edge; controls add the side insets.
+  // Full screen reaches the bottom edge, so the controls clear the home indicator
+  const controlsBottom = fullScreen ? insets.bottom : 0;
   const panel = (
     <Box
-      style={[{ backgroundColor: book.tint }, expanded ? { flex: 1 } : { height: PANEL_HEIGHT }]}
+      style={[{ backgroundColor: book.tint }, fullScreen ? { flex: 1 } : { height: PANEL_HEIGHT }]}
       className="w-full overflow-hidden"
     >
       {videoLayer(insets.left + 24, insets.right + 24, 70)}
@@ -677,13 +695,13 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         {viewButtons}
       </HStack>
 
-      <HStack style={{ right: insets.right + 20 }} className="absolute bottom-11 items-center gap-3.5">
+      <HStack style={{ right: insets.right + 20, bottom: controlsBottom + 44 }} className="absolute items-center gap-3.5">
         <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
         {playButton(60, 22)}
         <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
       </HStack>
 
-      <Box style={{ left: insets.left + 16, right: insets.right + 16 }} className="absolute bottom-0">
+      <Box style={{ left: insets.left + 16, right: insets.right + 16, bottom: controlsBottom }} className="absolute">
         <Scrubber positionSec={clock.positionSec} durationSec={episode.durationSec} onSeek={seekToLine} />
       </Box>
     </Box>
@@ -693,7 +711,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
     <Box style={{ paddingTop: insets.top }} className="flex-1 bg-background">
       {panel}
 
-      {expanded ? null : (
+      {fullScreen ? null : (
         <Box className="flex-1">
           <ScrollView
             ref={scrollRef}

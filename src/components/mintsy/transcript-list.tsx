@@ -39,7 +39,7 @@ export function TranscriptList({ lines, activeIndex, following, onSeek, onLineLa
           const past = i < activeIndex;
           return (
             <Pressable
-              key={line.startSec}
+              key={`${line.startSec}-${i}`}
               accessibilityRole="button"
               accessibilityState={{ selected: current }}
               accessibilityHint="Jumps playback to this line"

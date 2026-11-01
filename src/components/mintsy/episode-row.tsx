@@ -92,8 +92,8 @@ export function EpisodeRow({
           {locked ? (
             <Text className="font-inter text-[14px] leading-[21px] text-secondary-foreground">{episode.summary}</Text>
           ) : null}
-          {episode.transcript.slice(0, 3).map((line) => (
-            <HStack key={line.startSec} className="gap-3">
+          {episode.transcript.slice(0, 3).map((line, i) => (
+            <HStack key={`${line.startSec}-${i}`} className="gap-3">
               <Text className="w-10 font-inter-semibold text-[14px] leading-[21px] text-brand tabular-nums">
                 {formatTime(line.startSec)}
               </Text>

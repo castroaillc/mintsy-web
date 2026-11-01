@@ -38,7 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'mintsy',
   owner: 'castroai',
   version: '1.0.0',
-  orientation: 'portrait',
+  // Portrait everywhere except the player, which unlocks rotation (src/lib/orientation.ts)
+  orientation: 'default',
   icon: './assets/images/icon.png',
   scheme: variant.scheme,
   userInterfaceStyle: 'automatic',
@@ -77,6 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-secure-store',
+    ['expo-screen-orientation', { initialOrientation: 'PORTRAIT_UP' }],
     ['expo-notifications', { defaultChannel: 'default' }],
     // Send feedback: in-app mail sheet (and mail app queries on Android)
     'expo-mail-composer',
@@ -86,6 +88,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ? [['@react-native-google-signin/google-signin', { iosUrlScheme: GOOGLE_IOS_URL_SCHEME }] as [string, object]]
       : []),
   ],
+  // EAS Update. The fingerprint changes with the native code, so an update only reaches builds it can run on.
+  runtimeVersion: { policy: 'fingerprint' },
+  updates: {
+    url: 'https://u.expo.dev/9866b510-720d-449d-8579-10ee29cbfcab',
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,

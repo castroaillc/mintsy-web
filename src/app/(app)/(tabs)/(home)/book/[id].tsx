@@ -413,8 +413,8 @@ function TranscriptBlock({ book, episode, locked, onPlay }: TranscriptBlockProps
           <BrandButton label="Unlock with Premium" height={44} onPress={() => openPaywall(episode.id)} />
         </HStack>
       ) : null}
-      {episode.transcript.map((line) => (
-        <HStack key={line.startSec} className="gap-3">
+      {episode.transcript.map((line, i) => (
+        <HStack key={`${line.startSec}-${i}`} className="gap-3">
           <Text className="w-10 font-inter-semibold text-[14px] leading-[21px] text-brand tabular-nums">
             {formatTime(line.startSec)}
           </Text>
