@@ -22,7 +22,7 @@ Staff run this from the admin dashboard (`mintsy-admin/`): it queues jobs in Mon
 | `voice` | ElevenLabs narrates each scene with character timestamps; cue times and per-sentence transcript lines come from those | `audio/*.mp3`, `voice.json` |
 | `render` | Remotion renders 1280×720 H.264 (faststart) and a thumbnail | `episode.mp4`, `thumbnail.jpg` |
 | upload (worker `render` job) | Uploads to the media bucket under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg`, `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs) and upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft | — |
-| `publish` (legacy CLI) | Same upload, but writes the episode into `backend/scripts/catalog.json` instead of MongoDB | — |
+| `publish` (legacy CLI) | Same upload, but writes the episode into `mintsy-web/apps/backend/scripts/catalog.json` instead of MongoDB | — |
 
 ## Setup
 
@@ -66,7 +66,7 @@ pnpm run pipeline ingest ~/Books/psychology-of-money.pdf --book psychology-of-mo
 pnpm run pipeline episode --book psychology-of-money --chapter 4
 ```
 
-Legacy: `pnpm run pipeline publish --book <id> --chapter <n>` uploads and writes `backend/scripts/catalog.json` for `pnpm seed:catalog`. Seeding only adds missing books now, so use the worker (`render` job) to get episodes into MongoDB.
+Legacy: `pnpm run pipeline publish --book <id> --chapter <n>` uploads and writes `mintsy-web/apps/backend/scripts/catalog.json` for `pnpm seed:catalog`. Seeding only adds missing books now, so use the worker (`render` job) to get episodes into MongoDB.
 
 Every step writes a file you can read and edit. A step is skipped when its output already exists, so hand edits survive; use `--from <step>` to regenerate from that step on (e.g. `--from scenes` after editing `script.json`, `--from render` after changing a template), and `--to <step>` to stop early (e.g. `--to scenes` to review before paying for voice).
 

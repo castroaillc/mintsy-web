@@ -11,7 +11,7 @@ const USAGE = `Usage: pnpm run pipeline <command> [options]
   ingest <book.pdf> --book <id>         Extract text, find the book's metadata and chapters
   episode --book <id> --chapter <n>     Chapter → script → scenes → voice → render
           [--from <step>] [--to <step>]   Re-run from a step (later steps rerun too) / stop after one
-  publish --book <id> --chapter <n>     (legacy) Upload the video and add the episode to backend/scripts/catalog.json
+  publish --book <id> --chapter <n>     (legacy) Upload the video and add the episode to mintsy-web/apps/backend/scripts/catalog.json
   voices                                List ElevenLabs voices
 
 Steps: ${STEPS.map((s) => s.name).join(", ")}
