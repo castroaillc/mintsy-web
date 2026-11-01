@@ -13,6 +13,7 @@ const BOOKS_QUERY = `#graphql
       author
       category
       coverTone
+      coverUrl
       tint
       description
       episodes {
@@ -31,14 +32,17 @@ const BOOKS_QUERY = `#graphql
   }
 `;
 
-/** Backends that predate Premium have no `Episode.locked`; the app then decides locks itself. */
-const BOOKS_QUERY_LEGACY = BOOKS_QUERY.replace(/^\s*locked\n/m, '');
+/**
+ * Older backends lack newer fields: `Episode.locked` (pre-Premium; the app then decides locks itself)
+ * and `Book.coverUrl` (pre-covers; tiles are drawn instead).
+ */
+const BOOKS_QUERY_LEGACY = BOOKS_QUERY.replace(/^\s*locked\n/m, '').replace(/^\s*coverUrl\n/m, '');
 
 async function fetchBooks() {
   try {
     return (await graphql<{ books: Book[] }>(BOOKS_QUERY)).books;
   } catch (err) {
-    if (!/locked/.test((err as Error).message)) throw err;
+    if (!/locked|coverUrl/.test((err as Error).message)) throw err;
     return (await graphql<{ books: Book[] }>(BOOKS_QUERY_LEGACY)).books;
   }
 }

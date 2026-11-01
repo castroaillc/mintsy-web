@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Pressable } from 'react-native';
 
 import { Box } from '@/components/ui/box';
@@ -42,10 +44,13 @@ type CoverTileProps = {
   onPress?: () => void;
 };
 
-/** Generated cover: solid tone, title in Space Grotesk, author underneath. */
+/** The book's rendered cover when it has one; otherwise a generated tile: solid tone, title in Space Grotesk, author underneath. */
 export function CoverTile({ book, width = 124, showEpisodeCount, onPress }: CoverTileProps) {
   const p = presetFor(width);
   const ink = coverInk(book.coverTone);
+  // Falls back to the tile when the image can't load (offline, expired signed URL)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const image = book.coverUrl && book.coverUrl !== failedUrl ? book.coverUrl : null;
 
   const tile = (
     <Box
@@ -61,19 +66,30 @@ export function CoverTile({ book, width = 124, showEpisodeCount, onPress }: Cove
       }}
       className={`${p.author ? 'justify-between' : ''} ${p.shadow ? '' : 'overflow-hidden'}`}
     >
+      {image ? (
+        <Image
+          source={image}
+          contentFit="cover"
+          transition={150}
+          onError={() => setFailedUrl(image)}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: p.radius }}
+        />
+      ) : null}
       {showEpisodeCount ? (
         <Box className="absolute left-2 top-2 h-5 justify-center rounded-full bg-scrim/80 px-[7px]">
           <Text className="font-inter-semibold text-[11px] text-on-scrim">{book.episodes.length === 1 ? '1 episode' : `${book.episodes.length} eps`}</Text>
         </Box>
       ) : null}
-      <Text
-        numberOfLines={p.author ? 5 : 6}
-        style={{ color: ink, fontSize: p.title, lineHeight: Math.round(p.title * p.leading) + 1 }}
-        className="font-display"
-      >
-        {book.title}
-      </Text>
-      {p.author ? (
+      {image ? null : (
+        <Text
+          numberOfLines={p.author ? 5 : 6}
+          style={{ color: ink, fontSize: p.title, lineHeight: Math.round(p.title * p.leading) + 1 }}
+          className="font-display"
+        >
+          {book.title}
+        </Text>
+      )}
+      {!image && p.author ? (
         <Text numberOfLines={2} style={{ color: ink, fontSize: p.author }} className="font-inter-medium">
           {book.author}
         </Text>
