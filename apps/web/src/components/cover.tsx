@@ -4,8 +4,8 @@ import { coverInk, EPISODE_TINTS, type Book, type Episode } from "@/lib/types";
 import { cx } from "./ui";
 
 /**
- * The generated 2:3 cover tile from the boards: the book's coverTone with its title and author.
- * The API has no cover image yet (see README › API requests), so this is the cover everywhere.
+ * The book's 2:3 cover: its rendered cover image (Book.coverUrl) when it has one, otherwise the
+ * generated tile from the boards: the book's coverTone with its title and author.
  */
 export function Cover({
   book,
@@ -16,7 +16,7 @@ export function Cover({
   className,
   style,
 }: {
-  book: Pick<Book, "title" | "author" | "coverTone">;
+  book: Pick<Book, "title" | "author" | "coverTone"> & { coverUrl?: string | null };
   titleSize?: number;
   authorSize?: number;
   padding?: number;
@@ -24,6 +24,18 @@ export function Cover({
   className?: string;
   style?: CSSProperties;
 }) {
+  if (book.coverUrl) {
+    return (
+      <div
+        className={cx("box-border aspect-[2/3] overflow-hidden rounded-lg", className)}
+        style={{ background: book.coverTone, boxShadow: shadow ? "0 14px 30px rgba(0,0,0,0.4)" : undefined, ...style }}
+        aria-hidden="true"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived bucket URL; not worth the image optimizer */}
+        <img src={book.coverUrl} alt="" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
   return (
     <div
       className={cx("box-border flex aspect-[2/3] flex-col justify-between overflow-hidden rounded-lg", className)}

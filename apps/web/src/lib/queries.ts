@@ -22,6 +22,7 @@ export const CATALOG_QUERY = `#graphql
       author
       category
       coverTone
+      coverUrl
       tint
       description
       episodes { ${EPISODE_LIST_FIELDS} }
@@ -38,6 +39,7 @@ export const BOOK_QUERY = `#graphql
       author
       category
       coverTone
+      coverUrl
       tint
       description
       keyIdeas
@@ -110,7 +112,7 @@ export function finishedDatesQuery(bookIds: string[]) {
 export const SEARCH_QUERY = `#graphql
   query Search($query: String!) {
     search(query: $query) {
-      books { id title author category coverTone tint description episodes { id number durationSec locked } }
+      books { id title author category coverTone coverUrl tint description episodes { id number durationSec locked } }
       episodes {
         id
         bookId

@@ -33,7 +33,7 @@ export function ChaptersTable({
     setPending(null);
     if (!res.ok) return void toast.error(res.error);
     toast.success(`Script job queued for chapter ${c.number}`);
-    router.refresh();
+    router.push(`/books/${bookId}/chapters/${c.number}`);
   }
 
   if (chapters.length === 0) {
@@ -57,7 +57,9 @@ export function ChaptersTable({
             <TableRow key={c.number}>
               <TableCell className="pl-4 align-top tabular-nums text-muted-foreground">{c.number}</TableCell>
               <TableCell className="max-w-md align-top whitespace-normal">
-                <div className="font-medium">{c.title}</div>
+                <Link href={`/books/${bookId}/chapters/${c.number}`} className="font-medium hover:text-brand">
+                  {c.title}
+                </Link>
                 {c.error && <p className="mt-1 line-clamp-3 text-xs text-destructive">{c.latestJobKind} failed: {c.error}</p>}
               </TableCell>
               <TableCell className="align-top">

@@ -23,11 +23,13 @@ const map: Record<string, keyof typeof tone> = {
   "generating script": "busy",
   "script ready": "ready",
   rendering: "busy",
+  uploading: "busy",
+  "preview ready": "ready",
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   const t = tone[map[status] ?? "draft"];
-  const busy = status === "running" || status === "rendering" || status === "generating script" || status === "ingesting";
+  const busy = status === "running" || status === "rendering" || status === "uploading" || status === "generating script" || status === "ingesting";
   return (
     <Badge variant="outline" className={cn("capitalize", t, className)}>
       {busy && <span className="size-1.5 animate-pulse rounded-full bg-current" aria-hidden />}

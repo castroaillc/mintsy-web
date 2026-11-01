@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
+import { env } from "@/lib/env";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
-          <Nav />
+          <Nav db={env.mongodbDb} />
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
           <Toaster theme="dark" position="bottom-right" />
         </TooltipProvider>

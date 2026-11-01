@@ -95,7 +95,15 @@ export const createJobSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("render"),
     chapter: z.number().int().min(1),
+    /** Render locally only (studio/work), no upload and no change to the catalog. */
+    preview: z.boolean().optional(),
     scriptJson: scriptJsonSchema.optional(),
     scenesJson: scenesJsonSchema.optional(),
   }),
+  z.object({
+    kind: z.literal("upload"),
+    chapter: z.number().int().min(1),
+  }),
 ]);
+
+export const coverJobSchema = z.object({ upload: z.boolean().optional() });

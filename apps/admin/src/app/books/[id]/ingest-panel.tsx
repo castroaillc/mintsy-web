@@ -27,13 +27,13 @@ export function IngestPanel({
   hasBook: boolean;
 }) {
   const router = useRouter();
-  const { jobs, now } = useJobs(initialJobs, { bookId, initialNow, onStatusChange: () => router.refresh() });
+  const { jobs, now, workers, db } = useJobs(initialJobs, { bookId, initialNow, onStatusChange: () => router.refresh() });
   const ingest = jobs.find((j) => j.kind === "ingest");
   const running = ingest && (ingest.status === "queued" || ingest.status === "running");
 
   return (
     <div className="space-y-4">
-      <WorkerBanner jobs={jobs} now={now} />
+      <WorkerBanner jobs={jobs} now={now} workers={workers} db={db} />
       {ingest ? (
         <Card size="sm">
           <CardHeader>

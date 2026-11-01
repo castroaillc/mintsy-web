@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Books", match: (p: string) => p === "/" || p.startsWith("/books") },
+  { href: "/find", label: "Find books", match: (p: string) => p.startsWith("/find") },
   { href: "/jobs", label: "Jobs", match: (p: string) => p.startsWith("/jobs") },
 ];
 
-export function Nav() {
+export function Nav({ db }: { db: string }) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
@@ -32,7 +33,9 @@ export function Nav() {
             </Link>
           ))}
         </nav>
-        <span className="ml-auto hidden text-xs text-faint sm:block">Local only · Publish goes live in the app immediately</span>
+        <span className="ml-auto hidden text-xs text-faint sm:block">
+          Local only · db <span className="font-mono text-muted-foreground">{db}</span> · Publish goes live in the app immediately
+        </span>
       </div>
     </header>
   );

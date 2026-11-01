@@ -85,7 +85,15 @@ docker run -d --name mintsy-admin-mongo -p 127.0.0.1:27018:27017 mongo:7
 
 ## Run
 
-Two terminals, both pointing at the same `MONGODB_URI` / `MONGODB_DB`:
+One command runs the dashboard and the studio worker together, both on the admin's
+`MONGODB_URI` / `MONGODB_DB` (from `apps/admin/.env.local`, defaults below), so they can't
+drift onto different databases. The worker still reads its keys from `studio/.env`.
+
+```sh
+pnpm dev:studio      # from the mintsy-web repo root; Ctrl-C stops both
+```
+
+Or two terminals, both pointing at the same `MONGODB_URI` / `MONGODB_DB`:
 
 ```sh
 # 1. dashboard → http://127.0.0.1:3001 (from the mintsy-web repo root)
@@ -95,8 +103,9 @@ pnpm dev:admin
 cd studio && pnpm worker
 ```
 
-If jobs sit in the queue for more than 30 seconds, the dashboard shows a banner asking
-whether the worker is running.
+Workers write a heartbeat to `studio_workers` every 5 seconds. If jobs are queued and no
+worker has beaten on the dashboard's database in the last 15 seconds, the dashboard says so
+(and names the database). The nav shows which database the dashboard is on.
 
 To try the whole flow without calling Claude, ElevenLabs, Remotion or the bucket, run the
 worker in dry-run mode against a local database:

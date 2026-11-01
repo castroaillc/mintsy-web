@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { JobView } from "@/lib/types";
+import type { JobView, WorkerView } from "@/lib/types";
 
 const ACTIVE_MS = 2000;
 const IDLE_MS = 10000;
@@ -17,6 +17,9 @@ function signature(jobs: JobView[]) {
 export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow: string; onStatusChange?: () => void }) {
   const [jobs, setJobs] = useState(initial);
   const [now, setNow] = useState(() => Date.parse(opts.initialNow));
+  // Unknown (null) until the first poll answers.
+  const [workers, setWorkers] = useState<WorkerView[] | null>(null);
+  const [db, setDb] = useState<string | null>(null);
   const sig = useRef(signature(initial));
   const onChange = useRef(opts.onStatusChange);
   useEffect(() => {
@@ -32,9 +35,11 @@ export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow:
       try {
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok || cancelled) return;
-        const data = (await res.json()) as { jobs: JobView[]; now: string };
+        const data = (await res.json()) as { jobs: JobView[]; workers: WorkerView[]; db: string; now: string };
         if (cancelled) return;
         setJobs(data.jobs);
+        setWorkers(data.workers);
+        setDb(data.db);
         setNow(Date.parse(data.now));
         const next = signature(data.jobs);
         if (next !== sig.current) {
@@ -45,6 +50,7 @@ export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow:
         // dev server restarting etc.; try again next tick
       }
     };
+    void tick();
     const t = setInterval(tick, active ? ACTIVE_MS : IDLE_MS);
     return () => {
       cancelled = true;
@@ -62,5 +68,5 @@ export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow:
     sig.current = signature(initial);
   }, [initial]);
 
-  return { jobs, active, now };
+  return { jobs, active, now, workers, db };
 }

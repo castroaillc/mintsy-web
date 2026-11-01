@@ -1,7 +1,7 @@
 import "server-only";
 import type { Filter } from "mongodb";
-import { jobsCol } from "./mongo";
-import type { JobView, NewStudioJob, StudioJob } from "./types";
+import { jobsCol, workersCol } from "./mongo";
+import type { JobView, NewStudioJob, StudioJob, WorkerView } from "./types";
 
 export function toJobView(j: StudioJob): JobView {
   const { _id, createdAt, startedAt, finishedAt, scriptJson, scenesJson, ...rest } = j;
@@ -13,6 +13,28 @@ export function toJobView(j: StudioJob): JobView {
     finishedAt: finishedAt?.toISOString(),
     hasEdits: scriptJson !== undefined || scenesJson !== undefined,
   };
+}
+
+/** A worker that hasn't written its heartbeat for this long is treated as gone (it beats every 5s). */
+const WORKER_TIMEOUT_MS = 15_000;
+
+/** Studio workers consuming this database's queue right now, from their `studio_workers` heartbeats. */
+export async function listLiveWorkers(): Promise<WorkerView[]> {
+  const col = await workersCol();
+  const docs = await col.find({ lastSeenAt: { $gte: new Date(Date.now() - WORKER_TIMEOUT_MS) } }).toArray();
+  return docs.map((w) => ({ id: w._id, dryRun: w.dryRun, lastSeenAt: w.lastSeenAt.toISOString(), busy: w.currentJobId != null }));
+}
+
+/**
+ * Refuses a job a running worker would mishandle: e.g. a worker from before preview renders would
+ * ignore `preview` and upload. Returns an error message, or null when every live worker supports it.
+ */
+export async function outdatedWorkerError(capability: string) {
+  const col = await workersCol();
+  const live = await col.find({ lastSeenAt: { $gte: new Date(Date.now() - WORKER_TIMEOUT_MS) } }).toArray();
+  const old = live.filter((w) => !w.capabilities?.includes(capability));
+  if (old.length === 0) return null;
+  return `The studio worker running now (${old.map((w) => w._id).join(", ")}) predates this feature. Restart it (pnpm dev:studio) and try again.`;
 }
 
 /** Per the contract: admin inserts queued jobs and never touches them again. */

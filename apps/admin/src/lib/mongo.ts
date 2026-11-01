@@ -1,7 +1,7 @@
 import "server-only";
 import { MongoClient, type Db } from "mongodb";
 import { env } from "./env";
-import type { BookDoc, StudioJob } from "./types";
+import type { BookDoc, StudioJob, StudioWorkerDoc } from "./types";
 
 /** One client per process; survives dev hot reloads. */
 const globalForMongo = globalThis as unknown as { __mintsyAdminMongo?: Promise<MongoClient> };
@@ -23,6 +23,10 @@ export async function db(): Promise<Db> {
 
 export async function booksCol() {
   return (await db()).collection<BookDoc>("books");
+}
+
+export async function workersCol() {
+  return (await db()).collection<StudioWorkerDoc>("studio_workers");
 }
 
 export async function jobsCol() {

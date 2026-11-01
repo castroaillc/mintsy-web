@@ -32,6 +32,8 @@ export type Book = {
   category: Category | string;
   /** Solid background of the generated cover tile. */
   coverTone: string;
+  /** Rendered cover image (2:3), null until one is published; the tile is drawn without it. */
+  coverUrl?: string | null;
   /** Darker tint for hero backdrops and the player panel. */
   tint: string;
   description: string;

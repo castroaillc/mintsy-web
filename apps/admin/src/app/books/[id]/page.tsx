@@ -6,6 +6,9 @@ import { StatusBadge } from "@/components/badges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getBookPageData } from "@/lib/catalog";
 import { toJobView } from "@/lib/jobs";
+import { mediaUrl } from "@/lib/media";
+import { getLocalCover } from "@/lib/studio-work";
+import { BookCoverCard } from "./book-cover";
 import { effectiveStatus, liveRunLength } from "@/lib/status";
 import { BookStatusToggle } from "./book-status";
 import { ChaptersTable } from "./chapters";
@@ -26,6 +29,7 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
 
   const status = book ? effectiveStatus(book.status) : latestIngest?.status === "failed" ? "ingest failed" : "ingesting";
   const live = book ? liveRunLength(book.episodes) : 0;
+  const localCover = book ? await getLocalCover(id) : null;
 
   return (
     <div className="space-y-6">
@@ -69,7 +73,17 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
               />
             </CardContent>
           </Card>
-          <BookStatusToggle bookId={id} status={effectiveStatus(book.status)} liveEpisodes={live} totalEpisodes={book.episodes.length} />
+          <div className="space-y-6">
+            <BookStatusToggle bookId={id} status={effectiveStatus(book.status)} liveEpisodes={live} totalEpisodes={book.episodes.length} />
+            <BookCoverCard
+              bookId={id}
+              local={localCover}
+              publishedUrl={mediaUrl(book.coverPath)}
+              bookLive={effectiveStatus(book.status) === "published"}
+              initialJobs={jobs.filter((j) => j.kind === "cover").map(toJobView)}
+              initialNow={new Date().toISOString()}
+            />
+          </div>
         </div>
       )}
 

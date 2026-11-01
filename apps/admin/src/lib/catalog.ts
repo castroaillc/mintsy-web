@@ -81,6 +81,8 @@ export type ChapterState =
   | "generating script"
   | "script ready"
   | "rendering"
+  | "preview ready"
+  | "uploading"
   | "draft"
   | "published"
   | "failed";
@@ -119,9 +121,10 @@ export async function getBookPageData(id: string) {
       const episodeStatus = ep ? effectiveStatus(ep.status) : null;
       const active = latest ? latest.status === "queued" || latest.status === "running" : false;
       let state: ChapterState = "not started";
-      if (latest && active) state = latest.kind === "script" ? "generating script" : "rendering";
+      if (latest && active) state = latest.kind === "script" ? "generating script" : latest.kind === "upload" ? "uploading" : "rendering";
       else if (latest?.status === "failed") state = "failed";
       else if (latest?.kind === "script" && latest.status === "succeeded") state = "script ready";
+      else if (latest?.kind === "render" && latest.preview && latest.status === "succeeded") state = "preview ready";
       else if (episodeStatus) state = episodeStatus;
       return {
         number,

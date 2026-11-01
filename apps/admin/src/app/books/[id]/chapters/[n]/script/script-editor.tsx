@@ -86,17 +86,14 @@ export function ScriptEditor({
 
   async function render() {
     if (!scriptParsed.ok || !scenesParsed.ok) return;
-    const warn =
-      episodeStatus === "published"
-        ? `\n\nEpisode ${chapter} is live. Rendering returns it to draft${laterLive ? ", which also hides every later episode from the app" : ""} until you publish it again.`
-        : "";
-    if (!confirm(`Queue a render for chapter ${chapter}? The episode's title, summary and takeaways will be set from this script.${warn}`)) return;
+    if (!confirm(`Render a preview of chapter ${chapter} with this script? It's rendered on this machine only; nothing in the app changes until you upload and publish it.`)) return;
     setSubmitting(true);
     const res = await callApi(`/api/books/${bookId}/jobs`, {
       method: "POST",
       body: {
         kind: "render",
         chapter,
+        preview: true,
         scriptJson: scriptParsed.value,
         // Only when edited: sending scenes makes the studio skip re-planning them.
         ...(scenesEdited ? { scenesJson: scenesParsed.value } : {}),
@@ -104,8 +101,8 @@ export function ScriptEditor({
     });
     setSubmitting(false);
     if (!res.ok) return void toast.error(res.error);
-    toast.success(`Render queued for chapter ${chapter}`);
-    router.push(`/books/${bookId}`);
+    toast.success(`Preview render queued for chapter ${chapter}`);
+    router.push(`/books/${bookId}/chapters/${chapter}`);
   }
 
   const valid = scriptParsed.ok && scenesParsed.ok;
@@ -117,7 +114,7 @@ export function ScriptEditor({
           <TriangleAlert className="text-brand" />
           <AlertTitle>Episode {chapter} is live</AlertTitle>
           <AlertDescription>
-            A render returns it to draft{laterLive && " and hides every later episode from the app"} until you publish it again.
+            Rendering a preview doesn&apos;t change it. Uploading a new render returns it to draft{laterLive && " and hides every later episode from the app"} until you publish it again.
           </AlertDescription>
         </Alert>
       )}
@@ -146,7 +143,7 @@ export function ScriptEditor({
             )}
             <Button onClick={render} disabled={!valid || submitting || busy}>
               {submitting ? <Loader2 className="animate-spin" /> : <Clapperboard />}
-              Render
+              Render preview
             </Button>
           </div>
         </div>

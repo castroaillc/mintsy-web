@@ -118,6 +118,8 @@ export const typeDefs = `#graphql
     author: String!
     category: String!
     coverTone: String!
+    "Rendered cover image (2:3 JPEG, at least 1000×1500), or null when the book has none yet: draw the coverTone tile instead. Signed and short-lived when media is private, like Episode.thumbnailUrl."
+    coverUrl: String
     tint: String!
     description: String!
     episodes: [Episode!]!
@@ -234,6 +236,7 @@ export const resolvers = {
     // Episodes don't know their book, so derive their ids here
     episodes: (book: BookDoc) => book.episodes.map((e) => episodeWithId(book, e)),
     keyIdeas: async (book: BookDoc, _args: unknown, ctx: Context) => keyIdeas(book, await lockCheck(ctx)),
+    coverUrl: (book: BookDoc) => thumbnailUrl(book.coverPath),
   },
   EpisodeProgress: {
     id: (p: ProgressView) => p.episodeId,

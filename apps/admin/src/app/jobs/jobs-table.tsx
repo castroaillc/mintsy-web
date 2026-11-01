@@ -18,7 +18,7 @@ function duration(j: JobView, now: number) {
 }
 
 export function JobsTable({ initialJobs, initialNow }: { initialJobs: JobView[]; initialNow: string }) {
-  const { jobs, now, active } = useJobs(initialJobs, { initialNow });
+  const { jobs, now, active, workers, db } = useJobs(initialJobs, { initialNow });
   const [open, setOpen] = useState<Set<string>>(() => new Set(initialJobs.filter((j) => j.status === "running").map((j) => j.id)));
   const toggle = (id: string) =>
     setOpen((s) => {
@@ -30,7 +30,7 @@ export function JobsTable({ initialJobs, initialNow }: { initialJobs: JobView[];
 
   return (
     <div className="space-y-4">
-      <WorkerBanner jobs={jobs} now={now} />
+      <WorkerBanner jobs={jobs} now={now} workers={workers} db={db} />
       <p className="text-xs text-muted-foreground">{active ? "Refreshing every 2 seconds." : "Idle. Checking every 10 seconds."}</p>
       <div className="rounded-xl border bg-card">
         <Table>

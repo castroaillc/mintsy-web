@@ -31,6 +31,11 @@ export interface BookDoc {
   coverTone: string;
   tint: string;
   description: string;
+  /**
+   * Rendered cover image in the media bucket (2:3 JPEG, e.g. "books/atomic-habits/cover-1a2b3c4d.jpg"),
+   * written by the studio worker's `cover` job. Optional: clients draw the coverTone tile without it.
+   */
+  coverPath?: string;
   /** Position in the catalog listing. */
   order: number;
   episodes: EpisodeDoc[];

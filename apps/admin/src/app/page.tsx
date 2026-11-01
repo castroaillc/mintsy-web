@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { StatusBadge } from "@/components/badges";
 import { Time } from "@/components/time";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,18 @@ export default async function BooksPage() {
             The catalog in MongoDB <code className="font-mono text-xs">books</code>. Each book is a show; each chapter an episode.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/books/new">
-            <Plus /> New book
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/find">
+              <Search /> Find books
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/books/new">
+              <Plus /> New book
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border bg-card">
