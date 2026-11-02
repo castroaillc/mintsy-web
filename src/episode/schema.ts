@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Shared contract between the pipeline (Claude writes it, ElevenLabs times it) and the
+ * Shared contract between the pipeline (Claude writes it, the voice step times it) and the
  * Remotion composition (renders it). Visuals are a fixed set of templates so every episode
  * stays on-brand and renders deterministically.
  */

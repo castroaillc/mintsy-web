@@ -174,7 +174,7 @@ async function main() {
     }
   });
 
-  console.log(`studio worker ${WORKER_ID} on ${MONGODB_DB}.studio_jobs${DRY_RUN ? " (DRY RUN: no Claude, ElevenLabs, Remotion, ffmpeg or bucket)" : ""}`);
+  console.log(`studio worker ${WORKER_ID} on ${MONGODB_DB}.studio_jobs${DRY_RUN ? " (DRY RUN: no Claude, Kokoro, Remotion, ffmpeg or bucket)" : ""}`);
   console.log("Waiting for jobs; Ctrl-C to stop");
   while (!stopping) {
     current = await claim(jobs);

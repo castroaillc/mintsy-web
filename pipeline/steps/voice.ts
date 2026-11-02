@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { CollageScene } from "../../src/collage/schema";
@@ -10,16 +10,6 @@ import { FPS, INTRO_SEC, sceneFrames } from "../../src/episode/timing";
 import { files } from "../paths";
 import { type Alignment, KokoroTts, kokoroSpeed, kokoroVoices } from "../tts";
 import { mediaDurationSec, normalize, readJson, writeJson } from "../util";
-
-const API = "https://api.elevenlabs.io/v1";
-const MODEL_ID = process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2";
-
-/** `elevenlabs` (default) or `kokoro` (local, see studio/tts/README.md). */
-function provider() {
-  const p = process.env.TTS_PROVIDER ?? "elevenlabs";
-  if (p !== "elevenlabs" && p !== "kokoro") throw new Error(`TTS_PROVIDER must be elevenlabs or kokoro, not "${p}"`);
-  return p;
-}
 
 type CachedClip = { hash: string; alignment: Alignment };
 
@@ -35,49 +25,14 @@ export type TimedAnyScene = (Scene | CollageScene) & {
   words: SpokenWord[];
 };
 export type Voice = { scenes: TimedAnyScene[]; transcript: TranscriptLine[]; durationSec: number };
-/** voices/index.json: every narration track stored for the episode (for a future in-app voice choice). */
+/**
+ * voices/index.json: every narration track stored for the episode (for a future in-app voice choice).
+ * Episodes voiced before Kokoro have none: only voice.json, pointing at flat audio/NN.mp3 clips.
+ */
 export type VoiceIndex = {
   default: string;
-  voices: { id: string; provider: "kokoro" | "elevenlabs"; voice: string; durationSec: number; file: string }[];
+  voices: { id: string; provider: "kokoro"; voice: string; durationSec: number; file: string }[];
 };
-
-function apiKey() {
-  const key = process.env.ELEVENLABS_API_KEY;
-  if (!key) throw new Error("Set ELEVENLABS_API_KEY in studio/.env");
-  return key;
-}
-
-function voiceId() {
-  const id = process.env.ELEVENLABS_VOICE_ID;
-  if (!id) throw new Error("Set ELEVENLABS_VOICE_ID in studio/.env (run `pnpm run pipeline voices` to list them)");
-  return id;
-}
-
-export async function listVoices() {
-  const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": apiKey() } });
-  if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${await res.text()}`);
-  const { voices } = (await res.json()) as { voices: { voice_id: string; name: string; labels?: Record<string, string> }[] };
-  for (const v of voices) console.log(`${v.voice_id}  ${v.name}  ${Object.values(v.labels ?? {}).join(", ")}`);
-}
-
-/** Narrates one scene; neighbouring text keeps intonation continuous across clips. */
-async function synthesize(text: string, previousText: string | undefined, nextText: string | undefined) {
-  const res = await fetch(`${API}/text-to-speech/${voiceId()}/with-timestamps?output_format=mp3_44100_128`, {
-    method: "POST",
-    headers: { "xi-api-key": apiKey(), "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text,
-      model_id: MODEL_ID,
-      previous_text: previousText,
-      next_text: nextText,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.2 },
-    }),
-  });
-  if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${await res.text()}`);
-  const json = (await res.json()) as { audio_base64: string; alignment: Alignment | null };
-  if (!json.alignment) throw new Error("ElevenLabs returned no alignment");
-  return { audio: Buffer.from(json.audio_base64, "base64"), alignment: json.alignment };
-}
 
 /** Words of the spoken text with their start/end times, from the character alignment. */
 function wordsFromAlignment(alignment: Alignment): SpokenWord[] {
@@ -97,7 +52,7 @@ function phraseStart(alignment: Alignment, phrase: string) {
 }
 
 /** Narrates one scene into the given mp3 and returns its character timings. */
-type Synth = (text: string, previousText: string | undefined, nextText: string | undefined, mp3: string) => Promise<Alignment>;
+type Synth = (text: string, mp3: string) => Promise<Alignment>;
 
 /**
  * Voices every scene with `synth` into `<audioDir>/NN.mp3` (cached by `cacheKey` + text) and
@@ -122,7 +77,7 @@ async function voiceTrack(
     const name = `${audioDir}/${String(i + 1).padStart(2, "0")}`;
     const mp3 = path.join(epDir, `${name}.mp3`);
     const cachePath = path.join(epDir, `${name}.json`);
-    // Re-synthesize only when the text, voice or model changed
+    // Re-synthesize only when the text, voice or speed changed
     const hash = createHash("sha256").update(`${cacheKey}|${text}`).digest("hex").slice(0, 16);
 
     let alignment: Alignment;
@@ -130,7 +85,7 @@ async function voiceTrack(
     if (cached?.hash === hash) {
       alignment = cached.alignment;
     } else {
-      alignment = await synth(text, scenes[i - 1]?.narration, scenes[i + 1]?.narration, mp3);
+      alignment = await synth(text, mp3);
       await writeJson(cachePath, { hash, alignment } satisfies CachedClip);
       console.log(`  voiced scene ${i + 1}/${scenes.length}${label}`);
     }
@@ -158,28 +113,17 @@ const formatLength = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.rou
 export async function writeVoice(epDir: string) {
   const scenes = await readJson<(Scene | CollageScene)[]>(path.join(epDir, files.scenes));
 
-  if (provider() === "elevenlabs") {
-    const synth: Synth = async (text, prev, next, mp3) => {
-      const result = await synthesize(text, prev, next);
-      await writeFile(mp3, result.audio);
-      return result.alignment;
-    };
-    const voice = await voiceTrack(epDir, scenes, "audio", `${voiceId()}|${MODEL_ID}`, synth);
-    await writeJson(path.join(epDir, files.voice), voice);
-    console.log(`  narration ${formatLength(voice.durationSec)}, ${voice.transcript.length} transcript lines`);
-    return;
-  }
-
-  // Kokoro: voice the episode in every KOKORO_VOICES voice; the first is rendered.
+  // Voice the episode in every KOKORO_VOICES voice; the first is rendered.
   const voices = kokoroVoices();
-  const tts = new KokoroTts();
+  // Started by the first clip that isn't cached, so a fully cached episode doesn't load the model
+  let tts: KokoroTts | undefined;
   const index: VoiceIndex = { default: `kokoro-${voices[0]}`, voices: [] };
   try {
     await mkdir(path.join(epDir, "voices"), { recursive: true });
     for (const [n, v] of voices.entries()) {
       const id = `kokoro-${v}`;
       const label = voices.length > 1 ? ` (${v}${n === 0 ? ", default" : ""})` : "";
-      const track = await voiceTrack(epDir, scenes, `audio/${id}`, `kokoro|${v}|${kokoroSpeed()}`, (text, _p, _n, mp3) => tts.synthesize(text, v, mp3), label);
+      const track = await voiceTrack(epDir, scenes, `audio/${id}`, `kokoro|${v}|${kokoroSpeed()}`, (text, mp3) => (tts ??= new KokoroTts()).synthesize(text, v, mp3), label);
       const file = `voices/${id}.json`;
       await writeJson(path.join(epDir, file), track);
       index.voices.push({ id, provider: "kokoro", voice: v, durationSec: track.durationSec, file });
@@ -187,7 +131,7 @@ export async function writeVoice(epDir: string) {
       console.log(`  narration ${formatLength(track.durationSec)}, ${track.transcript.length} transcript lines${label}`);
     }
   } finally {
-    tts.close();
+    tts?.close();
   }
   await writeJson(path.join(epDir, "voices/index.json"), index);
 }

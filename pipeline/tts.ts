@@ -1,8 +1,9 @@
 /**
- * Local narration with Kokoro (studio/tts/kokoro_tts.py), used when TTS_PROVIDER=kokoro.
+ * Local narration with Kokoro (studio/tts/kokoro_tts.py), the voice step's only provider.
  * One Python process per voice step keeps the model loaded across scenes.
  */
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -10,6 +11,7 @@ import { createInterface } from "node:readline";
 import { STUDIO_DIR } from "./paths";
 import { run } from "./util";
 
+/** Parallel arrays, one entry per character of the spoken text; times in seconds from the start of the clip. */
 export type Alignment = {
   characters: string[];
   character_start_times_seconds: number[];
@@ -20,6 +22,7 @@ type Word = { word: string; start: number; end: number };
 type Reply = { id: number; ok: true; durationSec: number; words: Word[] } | { id: number; ok: false; error: string };
 
 const TTS_DIR = path.join(STUDIO_DIR, "tts");
+const SETUP = "Setup: brew install uv espeak-ng && (cd studio/tts && uv sync)";
 
 export class KokoroTts {
   private proc: ChildProcessWithoutNullStreams;
@@ -29,6 +32,8 @@ export class KokoroTts {
   private stderrTail: string[] = [];
 
   constructor() {
+    // `uv run` would otherwise build a missing environment itself: a ~1 GB download in the middle of a job
+    if (!existsSync(path.join(TTS_DIR, ".venv"))) throw new Error(`Kokoro isn't set up: studio/tts/.venv is missing. ${SETUP}`);
     this.proc = spawn("uv", ["run", "--project", TTS_DIR, "--quiet", "python", "-I", path.join(TTS_DIR, "kokoro_tts.py")], {
       cwd: TTS_DIR,
       env: { ...process.env, KOKORO_WARM_VOICE: kokoroVoices()[0] },
@@ -63,10 +68,10 @@ export class KokoroTts {
         waiter.resolve(msg as Reply);
       }
     });
-    this.proc.on("error", (err) => failReady(new Error(`Could not start Kokoro (is uv installed?): ${err.message}`)));
+    this.proc.on("error", (err) => failReady(new Error(`Could not start Kokoro (is uv installed?): ${err.message}. ${SETUP}`)));
     this.proc.on("exit", (code) => {
       const err = new Error(
-        `Kokoro exited (${code}). Setup: brew install espeak-ng && (cd studio/tts && uv sync)\n${this.stderrTail.slice(-5).join("\n")}`,
+        `Kokoro exited (${code}). ${SETUP}\n${this.stderrTail.slice(-5).join("\n")}`,
       );
       failReady(err);
       for (const w of this.pending.values()) w.reject(err);
@@ -74,7 +79,7 @@ export class KokoroTts {
     });
   }
 
-  /** Narrates `text` into `mp3Path` and returns character timings in the ElevenLabs shape. */
+  /** Narrates `text` into `mp3Path` and returns per-character timings (see `Alignment`). */
   async synthesize(text: string, voice: string, mp3Path: string): Promise<Alignment> {
     await this.ready;
     const id = this.nextId++;

@@ -4,7 +4,6 @@ import { runEpisode, STEPS } from "./episode";
 import { episodeDir } from "./paths";
 import { ingest } from "./steps/ingest";
 import { publish } from "./steps/publish";
-import { listVoices } from "./steps/voice";
 
 const USAGE = `Usage: pnpm run pipeline <command> [options]
 
@@ -12,7 +11,6 @@ const USAGE = `Usage: pnpm run pipeline <command> [options]
   episode --book <id> --chapter <n>     Chapter → script → scenes → voice → render
           [--from <step>] [--to <step>]   Re-run from a step (later steps rerun too) / stop after one
   publish --book <id> --chapter <n>     (legacy) Upload the video and add the episode to mintsy-web/apps/backend/scripts/catalog.json
-  voices                                List ElevenLabs voices
 
 Steps: ${STEPS.map((s) => s.name).join(", ")}
 Output goes to work/<book>/ep-<nn>/. Staff normally use the admin dashboard + \`pnpm worker\` instead.`;
@@ -39,8 +37,6 @@ async function main() {
     await runEpisode(book, chapter, values.from, values.to);
   } else if (command === "publish" && book && chapter) {
     await publish(book, chapter, episodeDir(book, chapter));
-  } else if (command === "voices") {
-    await listVoices();
   } else {
     console.log(USAGE);
     process.exitCode = 1;

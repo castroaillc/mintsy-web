@@ -202,7 +202,7 @@ async function renderJob(db: Db, job: StudioJob, chapter: number): Promise<Rende
   const dir = episodeDir(job.bookId, chapter);
   await mkdir(dir, { recursive: true });
 
-  // Voice is cached per scene (by text + voice), so rerunning it only pays for changed scenes.
+  // Voice is cached per scene (by text + voice), so rerunning it only narrates changed scenes.
   // A render job always re-renders, so the video matches the current script and scenes.
   let from: StepName = "voice";
   if (job.scriptJson !== undefined) await writeJson(path.join(dir, files.script), job.scriptJson);
@@ -264,7 +264,7 @@ async function narrationChanged(dir: string) {
   return normalize(script.narration.join(" ")) !== normalize(scenes.map((s) => s.narration).join(" "));
 }
 
-// ─── dry run: plausible fakes, no Claude / ElevenLabs / Remotion / ffmpeg / bucket, no files in work/ ───
+// ─── dry run: plausible fakes, no Claude / Kokoro / Remotion / ffmpeg / bucket, no files in work/ ───
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
