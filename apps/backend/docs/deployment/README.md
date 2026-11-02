@@ -16,16 +16,9 @@ Production runs on **Google Cloud Run** and is served at **https://api.getmintsy
 
 ## Which repository deploys production
 
-There are two repositories with backend code:
-
-* `castroaillc/mintsy-web`: this monorepo (`apps/backend`). **Production deploys from its `main`.**
-* `castroaillc/mintsy-backend`: the original standalone backend repo, now **frozen**. Production used to deploy from it.
+**Production deploys only from pushes to `main` of `castroaillc/mintsy-web`**, this monorepo (`apps/backend`).
 
 Commit `7e3a2ff` ("backend: add GET /version and enable Cloud Run deploy from mintsy-web") enabled the deploy job (`if: github.event_name == 'push' && github.ref == 'refs/heads/main'`); before it, the job was disabled with `if: false`. The workflow notes that Workload Identity only trusts `castroaillc/mintsy-web` on `refs/heads/main`. Since 2026-10-31 the "Deploy to Cloud Run" job has completed successfully from `castroaillc/mintsy-web` `main`, and `GET https://api.getmintsy.com/version` reports `castroaillc/mintsy-web` commits.
-
-{% hint style="warning" %}
-TODO: confirm that `castroaillc/mintsy-backend` can no longer deploy (its workflow disabled or its Workload Identity binding removed). Until then, a push to its `main` could still replace production with an older build.
-{% endhint %}
 
 ## What a deploy does
 

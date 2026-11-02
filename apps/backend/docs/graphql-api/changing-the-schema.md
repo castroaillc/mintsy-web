@@ -68,4 +68,4 @@ Paste the output into the code block on the Full SDL page.
 | Any schema change | mobile (`mobile-app/src/lib/graphql.ts`, `src/lib/catalog.tsx`, `src/data/types.ts`) and the web app |
 | New catalog field | studio (writes drafts), admin (edits) |
 | `FREE_EPISODES` | mobile mirrors it in `src/data/types.ts`; change both together |
-| New stored per-user data | landing (privacy policy) |
+| New stored per-user data | the privacy policy at getmintsy.com/privacy (no project owns its source now; tell the user) |

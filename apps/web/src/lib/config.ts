@@ -3,7 +3,7 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://getmintsy.com").replace(/\/$/, "");
 
 export const PRIVACY_URL = `${SITE_URL}/privacy`;
-/** The landing site has no /terms page yet, so Terms points at the privacy policy for now (see README). */
+/** getmintsy.com has no /terms page, so Terms points at the privacy policy for now. */
 export const TERMS_URL = `${SITE_URL}/privacy`;
 export const HELP_CENTER_URL = `${SITE_URL}/support`;
 

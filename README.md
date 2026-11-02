@@ -7,7 +7,7 @@ nothing else.
 |---|---|---|---|
 | `mintsy-web` | `apps/web` | The web app at app.getmintsy.com: browse, stream, My List, web checkout | Vercel (deployed) |
 | `mintsy-admin` | `apps/admin` | Content dashboard: books, PDF upload, studio jobs, draft/publish | Your machine only |
-| `mintsy-backend` | `apps/backend` | GraphQL API + Better Auth (api.getmintsy.com) | Cloud Run; deploys from `castroaillc/mintsy-backend` until cutover |
+| `mintsy-backend` | `apps/backend` | GraphQL API + Better Auth (api.getmintsy.com) | Cloud Run; deploys from this repo's `main` |
 
 > [!WARNING]
 > **The admin dashboard is local-only and must never be deployed.** It has no sign-in, and
@@ -49,11 +49,11 @@ Run anything for one app with `pnpm --filter mintsy-web <script>`,
 
 The web app deploys to Vercel; the backend to Cloud Run.
 
-**Backend:** production still deploys from the standalone `castroaillc/mintsy-backend` repo.
-Here, `.github/workflows/backend.yml` runs checks, the Docker image build
-(`docker build -f apps/backend/Dockerfile .`, repo-root context) and the smoke test for changes
-under `apps/backend/`, but its deploy job is disabled (`if: false`) until this repo exists on
-GitHub, the Workload Identity binding trusts it, and the cutover is approved.
+**Backend:** production deploys from this repo. `.github/workflows/backend.yml` runs on pushes
+and pull requests that change `apps/backend/` or the workflow itself. It runs checks, the Docker
+image build (`docker build -f apps/backend/Dockerfile .`, repo-root context) and the smoke test.
+**A push to `main` with those changes also deploys to Cloud Run** once the checks pass, so merging
+backend changes to `main` ships them to production.
 
 **Web:** its Vercel project uses **Root Directory `apps/web`**; Vercel
 installs from the workspace root lockfile and builds just that app. There is no Vercel
