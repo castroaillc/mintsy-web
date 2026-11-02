@@ -33,7 +33,7 @@ savings are read from the stores at runtime, so nothing here is hard-coded in th
 - [ ] Project settings › API keys: copy the **public** SDK keys:
   - iOS key (`appl_…`) → `EXPO_PUBLIC_REVENUECAT_IOS_KEY` in `mobile-app/.env` and the EAS environment variables for the build profiles.
   - Android key (`goog_…`) → `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`, same places.
-- [ ] Create a **secret API key** (v2, read access to customers/subscribers) → `REVENUECAT_SECRET_API_KEY` in the backend's environment (Cloud Run secret). Never in the app.
+- [ ] Create a **v1 secret API key** (`sk_...`; the backend calls the v1 REST API) → `REVENUECAT_SECRET_API_KEY` in the backend's environment (Cloud Run secret). Never in the app.
 - [ ] Integrations › Webhooks: URL `https://<backend host>/webhooks/revenuecat`, Authorization header value = a long random string; put the same string in the backend's `REVENUECAT_WEBHOOK_AUTH`.
 - [ ] App user ids: the app calls `Purchases.logIn(<Better Auth user id>)`, so RevenueCat's `app_user_id` is the backend user id. Leave "Restore behavior" at the default (transfer to new App User ID) unless you decide otherwise.
 
