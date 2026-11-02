@@ -7,8 +7,18 @@ import {
   useVideoConfig,
 } from "remotion";
 
-import { display } from "../episode/theme";
 import { condensed, palette, Stripes } from "../collage/kit";
+import {
+  DOT_BOTTOM,
+  DOT_CENTER,
+  DOT_LEFT,
+  LOGO_BASELINE,
+  LOGO_INTSY,
+  LOGO_M,
+  LOGO_M_END,
+  MARK_DOT_LEFT,
+  WORDMARK,
+} from "./logo";
 
 export type IntroProps = {
   bookTitle: string;
@@ -16,8 +26,12 @@ export type IntroProps = {
   episodeTitle: string;
 };
 
-const BRAND = { background: "#0D0E12", foreground: "#F2F2F5", gold: "#F5B83D" };
-const FONT_SIZE = 150;
+const BRAND = { background: "#0D0E12" };
+/** Pixels per wordmark unit: the wordmark's font units are 1000/em, so this draws it at 150px type. */
+const LOGO_SCALE = 0.15;
+/** How far below the frame's center the logo's box sits, so its baseline stays where it has always been. */
+const LOGO_NUDGE_Y = 13;
+const REVEAL_CLIP_ID = "intro-logo-reveal";
 
 /** mintsy logo reveal, then the book and chapter on paper tape. Lasts INTRO_SEC. */
 export const Intro: React.FC<IntroProps> = ({
@@ -65,6 +79,9 @@ export const Intro: React.FC<IntroProps> = ({
     ...clamp,
     easing: Easing.inOut(Easing.cubic),
   });
+  // Everything stays centered as it unfolds, from the official "m." mark to the full wordmark
+  const dotShift = (1 - unfold) * (MARK_DOT_LEFT - DOT_LEFT);
+  const centerShift = -dotShift / 2;
   const tape1 = spring({
     frame: frame - sec(2.3),
     fps,
@@ -100,53 +117,44 @@ export const Intro: React.FC<IntroProps> = ({
           scale: String(1 - lift * 0.25),
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            fontFamily: display,
-            fontWeight: 700,
-            fontSize: FONT_SIZE,
-            letterSpacing: -4,
-            color: BRAND.foreground,
-            lineHeight: 1,
-          }}
+        <svg
+          viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`}
+          width={WORDMARK.width * LOGO_SCALE}
+          height={WORDMARK.height * LOGO_SCALE}
+          style={{ overflow: "visible", translate: `0 ${LOGO_NUDGE_Y}px` }}
         >
-          <span
-            style={{
-              display: "inline-block",
-              scale: String(mPop),
-              transformOrigin: "50% 80%",
-            }}
+          <defs>
+            <clipPath id={REVEAL_CLIP_ID}>
+              <rect
+                x={LOGO_M_END}
+                y={0}
+                width={DOT_LEFT + dotShift - LOGO_M_END}
+                height={WORDMARK.height}
+              />
+            </clipPath>
+          </defs>
+          <g
+            fill={WORDMARK.onDark.letters}
+            transform={`translate(${centerShift} 0)`}
           >
-            m
-          </span>
-          <span
-            style={{
-              display: "inline-block",
-              overflow: "hidden",
-              maxWidth: unfold * 4.2 * FONT_SIZE * 0.6,
-              whiteSpace: "nowrap",
-              opacity: unfold,
-            }}
-          >
-            intsy
-          </span>
-          <span
-            style={{
-              display: "inline-block",
-              width: FONT_SIZE * 0.24,
-              height: FONT_SIZE * 0.24,
-              marginLeft: FONT_SIZE * 0.06,
-              borderRadius: "50%",
-              backgroundColor: BRAND.gold,
-              translate: `0 ${(1 - dotDrop) * -FONT_SIZE * 2.2}px`,
-              scale: `${squash} ${1 / squash}`,
-              transformOrigin: "50% 100%",
-              opacity: frame >= sec(0.7) ? 1 : 0,
-            }}
-          />
-        </div>
+            <path
+              d={LOGO_M}
+              transform={`translate(${LOGO_M_END / 2} ${LOGO_BASELINE}) scale(${mPop}) translate(${-LOGO_M_END / 2} ${-LOGO_BASELINE})`}
+            />
+            <path
+              d={LOGO_INTSY}
+              clipPath={`url(#${REVEAL_CLIP_ID})`}
+              opacity={unfold}
+            />
+            {/* Dropped from above, squashed against its bottom edge, then carried out by the unfold */}
+            <path
+              d={WORDMARK.dot}
+              fill={WORDMARK.onDark.dot}
+              opacity={frame >= sec(0.7) ? 1 : 0}
+              transform={`translate(${dotShift} ${(1 - dotDrop) * -2200}) translate(${DOT_CENTER} ${DOT_BOTTOM}) scale(${squash} ${1 / squash}) translate(${-DOT_CENTER} ${-DOT_BOTTOM})`}
+            />
+          </g>
+        </svg>
       </AbsoluteFill>
 
       <AbsoluteFill
