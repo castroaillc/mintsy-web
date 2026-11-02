@@ -29,6 +29,8 @@ CI runs the same checks plus the Docker image, the smoke test and the tests. For
 
 | File | Covers |
 | --- | --- |
+| `test/catalog-db.test.ts` | Catalog in a separate database (`MONGODB_CATALOG_DB`): reads come from it, user data goes to the app database, and a real server start creates nothing in it. |
+| `test/catalog-db-fallback.test.ts` | `MONGODB_CATALOG_DB` unset: the catalog is the app database. |
 | `test/delete-account.test.ts` | `POST /api/auth/delete-user`: password users vs. social-only users, `REAUTH_REQUIRED`, signed out. |
 | `test/progress.test.ts` | `setProgress`, `continueWatching`, `progress(bookId)`, `finishedBookIds` through the GraphQL schema. |
 | `test/revenuecat-webhook.test.ts` | RevenueCat webhook with Web Billing (`RC_BILLING`) and Stripe events: trial, renewal, cancellation, expiration, billing grace period. |

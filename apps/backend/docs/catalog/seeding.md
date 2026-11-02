@@ -1,6 +1,6 @@
 # Seeding the catalog
 
-`pnpm seed:catalog` (`scripts/seed-catalog.ts`) loads `scripts/catalog.json` into the `books` collection of whatever database `MONGODB_URI` / `MONGODB_DB` point at.
+`pnpm seed:catalog` (`scripts/seed-catalog.ts`) loads `scripts/catalog.json` into the `books` collection of the catalog database: `MONGODB_CATALOG_DB`, falling back to `MONGODB_DB`, then the database in `MONGODB_URI`.
 
 It's a **legacy bootstrap**: useful to fill a fresh local database, not the way content is published. For each entry it runs `updateOne({ _id: id }, { $setOnInsert: book }, { upsert: true })`, so it:
 
@@ -8,7 +8,13 @@ It's a **legacy bootstrap**: useful to fill a fresh local database, not the way 
 * **never overwrites** an existing book (editing `catalog.json` doesn't change a book that's already in the database);
 * never deletes anything.
 
-It prints `Inserted N new books; left M existing books untouched`.
+It prints `Inserted N new books; left M existing books untouched (database <name>)`.
+
+With the values from `.env.example`, a local seed writes to `mintsy_studio`, the database the local API and admin use.
+
+{% hint style="warning" %}
+With the split databases, seeding must use the **studio user's connection string** and `MONGODB_CATALOG_DB=mintsy_studio`. The backend's user is read-only on `mintsy_studio`, so it fails with `Unauthorized`. Don't leave `MONGODB_CATALOG_DB` unset there: the fallback would write the books to the app database, where the API doesn't read them.
+{% endhint %}
 
 {% hint style="danger" %}
 Never run `pnpm seed:catalog` against production Atlas without explicit approval. Books it inserts go live in the app immediately, with no release, unless they're marked as drafts.
@@ -62,7 +68,7 @@ A JSON array of books. Each is a `BookDoc` with `id` instead of `_id`:
 1. **Validate the file:** valid JSON; every episode has `number`, `title`, `summary`, `durationSec`, `transcript` and `takeaways`; `number`s are 1, 2, 3... with no gaps per book (the API hides everything after a gap); ids are lowercase and hyphenated. Episode ids are derived as `<bookId>-<number>`.
 2. **Check where `MONGODB_URI` points, without printing secrets.** For example, from `apps/backend/`:
    ```sh
-   node --env-file=.env -e 'const u = process.env.MONGODB_URI; console.log(new URL(u.replace(/^mongodb(\+srv)?:/, "http:")).hostname, process.env.MONGODB_DB || "(db from URI)")'
+   node --env-file=.env -e 'const u = process.env.MONGODB_URI; console.log(new URL(u.replace(/^mongodb(\+srv)?:/, "http:")).hostname, process.env.MONGODB_CATALOG_DB || process.env.MONGODB_DB || "(db from URI)")'
    ```
    `localhost` (docker compose) is fine. An Atlas host (`*.mongodb.net`) is production: **stop and get explicit approval**.
 3. **Run it:**

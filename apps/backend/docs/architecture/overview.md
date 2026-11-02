@@ -6,7 +6,7 @@ The backend is a single Express 5 process (`src/index.ts`) that serves three kin
 * **GraphQL** at `/graphql` (Apollo Server 5): catalog, search, the viewer's profile, Premium, My List, watch progress, push tokens.
 * A few **plain HTTP routes**: the RevenueCat webhook, `/health` and `/version`. See [HTTP endpoints](http-endpoints.md).
 
-Everything is stored in one MongoDB database (`mintsy`). See [MongoDB collections](mongodb-collections.md).
+Data is stored in two MongoDB databases on one cluster: `mintsy_app` holds the collections the backend owns (read/write), and `mintsy_studio` holds the ones studio and admin own, including the catalog (read only for the backend). Production stays on the single `mintsy` database until the split. See [MongoDB collections](mongodb-collections.md).
 
 ## Who talks to it
 
@@ -27,7 +27,7 @@ See [Authentication > Clients](../authentication/clients.md) for exactly how eac
 `main()` in `src/index.ts`:
 
 1. Connects the shared `MongoClient` (`src/db.ts`).
-2. Creates indexes: `ensurePushIndexes`, `ensureCatalogIndexes`, `ensureEntitlementIndexes`, `ensureSavedIndexes`, `ensureProgressIndexes`.
+2. Creates the app database's indexes: `ensurePushIndexes`, `ensureEntitlementIndexes`, `ensureSavedIndexes`, `ensureProgressIndexes`. Nothing is created in the catalog database, which is read-only for the API.
 3. Builds the Express app and middleware (see [Request flow](request-flow.md)).
 4. Starts Apollo Server with the drain-HTTP-server plugin and mounts it at `/graphql`.
 5. Listens on `PORT` and logs which optional integrations are missing.

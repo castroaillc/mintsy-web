@@ -29,6 +29,9 @@ export const env = {
   mongodbUri: required("MONGODB_URI"),
   // Optional: overrides the database name in MONGODB_URI
   mongodbDb: process.env.MONGODB_DB || undefined,
+  // Optional: database holding the catalog (`books`), which this API only reads.
+  // Unset = the catalog is in the app database above (see src/db.ts)
+  mongodbCatalogDb: process.env.MONGODB_CATALOG_DB || undefined,
   betterAuthSecret: required("BETTER_AUTH_SECRET"),
   betterAuthUrl: required("BETTER_AUTH_URL"),
   // Optional: only needed if "enhanced push security" is enabled for the Expo project

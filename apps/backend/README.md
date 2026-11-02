@@ -4,8 +4,8 @@ Part of the `mintsy-web` pnpm monorepo: one lockfile at the repo root, shared wi
 `apps/admin`. Run the commands below from this folder (`apps/backend`), or from the repo root as
 `pnpm --filter mintsy-backend <script>` (`pnpm dev:backend`, `pnpm test:backend`).
 
-> Production still deploys from the standalone `castroaillc/mintsy-backend` repo until the cutover
-> to `castroaillc/mintsy-web` (see "Deploy (production)").
+> Pushes to `main` of `castroaillc/mintsy-web` deploy production, including documentation-only changes
+> under `apps/backend/` (see "Deploy (production)").
 
 Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/password, Sign in with Google / Apple, OpenAPI plugin), MongoDB.
 
@@ -55,7 +55,8 @@ The GraphQL context carries the Better Auth session (`ctx.session`); see the `me
 ## Notes
 
 - MongoDB must be a replica set (Atlas always is) because Better Auth uses transactions.
-- Local dev uses the `mintsy` database (`MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true` in `.env.example`), the same name as production and the default of the studio worker and admin dashboard, so the API serves what the admin publishes. If your existing local `.env` still points at `/backend`, change it to `/mintsy`; your old local data stays in the `backend` database (copy it over with `mongodump`/`mongorestore --nsFrom 'backend.*' --nsTo 'mintsy.*'` if you need it).
+- Local dev keeps app data in `mintsy` (`MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true` in `.env.example`) and reads the catalog from `mintsy_studio` (`MONGODB_CATALOG_DB=mintsy_studio`), the default of the studio worker and admin dashboard, so the API serves what the admin publishes. An existing local `.env` needs that same line, and books already in the local `mintsy` database won't appear until they're copied or re-created; see [Local setup](docs/getting-started/local-setup.md#local-mongodb). If your existing local `.env` still points at `/backend`, change it to `/mintsy`; your old local data stays in the `backend` database (copy it over with `mongodump`/`mongorestore --nsFrom 'backend.*' --nsTo 'mintsy.*'` if you need it).
+- `MONGODB_CATALOG_DB` (optional) puts the catalog in its own database on the same connection; unset, `books` is in the app database, as on the flat production database and in the tests. The API only reads the catalog database: it never writes there or creates indexes (studio owns them). See [`docs/architecture/mongodb-collections.md`](docs/architecture/mongodb-collections.md).
 - Better Auth is mounted before `express.json()`, which it requires.
 
 ## Scripts
@@ -77,7 +78,9 @@ in `src/catalog.ts`: draft books are hidden, and each book only shows the contig
 episodes starting at episode 1 (a book with none is hidden). Nothing reaches the app until it's published.
 
 `scripts/catalog.json` and `pnpm seed:catalog` are a legacy bootstrap only: the script inserts books
-that don't exist yet (`$setOnInsert`) and never overwrites or deletes existing ones.
+that don't exist yet (`$setOnInsert`) and never overwrites or deletes existing ones. It writes to the catalog
+database (`MONGODB_CATALOG_DB`, falling back to the app database). With the split databases it must run with the
+studio user's connection string, because the backend user is read-only there.
 
 Videos are plain MP4 files in the public Cloud Storage bucket `gs://mintsy-media` (project
 `mintsy-prod`). The database stores object paths; `Episode.videoUrl` / `thumbnailUrl` are
@@ -465,15 +468,15 @@ of each episode the viewer can unlock, in order, deduplicated, first 5. Free vie
 
 ## Deploy (production)
 
-Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`).
+Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`, until the split to `mintsy_app` + `mintsy_studio`; see [`docs/deployment/README.md`](docs/deployment/README.md#splitting-the-database)).
 
 - **CI/CD** (`.github/workflows/backend.yml` at the repo root) runs on pushes and pull requests that touch `apps/backend/**` or the workflow:
   1. **Typecheck & build:** `pnpm typecheck` and `pnpm build`, after `pnpm install --frozen-lockfile --filter mintsy-backend...` at the root.
   2. **Integration:** builds the production Docker image from the repo root (`docker build -f apps/backend/Dockerfile .`), runs it against a MongoDB replica set, and runs `scripts/smoke-test.sh` (sign-up, session, GraphQL `me`, origin and push-token checks).
-  3. **Deploy:** **disabled in this repo (`if: false`)** until `castroaillc/mintsy-web` exists on GitHub, the Workload Identity provider / `github-deployer` service-account binding trusts that repo, and the cutover is approved. Until then production deploys from `castroaillc/mintsy-backend`. Once enabled: only on pushes to `main`, and only if steps 1 and 2 pass. It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
+  3. **Deploy:** only on pushes to `main` of `castroaillc/mintsy-web`, and only if steps 1 and 2 pass. **Get approval before you push or merge to `main`.** The standalone `castroaillc/mintsy-backend` repo is frozen; see [`docs/deployment/README.md`](docs/deployment/README.md#which-repository-deploys-production). It builds and pushes the image to Artifact Registry and deploys it to Cloud Run, authenticating with Workload Identity Federation, so no key is stored in GitHub.
 - **Dependabot** (`.github/dependabot.yml` at the repo root, whole workspace) opens weekly update PRs for npm packages and GitHub Actions, and they go through the same checks.
 - **Smoke test locally:** `scripts/smoke-test.sh http://localhost:4000`. It creates a throwaway user, so don't point it at production.
-- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` and `CORS_ORIGINS=` (the web app's origin is built in; see "Web app"). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, needed for the web app's redirect flow).
+- **Config:** plain env vars `BETTER_AUTH_URL=https://api.getmintsy.com`, `MONGODB_DB=mintsy` (after the split: `MONGODB_DB=mintsy_app` and `MONGODB_CATALOG_DB=mintsy_studio`) and `CORS_ORIGINS=` (the web app's origin is built in; see "Web app"). Secrets come from Secret Manager: `MONGODB_URI`, `BETTER_AUTH_SECRET`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_API_KEY`, `RESEND_API_KEY` and optionally `EXPO_ACCESS_TOKEN`. Optional plain env var: `EMAIL_FROM`. Optional plain env vars: `SIGNED_MEDIA=true` (see "Locking the media") and `MEDIA_BUCKET`. Sign in with Google / Apple: plain env vars `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`; secrets `GOOGLE_CLIENT_SECRET` and `APPLE_CLIENT_SECRET` (both optional, needed for the web app's redirect flow).
 - **Production behavior** (`NODE_ENV=production`, set in the image):
   - The OpenAPI auth reference is disabled.
   - GraphQL introspection and Apollo Sandbox are off.

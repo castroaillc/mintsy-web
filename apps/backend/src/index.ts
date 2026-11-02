@@ -6,8 +6,7 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { expressMiddleware } from "@as-integrations/express5";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
-import { ensureCatalogIndexes } from "./catalog.js";
-import { client } from "./db.js";
+import { catalogDb, client, db } from "./db.js";
 import { ensureEntitlementIndexes } from "./entitlements.js";
 import { ensureProgressIndexes } from "./progress.js";
 import { ensurePushIndexes } from "./push.js";
@@ -21,7 +20,6 @@ import { createContext, type Context } from "./graphql/context.js";
 async function main() {
   await client.connect();
   await ensurePushIndexes();
-  await ensureCatalogIndexes();
   await ensureEntitlementIndexes();
   await ensureSavedIndexes();
   await ensureProgressIndexes();
@@ -60,6 +58,7 @@ async function main() {
   await new Promise<void>((resolve) => httpServer.listen(env.port, resolve));
   console.log(`Server ready at http://localhost:${env.port}`);
   console.log(`  GraphQL:  http://localhost:${env.port}/graphql`);
+  console.log(`  Database: ${db.databaseName} (catalog: ${catalogDb.databaseName})`);
   console.log(`  Media:    ${env.signedMedia ? `signed URLs (gs://${env.mediaBucket})` : env.mediaBaseUrl}`);
   if (!env.revenueCatWebhookAuth) console.warn("  REVENUECAT_WEBHOOK_AUTH is not set: /webhooks/revenuecat answers 503");
   if (!env.revenueCatSecretApiKey) console.warn("  REVENUECAT_SECRET_API_KEY is not set: entitlements come from webhook payloads only");

@@ -1,23 +1,38 @@
 # MongoDB collections
 
-All collections live in one database: `mintsy` in production and in local dev (`mintsy-test` / `ci-test` for tests). The connection is the shared `MongoClient` in `src/db.ts`; `MONGODB_DB` overrides the database name in `MONGODB_URI`.
+The backend uses one shared `MongoClient` (`src/db.ts`) with two database handles:
+
+| Handle | Database | Env var | Backend access |
+| --- | --- | --- | --- |
+| `db` | App data | `MONGODB_DB`, else the database in `MONGODB_URI` | read/write |
+| `catalogDb` | Catalog | `MONGODB_CATALOG_DB`, else the same database as `db` | **read only** |
+
+There are two layouts:
+
+* **Single database:** `MONGODB_CATALOG_DB` is unset and every collection, including the studio ones, is in one database. This is the tests (`mintsy-test` / `ci-test`) and production until the split.
+* **Split:** `mintsy_app` holds the collections the backend owns, and `mintsy_studio` holds the ones studio and admin own. The backend's production user has readWrite on `mintsy_app` and read on `mintsy_studio`, on one connection string. Studio and admin use a separate user with readWrite on `mintsy_studio` only, so they can't reach user data. See [Splitting the database](../deployment/README.md#splitting-the-database).
+
+Local dev is split as well, with app data in `mintsy` and the catalog in `mintsy_studio` (see `.env.example`), on one local MongoDB with no separate users. See [Local setup](../getting-started/local-setup.md#local-mongodb).
+
+No query crosses the two: the backend uses no `$lookup` or other cross-collection pipeline, and Better Auth's transactions only touch app collections. The code joins them in application code, by id (for example `src/progress.ts`).
 
 MongoDB must be a **replica set**, because Better Auth uses transactions.
 
-Indexes are created at startup (`ensure*Indexes()` in `src/index.ts`), so a new database needs no migration step.
+Indexes on the app collections are created at startup (`ensure*Indexes()` in `src/index.ts`). **The backend never writes to the catalog database or creates indexes there**; studio owns those indexes.
 
 ## Overview
 
-| Collection | Owner module | Written by | Per user? |
-| --- | --- | --- | --- |
-| `user`, `session`, `account`, `verification` | Better Auth (`src/auth.ts`) | Better Auth | yes |
-| `books` | `src/catalog.ts` | studio worker, admin dashboard, `pnpm seed:catalog` | no |
-| `studio_jobs` | studio (worker) | admin dashboard, studio worker | no |
-| `pushTokens` | `src/push.ts` | `registerPushToken` | yes |
-| `entitlements` | `src/entitlements.ts` | RevenueCat webhook, `refreshPremium` | yes |
-| `revenueCatEvents` | `src/entitlements.ts` | RevenueCat webhook | no |
-| `saved_items` | `src/saved.ts` | `setSaved` | yes |
-| `watch_progress` | `src/progress.ts` | `setProgress` | yes |
+| Collection | Database when split | Owner module | Written by | Per user? |
+| --- | --- | --- | --- | --- |
+| `user`, `session`, `account`, `verification` | `mintsy_app` | Better Auth (`src/auth.ts`) | Better Auth | yes |
+| `pushTokens` | `mintsy_app` | `src/push.ts` | `registerPushToken` | yes |
+| `entitlements` | `mintsy_app` | `src/entitlements.ts` | RevenueCat webhook, `refreshPremium` | yes |
+| `revenueCatEvents` | `mintsy_app` | `src/entitlements.ts` | RevenueCat webhook | no |
+| `saved_items` | `mintsy_app` | `src/saved.ts` | `setSaved` | yes |
+| `watch_progress` | `mintsy_app` | `src/progress.ts` | `setProgress` | yes |
+| `books` | `mintsy_studio` | `src/catalog.ts` (read only) | studio worker, admin dashboard, `pnpm seed:catalog` | no |
+| `studio_jobs` | `mintsy_studio` | studio (worker) | admin dashboard, studio worker | no |
+| `studio_workers` | `mintsy_studio` | studio (worker) | studio worker | no |
 
 Per-user collections are cleared by `deleteUserData()` in `src/account.ts` when an account is deleted (Better Auth deletes its own `user`, `session` and `account` documents; the backend deletes the user's `verification` documents).
 
@@ -66,11 +81,15 @@ interface EpisodeDoc {
 }
 ```
 
-Indexes: `{ order: 1 }`. See [Catalog model](../catalog/README.md) for publishing rules.
+Index: `{ order: 1 }`, created by studio, not by the backend. Without it the listing still works but sorts in memory. See [Catalog model](../catalog/README.md) for publishing rules.
 
 ## `studio_jobs`
 
-Job queue between the admin dashboard and the studio worker. The backend only creates the index `{ status: 1, createdAt: 1 }` (the worker creates it too) and doesn't read or write jobs. The schema is owned by the studio project; see [Studio pipeline](../catalog/studio-pipeline.md).
+Job queue between the admin dashboard and the studio worker. The backend has no access path to it. The schema and the index `{ status: 1, createdAt: 1 }` are owned by the studio project; see [Studio pipeline](../catalog/studio-pipeline.md).
+
+## `studio_workers`
+
+One heartbeat document per running studio worker. Owned by the studio project; the backend doesn't use it.
 
 ## `pushTokens`
 

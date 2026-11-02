@@ -12,7 +12,7 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 
 | Name | Purpose |
 | --- | --- |
-| `MONGODB_URI` | MongoDB connection string. Must point at a replica set. Local default in `.env.example`: the `mintsy` database on `localhost:27017`. |
+| `MONGODB_URI` | MongoDB connection string. Must point at a replica set. Local default in `.env.example`: the `mintsy` database on `localhost:27017`, for app data. |
 | `BETTER_AUTH_SECRET` | Secret Better Auth uses to sign sessions and tokens. Generate with `openssl rand -base64 32`. |
 | `BETTER_AUTH_URL` | Public base URL of this API (`http://localhost:4000` locally, `https://api.getmintsy.com` in production). Fallback base URL for auth links and redirects; its scheme also decides whether cookies get the `__Secure-` prefix. See [Web app](../authentication/clients.md#web-app). |
 
@@ -21,7 +21,8 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 | Name | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `4000` | HTTP port. Cloud Run sets `8080`. |
-| `MONGODB_DB` | database from `MONGODB_URI` | Overrides the database name. Production sets `mintsy`. |
+| `MONGODB_DB` | database from `MONGODB_URI` | App data database (auth, push tokens, entitlements, My List, watch progress). Overrides the database name in the URI. `mintsy` on the single database, `mintsy_app` once split. |
+| `MONGODB_CATALOG_DB` | same database as app data | Database holding the catalog (`books`), which the API only reads and never writes or indexes. Unset or empty means the catalog is in the app database. `mintsy_studio` in `.env.example`, the default of admin and the studio worker, and in production once split; unset on the single database. See [MongoDB collections](../architecture/mongodb-collections.md). |
 | `CORS_ORIGINS` | empty | Comma-separated extra browser origins, added to both CORS and Better Auth's trusted origins. The web app's origin (`https://app.getmintsy.com`, plus `http://localhost:3000` outside production) is built in, so production sets this empty. |
 | `NODE_ENV` | unset (`development`) | `production` (set in the Docker image) turns off the OpenAPI auth reference, Apollo Sandbox and introspection, `exp://` trusted origins, and `http://localhost:3000` as a web origin. |
 

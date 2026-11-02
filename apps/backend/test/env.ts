@@ -9,6 +9,7 @@ export function useTestEnv(overrides: Record<string, string> = {}) {
   Object.assign(process.env, {
     MONGODB_URI: uri,
     MONGODB_DB: "",
+    MONGODB_CATALOG_DB: "",
     BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-123",
     BETTER_AUTH_URL: "http://localhost:4999",
     CORS_ORIGINS: "",

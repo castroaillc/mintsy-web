@@ -7,7 +7,7 @@ function trimSlash(s: string) {
 
 export const env = {
   mongodbUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017",
-  mongodbDb: process.env.MONGODB_DB ?? "mintsy",
+  mongodbDb: process.env.MONGODB_DB || "mintsy_studio",
   mediaBaseUrl: trimSlash(process.env.MEDIA_BASE_URL ?? "https://storage.googleapis.com/mintsy-media"),
   /** studio/work on this machine, for previewing renders before they're uploaded. */
   studioWorkDir: path.resolve(

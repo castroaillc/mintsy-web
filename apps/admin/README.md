@@ -25,7 +25,12 @@ dashboard ──inserts──▶ studio_jobs ◀──claims/updates── studi
                          └──▶ backend GraphQL (published only) ──▶ mobile app
 ```
 
-- `books` (db `mintsy`) is the catalog's source of truth. Books and episodes carry
+- Everything the dashboard touches lives in one database, `mintsy_studio`: `books`,
+  `studio_jobs` and `studio_workers`. The studio worker reads and writes the same database,
+  and the backend reads `books` from it. User data (accounts, entitlements, My List) is in a
+  separate database, `mintsy_app`, that the dashboard never accesses. The dashboard needs only
+  `readWrite` on `mintsy_studio` and creates no indexes; the worker creates them.
+- `books` is the catalog's source of truth. Books and episodes carry
   `status: "draft" | "published"` (missing = published) and `updatedAt`.
 - The dashboard only **inserts** jobs (`status: "queued"`, `log: []`, `createdAt`); the
   worker owns them after that.
@@ -72,7 +77,7 @@ cp apps/admin/.env.example apps/admin/.env.local   # then edit
 | Variable | Default | Meaning |
 |---|---|---|
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017` | MongoDB connection string |
-| `MONGODB_DB` | `mintsy` | Database holding `books` and `studio_jobs` |
+| `MONGODB_DB` | `mintsy_studio` | Database holding `books`, `studio_jobs` and `studio_workers`; must match the studio worker's |
 | `MEDIA_BASE_URL` | `https://storage.googleapis.com/mintsy-media` | Public prefix for episode videos and thumbnails (`MEDIA_BASE_URL + "/" + path`) |
 | `UPLOAD_DIR` | `apps/admin/uploads` (the app's working directory) | Where PDFs are saved; the worker reads them from here, so it must be on the same machine |
 
@@ -111,7 +116,7 @@ To try the whole flow without calling Claude, ElevenLabs, Remotion or the bucket
 worker in dry-run mode against a local database:
 
 ```sh
-cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=mintsy pnpm worker
+cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=mintsy_studio pnpm worker
 ```
 
 ## Scripts

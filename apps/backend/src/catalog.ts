@@ -1,4 +1,4 @@
-import { db } from "./db.js";
+import { catalogDb } from "./db.js";
 import { env } from "./env.js";
 
 /** Missing = "published" (docs that predate draft support). */
@@ -48,16 +48,8 @@ export interface BookDoc {
   updatedAt?: Date;
 }
 
-export const books = db.collection<BookDoc>("books");
-
-/** Written by the studio worker, created by the admin dashboard (see the contracts skill). */
-export const studioJobs = db.collection("studio_jobs");
-
-export async function ensureCatalogIndexes() {
-  await books.createIndex({ order: 1 });
-  // The worker claims the oldest queued job; it creates this index too, which is harmless
-  await studioJobs.createIndex({ status: 1, createdAt: 1 });
-}
+/** Read-only here: the studio worker and admin dashboard write it and create its indexes. */
+export const books = catalogDb.collection<BookDoc>("books");
 
 const notDraft = { status: { $ne: "draft" as const } };
 

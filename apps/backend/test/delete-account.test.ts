@@ -13,6 +13,7 @@ if (!["localhost", "127.0.0.1", "::1", "mongo", "host.docker.internal"].includes
 Object.assign(process.env, {
   MONGODB_URI: uri,
   MONGODB_DB: "",
+  MONGODB_CATALOG_DB: "",
   BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-123",
   BETTER_AUTH_URL: "http://localhost:4999",
   CORS_ORIGINS: "",

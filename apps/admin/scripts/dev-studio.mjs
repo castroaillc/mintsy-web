@@ -21,7 +21,7 @@ for (const name of [".env.development.local", ".env.local", ".env.development", 
 // Same defaults as src/lib/env.ts.
 const shared = {
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
-  MONGODB_DB: process.env.MONGODB_DB || "mintsy",
+  MONGODB_DB: process.env.MONGODB_DB || "mintsy_studio",
   UPLOAD_DIR: path.resolve(process.env.UPLOAD_DIR || path.join(adminDir, "uploads")),
 };
 

@@ -12,7 +12,7 @@ Document shapes: [MongoDB collections > books](../architecture/mongodb-collectio
 | Studio worker, `render` job | Upserts one episode by `number` with `status: "draft"`, after uploading the MP4 and JPG. A re-render always returns the episode to draft. |
 | Admin dashboard | Edits book metadata and episode text, sets `status`, may edit `keyIdeas`. |
 | `pnpm seed:catalog` | Inserts books from `catalog.json` that don't exist yet. Never overwrites. |
-| This API | Reads only. Never writes `books`. |
+| This API | Reads only. Never writes `books` or creates indexes in the catalog database (`MONGODB_CATALOG_DB`). |
 
 ## Draft and published
 

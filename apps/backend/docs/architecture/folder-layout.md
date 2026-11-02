@@ -17,12 +17,12 @@ apps/backend/
 ├── src/
 │   ├── index.ts             Express app, middleware order, startup and shutdown
 │   ├── env.ts               Reads and validates env vars
-│   ├── db.ts                Shared MongoClient and db
+│   ├── db.ts                Shared MongoClient, app db and read-only catalogDb
 │   ├── constants.ts         FREE_EPISODES, PREMIUM_ENTITLEMENT
 │   ├── auth.ts              Better Auth config and hooks
 │   ├── account.ts           Per-user data deletion, RevenueCat subscriber deletion
 │   ├── email.ts             Resend client and branded email template
-│   ├── catalog.ts           books / studio_jobs collections, public filtering
+│   ├── catalog.ts           books collection (read only), public filtering
 │   ├── media.ts             Video and thumbnail URLs, GCS signed URLs
 │   ├── search.ts            Catalog search and key ideas (pure functions)
 │   ├── saved.ts             My List (saved_items)

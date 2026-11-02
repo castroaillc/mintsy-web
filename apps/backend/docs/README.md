@@ -12,7 +12,7 @@ It lives in `apps/backend/` of the `castroaillc/mintsy-web` pnpm monorepo, next 
 | Express 5 | HTTP server and routing. |
 | Apollo Server 5 | GraphQL API at `/graphql`. |
 | Better Auth | Accounts, sessions, email/password, Sign in with Google / Apple, at `/api/auth/*`. |
-| MongoDB | All data, database `mintsy`. Must be a replica set (Better Auth uses transactions). |
+| MongoDB | One cluster, two databases: `mintsy_app` (the collections the backend owns) and `mintsy_studio` (the ones studio and admin own, including the catalog; read only for the backend). Production stays on the single `mintsy` database until the split. Must be a replica set (Better Auth uses transactions). |
 | `expo-server-sdk` | Expo push notifications. |
 | RevenueCat | Premium subscriptions (webhook + REST API). |
 | Resend | Transactional email (password reset, email change). |

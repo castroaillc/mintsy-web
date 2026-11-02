@@ -43,6 +43,7 @@ On startup the server prints:
 ```
 Server ready at http://localhost:4000
   GraphQL:  http://localhost:4000/graphql
+  Database: mintsy (catalog: mintsy_studio)
   Media:    https://storage.googleapis.com/mintsy-media
   Auth API: http://localhost:4000/api/auth/reference
 ```
@@ -57,7 +58,22 @@ From the repository root you can run the same thing with `pnpm dev:backend`, or 
 
 The replica set is required: Better Auth uses MongoDB transactions, which don't work on a standalone server. Atlas is always a replica set.
 
-The default `MONGODB_URI` in `.env.example` is `mongodb://localhost:27017/mintsy?directConnection=true`. The database is `mintsy`, the same name as production and the default of the studio worker and admin dashboard. That way the local API serves what you publish from the local admin.
+`.env.example` uses two databases on this one MongoDB:
+
+* **App data:** `mintsy`, from `MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true`.
+* **Catalog (`books`):** `mintsy_studio`, from `MONGODB_CATALOG_DB=mintsy_studio`. The studio worker and admin dashboard default to this database, so the local API serves what you publish from the local admin.
+
+Admin and the worker must also be on this MongoDB. Admin's default `MONGODB_URI` is `mongodb://127.0.0.1:27017`, which is this one; the worker has no default, so set it in `studio/.env`. Publishes from a separate throwaway MongoDB, such as the one on port 27018 in the admin README, don't reach the local API.
+
+{% hint style="warning" %}
+An existing local `.env` needs the same line: add `MONGODB_CATALOG_DB=mintsy_studio` and restart the API. The startup log should say `catalog: mintsy_studio`.
+
+Books already in the local `mintsy` database then won't appear until they're copied or re-created. To copy them, run this from `apps/backend` (books whose id already exists in `mintsy_studio` are left as they are):
+
+```sh
+docker compose exec -T mongo sh -c "mongodump --quiet --archive --db=mintsy --collection=books | mongorestore --quiet --archive --nsFrom='mintsy.books' --nsTo='mintsy_studio.books'"
+```
+{% endhint %}
 
 {% hint style="info" %}
 If an older local `.env` still points at the `/backend` database, change it to `/mintsy`. Your old data stays in `backend`; copy it with `mongodump` / `mongorestore --nsFrom 'backend.*' --nsTo 'mintsy.*'` if you need it.
