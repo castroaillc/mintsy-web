@@ -2,7 +2,7 @@ import { GraphQLError } from "graphql";
 import { getPublishedBook, listPublishedBooks, type BookDoc, type EpisodeDoc } from "../catalog.js";
 import { FREE_EPISODES } from "../constants.js";
 import { refreshPremium } from "../entitlements.js";
-import { thumbnailUrl, videoUrl } from "../media.js";
+import { hlsUrl, thumbnailUrl, videoUrl } from "../media.js";
 import {
   isValidPushToken,
   registerPushToken,
@@ -107,6 +107,8 @@ export const typeDefs = `#graphql
     takeaways: [String!]!
     "Progressive MP4; null until the episode's video is uploaded, and null when locked. May be a short-lived signed URL: refetch rather than storing it."
     videoUrl: String
+    "HLS master playlist (adaptive bitrate); prefer it for streaming when present and fall back to videoUrl. Null when locked, when the episode has no HLS encode, and always while media is private (SIGNED_MEDIA). Offline downloads keep using videoUrl."
+    hlsUrl: String
     thumbnailUrl: String
     "True when the viewer needs Premium to watch: number > 3 (FREE_EPISODES) and the viewer isn't Premium. Signed-out viewers are never Premium."
     locked: Boolean!
@@ -290,6 +292,8 @@ export const resolvers = {
     locked: (episode: EpisodeDoc, _args: unknown, ctx: Context) => isLocked(episode, ctx),
     videoUrl: async (episode: EpisodeDoc, _args: unknown, ctx: Context) =>
       (await isLocked(episode, ctx)) ? null : videoUrl(episode.videoPath),
+    hlsUrl: async (episode: EpisodeDoc, _args: unknown, ctx: Context) =>
+      (await isLocked(episode, ctx)) ? null : hlsUrl(episode.hlsPath),
     transcript: async (episode: EpisodeDoc, _args: unknown, ctx: Context) =>
       (await isLocked(episode, ctx)) ? [] : episode.transcript,
     takeaways: async (episode: EpisodeDoc, _args: unknown, ctx: Context) =>

@@ -36,7 +36,7 @@ Because of this rule, the admin dashboard only publishes episode n when 1..n-1 a
 * `category`: free text in the backend. The values in use are `Finance`, `Business`, `Psychology`, `Productivity`, `History`, `Health`; the app, studio and admin each keep that list, so change all three together.
 * `coverTone`, `tint`: colours for the book's cover and accents.
 * `keyIdeas`: optional curated "book in 5 ideas". When missing or empty, `Book.keyIdeas` is derived from the first takeaway of each unlocked episode.
-* `videoPath`, `thumbnailPath`: object paths in `gs://mintsy-media`. See [Media and signed URLs](../features/media.md).
+* `videoPath`, `hlsPath` (optional), `thumbnailPath`: object paths in `gs://mintsy-media`. See [Media and signed URLs](../features/media.md).
 
 ## Ids
 

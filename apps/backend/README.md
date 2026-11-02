@@ -127,7 +127,7 @@ type Episode { ..., locked: Boolean! }   # number > 3 && viewer isn't premium (s
 type Mutation { ..., refreshPremium: Premium! }   # session required; refetch from RevenueCat, store, return
 ```
 
-A locked episode has `videoUrl: null`, `transcript: []` and `takeaways: []`; title, summary, duration and
+A locked episode has `videoUrl: null`, `hlsUrl: null`, `transcript: []` and `takeaways: []`; title, summary, duration and
 thumbnail stay. The viewer's entitlement is read once per request (`ctx.viewerPremium()`).
 `active` is false once `expiresAt` (or a billing grace period) has passed, even if the stored flag is stale.
 `store` is where it was bought, lowercased from RevenueCat: `app_store`, `rc_billing` (RevenueCat Web Billing on
@@ -195,6 +195,9 @@ enforced in the UI. With `SIGNED_MEDIA=true` the bucket is private and the API h
 [V4 signed URLs](https://cloud.google.com/storage/docs/access-control/signed-urls) (`src/media.ts`):
 
 - `Episode.videoUrl`: signed for **~1 hour** (60–90 min left when issued), and only for unlocked episodes.
+- `Episode.hlsUrl`: **always null while `SIGNED_MEDIA` is on**, so HLS isn't available and clients fall back to
+  `videoUrl`. A V4 signed URL covers one object, while a player fetches HLS playlists and segments by relative
+  path, so a signed master playlist would 403 on its segments. See [`docs/features/media.md`](docs/features/media.md).
 - `Episode.thumbnailUrl`: signed for **~7 days** (the V4 maximum). Thumbnails are allowed to be public, but
   a private bucket makes every object private and studio uploads both into the same bucket, so they're
   signed too. Trade-off: no public CDN URLs for thumbnails, but no second bucket and no studio change.

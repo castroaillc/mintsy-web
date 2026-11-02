@@ -77,6 +77,7 @@ query Books {
       durationSec
       thumbnailUrl
       videoUrl
+      hlsUrl
       locked
       takeaways
       transcript { startSec text }

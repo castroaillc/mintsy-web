@@ -1,6 +1,6 @@
 # Media and signed URLs
 
-Episode videos (MP4) and thumbnails (JPG) live in the Cloud Storage bucket `gs://mintsy-media` (project `mintsy-prod`). The database stores only object **paths** (`EpisodeDoc.videoPath`, `thumbnailPath`, e.g. `books/psychology-of-money/4.mp4`). The API turns them into URLs in `src/media.ts`, so clients must refetch URLs from the API rather than store them.
+Episode videos (MP4, optionally also HLS) and thumbnails (JPG) live in the Cloud Storage bucket `gs://mintsy-media` (project `mintsy-prod`). The database stores only object **paths** (`EpisodeDoc.videoPath`, `hlsPath`, `thumbnailPath`, e.g. `books/psychology-of-money/4.mp4`). The API turns them into URLs in `src/media.ts`, so clients must refetch URLs from the API rather than store them.
 
 ## Two modes
 
@@ -8,12 +8,30 @@ Episode videos (MP4) and thumbnails (JPG) live in the Cloud Storage bucket `gs:/
 | --- | --- | --- |
 | Bucket | public | private |
 | `videoUrl` | `MEDIA_BASE_URL` + `/` + path | V4 signed URL, about 60-90 minutes left when issued |
+| `hlsUrl` | `MEDIA_BASE_URL` + `/` + path | always `null` (see [HLS](#hls)) |
 | `thumbnailUrl` | `MEDIA_BASE_URL` + `/` + path | V4 signed URL, about 6-7 days left (the V4 maximum is 7 days) |
 | Free tier | enforced in the API only; the raw file is public | enforced: locked episodes get no URL and the bucket refuses unsigned reads |
 
 Either way, `videoUrl` is `null` for locked episodes and for episodes without a `videoPath`.
 
 TODO: confirm whether `SIGNED_MEDIA=true` is currently on in production.
+
+## HLS
+
+Episodes can also have an HLS encode (adaptive bitrate), written by the studio worker. `EpisodeDoc.hlsPath` is the master playlist's object path, e.g. `books/<bookId>/<n>-<hash>/master.m3u8`. It's optional and sits beside the MP4, which stays: offline downloads and older app builds use `videoUrl`.
+
+`Episode.hlsUrl` is decided in this order:
+
+1. Locked for this viewer (same check as `videoUrl`): `null`.
+2. No `hlsPath`: `null`.
+3. `SIGNED_MEDIA=true`: `null`.
+4. Otherwise: `MEDIA_BASE_URL` + `/` + path.
+
+{% hint style="warning" %}
+**HLS isn't available while `SIGNED_MEDIA` is on.** A V4 signed URL covers one object, but a player fetches variant playlists and segments by relative path, without a signature, so a signed master playlist would 403 on its segments. The API returns `hlsUrl: null` instead and clients fall back to `videoUrl`, so turning `SIGNED_MEDIA` on can't break playback.
+{% endhint %}
+
+With a public bucket, HLS files are as public as the MP4: the free tier is enforced by the API only (no URL for locked episodes), not by the bucket. Protecting HLS for Premium is a separate, later project.
 
 ## How signing works
 

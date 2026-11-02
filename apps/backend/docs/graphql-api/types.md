@@ -32,6 +32,7 @@ A published book. Only books with at least one published episode are returned.
 | `transcript` | `[TranscriptLine!]!` | Empty when locked. |
 | `takeaways` | `[String!]!` | Empty when locked. |
 | `videoUrl` | `String` | Progressive MP4. Null until the video is uploaded, and null when locked. May be a short-lived signed URL: refetch rather than store it. Also null if signing fails. |
+| `hlsUrl` | `String` | HLS master playlist (adaptive bitrate). Prefer it for streaming when present and fall back to `videoUrl`. Null when locked, when the episode has no HLS encode, and always while `SIGNED_MEDIA` is on. Offline downloads keep using `videoUrl`. See [Media and signed URLs](../features/media.md#hls). |
 | `thumbnailUrl` | `String` | JPG. Null when the episode has no thumbnail. Not hidden when locked. May be signed (about 7 days). |
 | `locked` | `Boolean!` | True when the viewer needs Premium to watch: `number > 3` (`FREE_EPISODES`) and the viewer isn't Premium. Signed-out viewers are never Premium. |
 

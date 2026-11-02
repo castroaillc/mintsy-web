@@ -60,4 +60,4 @@ Episode ids are stable and shared by `Episode.id`, `User.savedEpisodeIds`, `Epis
 
 ## Media URLs
 
-`Episode.videoUrl` and `thumbnailUrl` may be short-lived signed URLs. Refetch them instead of storing them. See [Media and signed URLs](../features/media.md).
+`Episode.videoUrl` and `thumbnailUrl` may be short-lived signed URLs. Refetch them instead of storing them. `Episode.hlsUrl` is null whenever they are signed; fall back to `videoUrl`. See [Media and signed URLs](../features/media.md).

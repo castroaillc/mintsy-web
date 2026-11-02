@@ -137,6 +137,11 @@ type Episode {
   Progressive MP4; null until the episode's video is uploaded, and null when locked. May be a short-lived signed URL: refetch rather than storing it.
   """
   videoUrl: String
+
+  """
+  HLS master playlist (adaptive bitrate); prefer it for streaming when present and fall back to videoUrl. Null when locked, when the episode has no HLS encode, and always while media is private (SIGNED_MEDIA). Offline downloads keep using videoUrl.
+  """
+  hlsUrl: String
   thumbnailUrl: String
 
   """
@@ -151,6 +156,11 @@ type Book {
   author: String!
   category: String!
   coverTone: String!
+
+  """
+  Rendered cover image (2:3 JPEG, at least 1000×1500), or null when the book has none yet: draw the coverTone tile instead. Signed and short-lived when media is private, like Episode.thumbnailUrl.
+  """
+  coverUrl: String
   tint: String!
   description: String!
   episodes: [Episode!]!

@@ -31,7 +31,7 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 | Name | Default | Purpose |
 | --- | --- | --- |
 | `MEDIA_BASE_URL` | `https://storage.googleapis.com/mintsy-media` | Base URL prepended to episode `videoPath` / `thumbnailPath` when signed media is off. |
-| `SIGNED_MEDIA` | off | `true` makes `videoUrl` / `thumbnailUrl` short-lived GCS V4 signed URLs (private bucket). See [Media and signed URLs](../features/media.md). |
+| `SIGNED_MEDIA` | off | `true` makes `videoUrl` / `thumbnailUrl` short-lived GCS V4 signed URLs (private bucket), and makes `hlsUrl` always null. See [Media and signed URLs](../features/media.md). |
 | `MEDIA_BUCKET` | `mintsy-media` | Bucket used for signed URLs. |
 
 ## Push notifications

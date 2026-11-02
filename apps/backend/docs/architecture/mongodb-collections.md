@@ -75,6 +75,7 @@ interface EpisodeDoc {
   transcript: { startSec: number; text: string }[];
   takeaways: string[];
   videoPath?: string;      // object path in the media bucket
+  hlsPath?: string;        // HLS master playlist, relative to the media bucket
   thumbnailPath?: string;
   status?: ContentStatus;
   updatedAt?: Date;

@@ -18,6 +18,11 @@ export interface EpisodeDoc {
   takeaways: string[];
   /** Object path in the media bucket, e.g. "books/psychology-of-money/4.mp4". */
   videoPath?: string;
+  /**
+   * HLS master playlist in the media bucket, e.g. "books/psychology-of-money/4-1a2b3c4d/master.m3u8".
+   * Written by the studio worker. Optional: episodes without it only have the MP4 in videoPath.
+   */
+  hlsPath?: string;
   thumbnailPath?: string;
   status?: ContentStatus;
   updatedAt?: Date;

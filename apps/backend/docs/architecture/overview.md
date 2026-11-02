@@ -37,6 +37,6 @@ See [Authentication > Clients](../authentication/clients.md) for exactly how eac
 ## Key rules that span modules
 
 * **Free tier.** Episodes `1..FREE_EPISODES` (3, `src/constants.ts`) of every book are free. Later episodes are *locked* for viewers without an active Premium entitlement. Signed-out viewers are never Premium. The mobile app mirrors this constant; change both together.
-* **Locked content never leaks.** A locked episode returns `videoUrl: null`, `transcript: []`, `takeaways: []`. Search skips locked episodes, `keyIdeas` skips their takeaways, and `setProgress` refuses them.
+* **Locked content never leaks.** A locked episode returns `videoUrl: null`, `hlsUrl: null`, `transcript: []`, `takeaways: []`. Search skips locked episodes, `keyIdeas` skips their takeaways, and `setProgress` refuses them.
 * **Only published content is public.** `listPublishedBooks()` / `getPublishedBook()` / `publicBook()` in `src/catalog.ts` are the only place public catalog filtering happens. See [Catalog model](../catalog/README.md).
 * **Per-user data is deleted with the account.** `deleteUserData()` in `src/account.ts` removes every per-user collection. Anything new that stores per-user data must be added there.

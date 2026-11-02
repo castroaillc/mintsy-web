@@ -62,6 +62,19 @@ export async function videoUrl(path: string | undefined) {
   return env.signedMedia ? signedOrNull(path, VIDEO) : mediaUrl(path);
 }
 
+/**
+ * URL of an episode's HLS master playlist. Callers must only ask for episodes the viewer may watch.
+ *
+ * Always null while SIGNED_MEDIA is on: a V4 signed URL covers one object, but a player fetches the
+ * variant playlists and segments by paths relative to the master playlist, and those requests carry
+ * no signature, so a signed master playlist would 403 on its segments. Null makes clients fall back
+ * to videoUrl, so turning SIGNED_MEDIA on can't break playback.
+ */
+export function hlsUrl(path: string | undefined) {
+  if (!path || env.signedMedia) return null;
+  return mediaUrl(path);
+}
+
 export async function thumbnailUrl(path: string | undefined) {
   if (!path) return null;
   return env.signedMedia ? signedOrNull(path, THUMB) : mediaUrl(path);

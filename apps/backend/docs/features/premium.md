@@ -4,7 +4,7 @@
 
 Episodes `1..FREE_EPISODES` (3, `src/constants.ts`) of every book are free. Later episodes need the RevenueCat entitlement `premium` (`PREMIUM_ENTITLEMENT`). The mobile app has the same constant; change both together.
 
-`Episode.locked = number > 3 && !viewer.premium.active`. Signed-out viewers are never Premium. A locked episode returns `videoUrl: null`, `transcript: []` and `takeaways: []`; title, summary, duration and thumbnail stay. The viewer's entitlement is read once per request (`ctx.viewerPremium()`).
+`Episode.locked = number > 3 && !viewer.premium.active`. Signed-out viewers are never Premium. A locked episode returns `videoUrl: null`, `hlsUrl: null`, `transcript: []` and `takeaways: []`; title, summary, duration and thumbnail stay. The viewer's entitlement is read once per request (`ctx.viewerPremium()`).
 
 ## Identity
 
