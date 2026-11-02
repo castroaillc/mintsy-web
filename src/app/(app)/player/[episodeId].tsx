@@ -40,6 +40,7 @@ import { isEpisodeLocked, openPaywall, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { useSaved } from '@/lib/saved';
 import { activeLineIndex, episodeLabel, episodeStatus, formatTime } from '@/lib/series';
+import { streamSources } from '@/lib/stream-source';
 
 const TABS = [
   { value: 'transcript', label: 'Transcript' },
@@ -99,7 +100,7 @@ function PlayerRoute() {
     const episode = fromCatalog ? { ...fromCatalog.episode, thumbnailUrl: local.episode.thumbnailUrl } : local.episode;
     return (
       <ReservedRegionsProvider style={{ flex: 1 }}>
-        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} videoUrl={local.videoUri} />
+        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} source={local.videoUri} />
       </ReservedRegionsProvider>
     );
   }
@@ -127,6 +128,7 @@ function PlayerRoute() {
   }
   // Remount per episode so the clock and transcript start fresh
   const { book, episode } = found;
+  const stream = streamSources(episode);
 
   // Never play a locked episode, however it was opened (deep link, Up next, Continue watching)
   if (isEpisodeLocked(episode, isPremium)) {
@@ -136,8 +138,8 @@ function PlayerRoute() {
   // Full-screen provider: the fold's frame comes back in screen coordinates
   return (
     <ReservedRegionsProvider style={{ flex: 1 }}>
-      {episode.videoUrl ? (
-        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} videoUrl={episode.videoUrl} />
+      {stream ? (
+        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} source={stream.source} fallback={stream.fallback} />
       ) : (
         <SimulatedEpisodePlayer key={episode.id} book={book} episode={episode} />
       )}
@@ -205,9 +207,9 @@ function useClockOptions({ book, episode }: PlayerProps, onLockedNext: () => voi
   };
 }
 
-function VideoEpisodePlayer({ videoUrl, ...props }: PlayerProps & { videoUrl: string }) {
+function VideoEpisodePlayer({ source, fallback, ...props }: PlayerProps & { source: string; fallback?: string | null }) {
   const [upsell, setUpsell] = useState(false);
-  const { player, ...clock } = useVideoClock(videoUrl, useClockOptions(props, () => setUpsell(true)));
+  const { player, ...clock } = useVideoClock(source, useClockOptions(props, () => setUpsell(true)), fallback);
   return (
     <>
       <Player {...props} clock={clock} video={player} />

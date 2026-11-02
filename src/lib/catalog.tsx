@@ -3,40 +3,12 @@ import { AppState } from 'react-native';
 
 import type { Book } from '@/data/types';
 import { authClient } from '@/lib/auth-client';
+import { booksQuery, legacyBooksQuery } from '@/lib/catalog-query';
 import { graphql } from '@/lib/graphql';
+import { HLS_ENABLED } from '@/lib/stream-source';
 
-const BOOKS_QUERY = `#graphql
-  query Books {
-    books {
-      id
-      title
-      author
-      category
-      coverTone
-      coverUrl
-      tint
-      description
-      episodes {
-        id
-        number
-        title
-        summary
-        durationSec
-        transcript { startSec text }
-        takeaways
-        videoUrl
-        thumbnailUrl
-        locked
-      }
-    }
-  }
-`;
-
-/**
- * Older backends lack newer fields: `Episode.locked` (pre-Premium; the app then decides locks itself)
- * and `Book.coverUrl` (pre-covers; tiles are drawn instead).
- */
-const BOOKS_QUERY_LEGACY = BOOKS_QUERY.replace(/^\s*locked\n/m, '').replace(/^\s*coverUrl\n/m, '');
+const BOOKS_QUERY = booksQuery(HLS_ENABLED);
+const BOOKS_QUERY_LEGACY = legacyBooksQuery(BOOKS_QUERY);
 
 async function fetchBooks() {
   try {

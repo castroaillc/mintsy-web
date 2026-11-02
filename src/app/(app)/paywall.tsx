@@ -16,7 +16,6 @@ import {
   PlanCard,
   PlanSkeleton,
 } from '@/components/premium/premium-parts';
-import { SafeAreaView } from '@/components/safe-area-view';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
@@ -198,7 +197,10 @@ export default function PaywallScreen() {
   // ── Wide (e.g. iPhone Duo open): pitch on the left, plans and purchase on the right ──
   if (wide) {
     return (
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} className="flex-1 flex-row bg-background">
+      <Box
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}
+        className="flex-1 flex-row bg-background"
+      >
         <ScrollView
           style={{ width: WIDE_INFO_WIDTH }}
           className="flex-none border-r border-border"
@@ -219,12 +221,12 @@ export default function PaywallScreen() {
           {plans}
           {purchaseBlock}
         </ScrollView>
-      </SafeAreaView>
+      </Box>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
+    <Box style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }} className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 28 }} contentContainerClassName="px-6 pt-3">
         <HStack className="h-11 items-center justify-between">
           {closeButton}
@@ -244,6 +246,6 @@ export default function PaywallScreen() {
         <Box className="mt-[26px]">{plans}</Box>
         {purchaseBlock}
       </ScrollView>
-    </SafeAreaView>
+    </Box>
   );
 }

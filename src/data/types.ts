@@ -12,6 +12,11 @@ export type Episode = {
   takeaways: string[];
   /** Progressive MP4; null until the episode's video is uploaded. */
   videoUrl: string | null;
+  /**
+   * HLS playlist (`master.m3u8`), only queried when EXPO_PUBLIC_HLS_ENABLED is on (`src/lib/stream-source.ts`).
+   * Null or missing when locked, when the episode has no HLS, and from backends without the field. Never downloaded.
+   */
+  hlsUrl?: string | null;
   thumbnailUrl: string | null;
   /**
    * From the API: true when the viewer can't watch this episode (free tier, number > FREE_EPISODES).
