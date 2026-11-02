@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The paused web app (see its README)
+    "src/paused-app/**",
   ]),
 ]);
 
