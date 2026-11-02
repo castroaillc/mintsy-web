@@ -76,13 +76,13 @@ export async function getLocalPreview(bookId: string, chapter: number): Promise<
       });
     }
   } else {
-    // ElevenLabs episodes have a single voice.json and no index.
+    // Older episodes have a single voice.json and no index.
     const track = await readJson<VoiceFile>(path.join(dir, "voice.json"));
     if (track)
       voices.push({
         id: "voice",
-        voice: "ElevenLabs",
-        provider: "elevenlabs",
+        voice: "Original narration",
+        provider: "legacy",
         durationSec: track.durationSec,
         isDefault: true,
         clips: track.scenes.map((s) => ({ audio: s.audio, audioSec: s.audioSec })),

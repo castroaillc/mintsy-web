@@ -112,7 +112,7 @@ Workers write a heartbeat to `studio_workers` every 5 seconds. If jobs are queue
 worker has beaten on the dashboard's database in the last 15 seconds, the dashboard says so
 (and names the database). The nav shows which database the dashboard is on.
 
-To try the whole flow without calling Claude, ElevenLabs, Remotion or the bucket, run the
+To try the whole flow without calling Claude, Kokoro, Remotion or the bucket, run the
 worker in dry-run mode against a local database:
 
 ```sh

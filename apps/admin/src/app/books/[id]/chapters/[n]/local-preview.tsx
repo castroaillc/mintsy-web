@@ -46,7 +46,7 @@ export function LocalPreview({ bookId, chapter, preview }: { bookId: string; cha
             />
             {defaultVoice && (
               <p className="text-xs text-muted-foreground">
-                Narrated by {VOICE_LABEL[defaultVoice.voice] ?? defaultVoice.voice}
+                {defaultVoice.provider === "legacy" ? defaultVoice.voice : `Narrated by ${VOICE_LABEL[defaultVoice.voice] ?? defaultVoice.voice}`}
                 {preview.voices.length > 1 && ", the default voice. The other voices are below (audio only)."}
               </p>
             )}

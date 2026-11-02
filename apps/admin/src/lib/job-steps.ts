@@ -21,7 +21,7 @@ const STEP_INFO: Record<string, { label: string; description: string }> = {
   chapter: { label: "Extract chapter", description: "Pull this chapter's text out of the book PDF" },
   script: { label: "Write script", description: "Claude writes the ~5 minute narration, summary and takeaways" },
   scenes: { label: "Plan scenes", description: "Claude splits the narration into visual scenes and checks them" },
-  voice: { label: "Voice", description: "Narrates each scene (ElevenLabs or local Kokoro voices) and times the transcript" },
+  voice: { label: "Voice", description: "Narrates each scene with local Kokoro voices and times the transcript" },
   render: { label: "Render video", description: "Remotion renders the MP4 and thumbnail" },
   upload: { label: "Upload", description: "Goes to the media bucket and is saved in the catalog (episodes as drafts)" },
   cover: { label: "Render cover", description: "Renders the book cover from its current title, author, category and tone" },
