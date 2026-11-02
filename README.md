@@ -8,7 +8,7 @@ book.pdf ─ingest─▶ book.json (metadata + chapter pages)
    episode ─▶ chapter.txt ─▶ script.json ─▶ scenes.json ─▶ voice.json + audio/ ─▶ episode.mp4 + thumbnail.jpg
               (pages)        (Claude)       (Claude)       (ElevenLabs)            (Remotion)
                                                                                       │
-   upload ─▶ gs://mintsy-media + draft episode in MongoDB `books` ◀────────────────────┘
+   upload (encodes HLS) ─▶ gs://mintsy-media + draft episode in MongoDB `books` ◀────────────────────┘
 ```
 
 Staff run this from the admin dashboard (`mintsy-admin/`): it queues jobs in MongoDB and `pnpm worker` here runs them. MongoDB `books` is the catalog's source of truth; the worker writes **drafts** and staff publish them in the dashboard. The CLI below still works for hand runs.
@@ -21,8 +21,8 @@ Staff run this from the admin dashboard (`mintsy-admin/`): it queues jobs in Mon
 | `scenes` | Claude splits the narration into 10–16 scenes and picks a visual template for each, with cue phrases that time on-screen items to the voice | `scenes.json` |
 | `voice` | ElevenLabs narrates each scene with character timestamps; cue times and per-sentence transcript lines come from those | `audio/*.mp3`, `voice.json` |
 | `render` | Remotion renders 1280×720 H.264 (faststart) and a thumbnail | `episode.mp4`, `thumbnail.jpg` |
-| upload (worker `render` job) | Uploads to the media bucket under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg`, `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs) and upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft | — |
-| `publish` (legacy CLI) | Same upload, but writes the episode into `mintsy-web/apps/backend/scripts/catalog.json` instead of MongoDB | — |
+| upload (worker `render` and `upload` jobs) | Encodes `episode.mp4` to HLS with local ffmpeg (`pipeline/transcode.sh`: 1080p/720p/360p H.264 + AAC fMP4, no upscaling, aligned 6s keyframes), uploads to the media bucket under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg` and `books/<book>/<chapter>-<hash8>/master.m3u8` + `stream_N/`, `master.m3u8` last; `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs) and upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft. Any encode or upload failure fails the job and saves nothing. The MP4 stays: offline downloads and existing app builds use it | `hls/` |
+| `publish` (legacy CLI) | Same encode and upload, but writes the episode into `mintsy-web/apps/backend/scripts/catalog.json` instead of MongoDB | — |
 
 ## Setup
 
@@ -32,19 +32,19 @@ cp .env.example .env     # ElevenLabs key and voice
 ant auth login           # or set ANTHROPIC_API_KEY in .env
 ```
 
-Also needs `ffmpeg` (`brew install ffmpeg`) and, for uploads (worker `render` jobs, legacy `publish`), `gcloud` signed in with access to `gs://mintsy-media`. The worker also needs `MONGODB_URI` in `.env`.
+Also needs `ffmpeg` and `ffprobe` on `PATH` (`brew install ffmpeg`), which every upload now uses to encode HLS, and, for uploads (worker `render` jobs, legacy `publish`), `gcloud` signed in with access to `gs://mintsy-media`. The worker also needs `MONGODB_URI` in `.env`.
 
 ## Worker (admin dashboard jobs)
 
 ```sh
 pnpm worker                              # runs queued jobs from <MONGODB_DB>.studio_jobs, one at a time
-STUDIO_WORKER_DRY_RUN=1 pnpm worker      # fake results, no Claude / ElevenLabs / Remotion / bucket
+STUDIO_WORKER_DRY_RUN=1 pnpm worker      # fake results, no Claude / ElevenLabs / Remotion / ffmpeg / bucket
 ```
 
 | Env | Default | |
 |---|---|---|
 | `MONGODB_URI` | (required) | e.g. `mongodb://localhost:27017` |
-| `MONGODB_DB` | `mintsy` | database holding `books` and `studio_jobs` |
+| `MONGODB_DB` | `mintsy_studio` | database holding `books`, `studio_jobs` and `studio_workers`, the only collections the worker touches. It needs `readWrite` here and nothing on `mintsy_app`; on startup it creates the `books` `{ order: 1 }` and `studio_jobs` `{ status: 1, createdAt: 1 }` indexes if missing |
 | `STUDIO_WORKER_DRY_RUN` | off | `1` fakes every job's work and result, but still writes `studio_jobs` and `books` |
 | `STUDIO_WORKER_ID` | hostname | stored on claimed jobs; on startup, `running` jobs with this id are marked `failed` |
 | `STUDIO_WORKER_POLL_MS` | `2000` | how often to look for a queued job when idle |
@@ -55,7 +55,7 @@ Job flow (contract: "Studio jobs" in `.claude/skills/mintsy-contracts`): the das
 |---|---|---|---|
 | `ingest` | `bookId`, `pdfPath` | `ingest`, then inserts the book into `books` (status `draft`, `episodes: []`, `order` after the last book) only if the id is new | `{ book: { title, author, category, description }, chapters: [{ number, title }] }` |
 | `script` | `bookId`, `chapter`, `regenerate?` | episode steps up to `scenes` (from `script` when `regenerate`) | `{ script, scenes }` (contents of script.json / scenes.json) |
-| `render` | `bookId`, `chapter`, `scriptJson?`, `scenesJson?` | writes the edited files, reruns from `voice` (from `scenes` if only the script's narration changed), renders, uploads, upserts the episode into `books` as `draft` | `{ durationSec, videoPath, thumbnailPath }` |
+| `render` | `bookId`, `chapter`, `scriptJson?`, `scenesJson?` | writes the edited files, reruns from `voice` (from `scenes` if only the script's narration changed), renders, encodes HLS, uploads, upserts the episode into `books` as `draft` | `{ durationSec, videoPath, thumbnailPath, hlsPath }` |
 
 A render job always re-renders and always returns the episode to `draft`, even if it was published. Voice audio is cached per scene, so only changed narration is paid for. Ctrl-C stops the worker after the current job; a second Ctrl-C aborts the job and marks it failed.
 

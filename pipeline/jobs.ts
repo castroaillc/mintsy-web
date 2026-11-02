@@ -52,6 +52,8 @@ export interface RenderResult {
   durationSec: number;
   videoPath: string;
   thumbnailPath: string;
+  /** Bucket path of the HLS master playlist. */
+  hlsPath?: string;
 }
 /** render with preview: true. */
 export interface PreviewResult {
@@ -137,7 +139,7 @@ async function insertDraftBook(db: Db, bookId: string, info: Omit<BookInfo, "cha
 }
 
 /** Inserts or replaces episode `number` in the book, always as a draft (a re-render unpublishes it). */
-async function upsertDraftEpisode(db: Db, bookId: string, episode: CatalogEpisode & Required<Pick<CatalogEpisode, "videoPath" | "thumbnailPath">>) {
+async function upsertDraftEpisode(db: Db, bookId: string, episode: CatalogEpisode & Required<Pick<CatalogEpisode, "videoPath" | "thumbnailPath" | "hlsPath">>) {
   const books = booksOf(db);
   const now = new Date();
   const doc: EpisodeDoc = { ...episode, status: "draft", updatedAt: now };
@@ -262,7 +264,7 @@ async function narrationChanged(dir: string) {
   return normalize(script.narration.join(" ")) !== normalize(scenes.map((s) => s.narration).join(" "));
 }
 
-// ─── dry run: plausible fakes, no Claude / ElevenLabs / Remotion / bucket, no files in work/ ───
+// ─── dry run: plausible fakes, no Claude / ElevenLabs / Remotion / ffmpeg / bucket, no files in work/ ───
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -331,7 +333,7 @@ async function dryScript(job: StudioJob, chapter: number): Promise<ScriptResult>
 }
 
 async function dryUpload(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
-  return (await dryRender(db, { ...job, preview: false }, chapter, ["upload"])) as RenderResult;
+  return (await dryRender(db, { ...job, preview: false }, chapter, [])) as RenderResult;
 }
 
 async function dryCover(db: Db, job: StudioJob): Promise<CoverResult> {
@@ -346,13 +348,13 @@ async function dryRender(
   db: Db,
   job: StudioJob,
   chapter: number,
-  steps = ["voice", "render 0%", "render 50%", "render 100%", "upload"],
+  steps = ["voice", "render 0%", "render 50%", "render 100%"],
 ): Promise<RenderResult | PreviewResult> {
   if (!(await booksOf(db).findOne({ _id: job.bookId }, { projection: { _id: 1 } }))) {
     await insertDraftBook(db, job.bookId, fakeBook(job.bookId));
   }
   if (job.scriptJson !== undefined || job.scenesJson !== undefined) console.log("wrote edited script/scenes (dry run: not saved)");
-  await fakeSteps(job.preview ? steps.filter((s) => s !== "upload") : steps);
+  await fakeSteps(job.preview ? steps : [...steps, "upload", "hls"]);
   const edited = job.scriptJson as Partial<Script> | undefined;
   const script = { ...fakeScript(job.bookId, chapter), ...(edited && typeof edited === "object" ? edited : {}) };
   const hash = createHash("sha256").update(`${job._id.toHexString()}|${JSON.stringify(script)}`).digest("hex").slice(0, 8);
@@ -370,7 +372,8 @@ async function dryRender(
     durationSec,
     videoPath: `${prefix}.mp4`,
     thumbnailPath: `${prefix}.jpg`,
+    hlsPath: `${prefix}/master.m3u8`,
   };
   await upsertDraftEpisode(db, job.bookId, episode);
-  return { durationSec, videoPath: episode.videoPath, thumbnailPath: episode.thumbnailPath };
+  return { durationSec, videoPath: episode.videoPath, thumbnailPath: episode.thumbnailPath, hlsPath: episode.hlsPath };
 }

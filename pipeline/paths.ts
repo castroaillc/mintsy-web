@@ -22,4 +22,6 @@ export const files = {
   voice: "voice.json",
   video: "episode.mp4",
   thumbnail: "thumbnail.jpg",
+  /** Folder of HLS output, written during upload. */
+  hls: "hls",
 };

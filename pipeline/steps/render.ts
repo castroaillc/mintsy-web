@@ -33,6 +33,9 @@ export async function render(bookId: string, epDir: string) {
   // For previewing in Studio: npx remotion studio --public-dir <epDir> --props <epDir>/props.json, then open the composition
   await writeJson(path.join(epDir, "props.json"), inputProps);
 
+  // The HLS from the last upload no longer matches, and Remotion would copy it along with the public dir
+  await rm(path.join(epDir, files.hls), { recursive: true, force: true });
+
   // The episode folder is the public dir, so the composition loads narration via staticFile("audio/01.mp3")
   console.log("  bundling");
   const serveUrl = await bundle({ entryPoint: path.join(STUDIO_DIR, "src/index.ts"), publicDir: epDir });

@@ -10,7 +10,7 @@ import "./paths"; // loads .env
 import { DRY_RUN, runJob, type StudioJob } from "./jobs";
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DB = process.env.MONGODB_DB || "mintsy";
+const MONGODB_DB = process.env.MONGODB_DB || "mintsy_studio";
 const WORKER_ID = process.env.STUDIO_WORKER_ID || os.hostname();
 const POLL_MS = Number(process.env.STUDIO_WORKER_POLL_MS) || 2000;
 const LOG_LINES = 500;
@@ -114,6 +114,8 @@ async function main() {
   const client = await new MongoClient(MONGODB_URI).connect();
   const jobs = client.db(MONGODB_DB).collection<StudioJob>("studio_jobs");
   await jobs.createIndex({ status: 1, createdAt: 1 });
+  // The backend only reads this database, so its catalog listing's sort index is created here
+  await client.db(MONGODB_DB).collection("books").createIndex({ order: 1 });
   const workers = client.db(MONGODB_DB).collection<StudioWorker>("studio_workers");
 
   // Jobs this machine left running (crash, killed terminal) can't be resumed
@@ -172,7 +174,7 @@ async function main() {
     }
   });
 
-  console.log(`studio worker ${WORKER_ID} on ${MONGODB_DB}.studio_jobs${DRY_RUN ? " (DRY RUN: no Claude, ElevenLabs, Remotion or bucket)" : ""}`);
+  console.log(`studio worker ${WORKER_ID} on ${MONGODB_DB}.studio_jobs${DRY_RUN ? " (DRY RUN: no Claude, ElevenLabs, Remotion, ffmpeg or bucket)" : ""}`);
   console.log("Waiting for jobs; Ctrl-C to stop");
   while (!stopping) {
     current = await claim(jobs);
