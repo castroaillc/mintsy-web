@@ -37,12 +37,32 @@ export async function outdatedWorkerError(capability: string) {
   return `The studio worker running now (${old.map((w) => w._id).join(", ")}) predates this feature. Restart it (pnpm dev:studio) and try again.`;
 }
 
-/** Per the contract: admin inserts queued jobs and never touches them again. */
+/** Per the contract: admin inserts queued jobs and never updates them. The one exception is cancelQueuedJobs. */
 export async function insertJob(job: Omit<NewStudioJob, "status" | "log" | "createdAt">) {
   const col = await jobsCol();
   const doc: NewStudioJob = { ...job, status: "queued", log: [], createdAt: new Date() };
   const res = await col.insertOne(doc as StudioJob);
   return res.insertedId.toHexString();
+}
+
+/** Inserts already-built queued jobs in order; a failure part way keeps the earlier ones. Returns their ids. */
+export async function insertJobs(docs: NewStudioJob[]) {
+  if (docs.length === 0) return [];
+  const res = await (await jobsCol()).insertMany(docs as StudioJob[], { ordered: true });
+  return docs.map((_, i) => res.insertedIds[i].toHexString());
+}
+
+/**
+ * Deletes the book's queued jobs. A job the worker has claimed is no longer `queued`, so it's left to
+ * finish, and a job deleted here can't be claimed: both go through the same atomic status check.
+ * Renders go first: a render whose script job was deleted, if claimed in between, would write the
+ * script itself with a paid Claude call. Claiming a script in between is what "the running job finishes" means.
+ */
+export async function cancelQueuedJobs(bookId: string) {
+  const col = await jobsCol();
+  const renders = await col.deleteMany({ bookId, status: "queued", kind: "render" });
+  const rest = await col.deleteMany({ bookId, status: "queued" });
+  return renders.deletedCount + rest.deletedCount;
 }
 
 export async function listJobs(filter: Filter<StudioJob> = {}, limit = 200) {

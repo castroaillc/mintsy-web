@@ -60,7 +60,7 @@ export function ChaptersTable({
                 <Link href={`/books/${bookId}/chapters/${c.number}`} className="font-medium hover:text-brand">
                   {c.title}
                 </Link>
-                {c.error && <p className="mt-1 line-clamp-3 text-xs text-destructive">{c.latestJobKind} failed: {c.error}</p>}
+                {c.error && <p className="mt-1 line-clamp-3 text-xs text-destructive">{c.error}</p>}
               </TableCell>
               <TableCell className="align-top">
                 <div className="flex flex-wrap gap-1.5">

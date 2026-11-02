@@ -2,6 +2,7 @@ import "server-only";
 import { booksCol, jobsCol } from "./mongo";
 import { effectiveStatus, liveRunLength } from "./status";
 import type { BookDoc, ContentStatus, EpisodeDoc, IngestResult, ScriptResult, StudioJob } from "./types";
+import { describeChapterFailure } from "./generate-all";
 import { listJobs } from "./jobs";
 
 export type BookRow = {
@@ -119,9 +120,11 @@ export async function getBookPageData(id: string) {
       const latest = chapterJobs[0];
       const ep = episodes.find((e) => e.number === number);
       const episodeStatus = ep ? effectiveStatus(ep.status) : null;
-      const active = latest ? latest.status === "queued" || latest.status === "running" : false;
+      // A whole-book run queues a script and then a render, so the job at work is the oldest active one.
+      const current = chapterJobs.findLast((j) => j.status === "queued" || j.status === "running");
+      const active = !!current;
       let state: ChapterState = "not started";
-      if (latest && active) state = latest.kind === "script" ? "generating script" : latest.kind === "upload" ? "uploading" : "rendering";
+      if (current) state = current.kind === "script" ? "generating script" : current.kind === "upload" ? "uploading" : "rendering";
       else if (latest?.status === "failed") state = "failed";
       else if (latest?.kind === "script" && latest.status === "succeeded") state = "script ready";
       else if (latest?.kind === "render" && latest.preview && latest.status === "succeeded") state = "preview ready";
@@ -133,7 +136,7 @@ export async function getBookPageData(id: string) {
         episodeStatus,
         hasScript: chapterJobs.some((j) => j.kind === "script" && j.status === "succeeded"),
         active,
-        error: latest?.status === "failed" ? (latest.error ?? "Failed") : null,
+        error: describeChapterFailure(chapterJobs),
         latestJobKind: latest?.kind ?? null,
       };
     });

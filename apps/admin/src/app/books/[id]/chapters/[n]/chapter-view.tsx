@@ -46,7 +46,8 @@ export function ChapterView({
     onStatusChange: () => router.refresh(),
   });
   const jobs = allJobs.filter((j) => j.chapter === chapter.number && j.kind !== "ingest");
-  const latest = jobs[0] ?? null;
+  // A whole-book run queues a script and then a render, so show the oldest active job while one is left.
+  const latest = jobs.findLast((j) => j.status === "queued" || j.status === "running") ?? jobs[0] ?? null;
   const active = latest?.status === "queued" || latest?.status === "running";
 
   // The local render was uploaded if an upload (or full render) finished after it was written
@@ -144,7 +145,11 @@ export function ChapterView({
         </div>
       </div>
 
-      <WorkerBanner jobs={jobs} now={now} workers={workers} db={db} />
+      <WorkerBanner jobs={allJobs} now={now} workers={workers} db={db} />
+
+      {chapter.error?.startsWith("Script failed") && (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{chapter.error}</p>
+      )}
 
       {latest ? (
         <JobProgress job={latest} now={now} />
@@ -164,10 +169,10 @@ export function ChapterView({
         <Card>
           <CardHeader>
             <CardTitle>History</CardTitle>
-            <CardDescription>Earlier jobs for this chapter, newest first.</CardDescription>
+            <CardDescription>Other jobs for this chapter, newest first.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {jobs.slice(1).map((j) => (
+            {jobs.filter((j) => j !== latest).map((j) => (
               <div key={j.id} className="space-y-1.5 border-t pt-4 first:border-t-0 first:pt-0">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-medium capitalize">{j.kind}</span>

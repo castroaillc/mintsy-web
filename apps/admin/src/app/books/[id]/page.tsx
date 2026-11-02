@@ -12,6 +12,7 @@ import { BookCoverCard } from "./book-cover";
 import { effectiveStatus, liveRunLength } from "@/lib/status";
 import { BookStatusToggle } from "./book-status";
 import { ChaptersTable } from "./chapters";
+import { GenerateBook } from "./generate-book";
 import { IngestPanel } from "./ingest-panel";
 import { MetadataForm } from "./metadata-form";
 
@@ -92,10 +93,18 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
           <CardHeader>
             <CardTitle>Chapters</CardTitle>
             <CardDescription>
-              Generate a script, review it, then render. Rendered episodes start as drafts. {live > 0 && `${live} live in the app.`}
+              Generate a script, review it, then render, one chapter at a time or all at once. Rendered episodes start as drafts. {live > 0 && `${live} live in the app.`}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-0">
+          <CardContent className="space-y-4 px-0">
+            {book && chapters.length > 0 && (
+              <GenerateBook
+                bookId={id}
+                chapters={chapters.map((c) => ({ number: c.number, title: c.title }))}
+                initialJobs={jobs.map(toJobView)}
+                initialNow={new Date().toISOString()}
+              />
+            )}
             <ChaptersTable bookId={id} chapters={chapters} canQueue={!!book} />
           </CardContent>
         </Card>

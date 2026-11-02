@@ -106,4 +106,9 @@ export const createJobSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+/** POST /api/books/[id]/jobs/all. Without `chapters`, every chapter that needs anything. */
+export const generateAllSchema = z.strictObject({
+  chapters: z.array(z.number().int().min(1)).max(1000).optional(),
+});
+
 export const coverJobSchema = z.object({ upload: z.boolean().optional() });

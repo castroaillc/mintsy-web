@@ -55,6 +55,24 @@ async function readJson<T>(p: string): Promise<T | null> {
 type VoiceFile = { scenes: { audio: string; audioSec: number }[]; durationSec: number };
 type VoiceIndex = { default: string; voices: { id: string; provider: string; voice: string; durationSec: number; file: string }[] };
 
+/** script.json and scenes.json when both exist, with the time the later one was written. */
+export async function getScriptFiles(bookId: string, chapter: number) {
+  const dir = episodeDir(bookId, chapter);
+  const [script, scenes] = await Promise.all([statOrNull(path.join(dir, "script.json")), statOrNull(path.join(dir, "scenes.json"))]);
+  if (!script || !scenes) return null;
+  return { newestMs: Math.round(Math.max(script.mtimeMs, scenes.mtimeMs)) };
+}
+
+export async function hasScriptJson(bookId: string, chapter: number) {
+  return !!(await statOrNull(path.join(episodeDir(bookId, chapter), "script.json")));
+}
+
+/** Pages per chapter from work/<book>/book.json (written by ingest), or null when it isn't there. */
+export async function getChapterPages(bookId: string) {
+  const book = await readJson<{ chapters?: { number: number; startPage: number; endPage: number }[] }>(path.join(env.studioWorkDir, bookId, "book.json"));
+  return book?.chapters ? new Map(book.chapters.map((c) => [c.number, c.endPage - c.startPage + 1])) : null;
+}
+
 export async function getLocalPreview(bookId: string, chapter: number): Promise<LocalPreview> {
   const dir = episodeDir(bookId, chapter);
   const [video, thumb] = await Promise.all([statOrNull(path.join(dir, "episode.mp4")), statOrNull(path.join(dir, "thumbnail.jpg"))]);

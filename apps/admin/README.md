@@ -32,8 +32,10 @@ dashboard ──inserts──▶ studio_jobs ◀──claims/updates── studi
   `readWrite` on `mintsy_studio` and creates no indexes; the worker creates them.
 - `books` is the catalog's source of truth. Books and episodes carry
   `status: "draft" | "published"` (missing = published) and `updatedAt`.
-- The dashboard only **inserts** jobs (`status: "queued"`, `log: []`, `createdAt`); the
-  worker owns them after that.
+- The dashboard **inserts** jobs (`status: "queued"`, `log: []`, `createdAt`) and never
+  updates them; the worker owns them after that. The one exception: **Cancel queued jobs**
+  deletes a book's jobs while they're still `queued`. The worker's claim is atomic, so a job
+  is either claimed and finishes, or deleted and never runs.
 - Shapes: `.claude/skills/mintsy-contracts/SKILL.md` ("Catalog drafts", "Studio jobs"),
   mirrored in `src/lib/types.ts`.
 
@@ -48,6 +50,8 @@ dashboard ──inserts──▶ studio_jobs ◀──claims/updates── studi
    narration, or the raw script.json / scenes.json) → **Render**. A render creates or
    replaces the episode as a **draft**, and sets its title, summary and takeaways from
    script.json.
+   Or **Generate whole book** on the book page, which does steps up to a preview render for
+   every chapter at once (see below).
 4. **Metadata** (book page): the category must be one of the app's six chips (`Finance`,
    `Business`, `Psychology`, `Productivity`, `History`, `Health`; `CATEGORIES` in
    `src/lib/schemas.ts`, mirroring the app and studio). A stored book with any other
@@ -56,6 +60,30 @@ dashboard ──inserts──▶ studio_jobs ◀──claims/updates── studi
    highest-order books as "Recently added".
 5. **Episode editor**: watch the video, fix text and transcript timing, then **Publish**.
 6. **Publish the book** with the toggle on the book page.
+
+### Generate whole book
+
+Queues, per chapter in order, a `script` job then a preview `render` job, and shows what it
+will do and cost before anything is queued. It skips the per-chapter script review. Nothing
+is uploaded or published: you review each preview on its chapter page and upload it from there.
+
+It only queues what's missing, so clicking it again retries failures without paying twice:
+
+| Chapter | Queued |
+|---|---|
+| Episode published or live, or an uploaded draft | nothing |
+| Has a queued or running job | nothing |
+| Local render newer than `script.json` and `scenes.json` | nothing |
+| Script job succeeded, or both files on disk | render |
+| Otherwise | script + render |
+
+Each job gets its own `createdAt` millisecond because the worker sorts on nothing else.
+
+If a script job fails, later chapters keep going. That chapter's render job still runs and, since
+the worker runs any missing earlier step, it **tries the script again (a second paid call)**. The
+dashboard shows the script's error as the cause.
+
+**Cancel queued jobs** deletes all of the book's queued jobs; the running one finishes.
 
 Publishing rules (also enforced by the API):
 
@@ -137,6 +165,7 @@ cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGO
 | `src/lib/schemas.ts` | zod schemas for every write |
 | `src/lib/status.ts` | Publish rules (contiguous run from episode 1) |
 | `src/lib/catalog.ts`, `src/lib/jobs.ts` | Reads, chapter-state derivation, job inserts |
+| `src/lib/generate-all.ts`, `src/lib/generate-all-plan.ts` | Generate whole book: what to queue, job order, progress |
 | `src/app/api/**` | Route handlers for all writes (JSON; PDF upload is multipart) |
 | `src/app/**/page.tsx` | Books, New book, Book, Script review, Episode editor, Jobs |
 

@@ -28,6 +28,8 @@ export function WorkerBanner({
   const queued = jobs.filter((j) => j.status === "queued");
   const running = jobs.some((j) => j.status === "running");
   if (!queued.length || running) return null;
+  // A live worker is consuming this queue; a long queue just takes a while.
+  if (workers?.length) return null;
 
   const knownNoWorker = workers != null && workers.length === 0;
   const stale = queued.filter((j) => now - Date.parse(j.createdAt) > STALE_MS);

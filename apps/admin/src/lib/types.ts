@@ -110,7 +110,7 @@ export interface StudioJob {
   workerId?: string;
 }
 
-/** What the admin inserts; the worker owns every field after this. */
+/** What the admin inserts; the worker owns every field after this. Admin may still delete a job while it's queued. */
 export type NewStudioJob = Omit<StudioJob, "_id">;
 
 // ─── Serialized forms passed to client components / JSON APIs ─────
