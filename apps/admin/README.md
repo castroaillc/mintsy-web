@@ -1,173 +1,34 @@
 # mintsy admin
 
-Internal content dashboard for mintsy. Staff use it to upload a book PDF, have the
-studio pipeline generate episodes, review and edit them, and publish them to the app.
+Internal content dashboard for mintsy. Staff use it to upload a book PDF, have the studio pipeline
+generate episodes, review and edit them, and publish them to the app.
 
-It runs **only on your machine** (`pnpm dev:admin` from the repo root, bound to
-`127.0.0.1:3001`) and has **no sign-in**. There is no deployment config, on purpose, and
-`pnpm build` refuses to run on Vercel (`scripts/refuse-deploy.mjs`).
-
-It lives in the `mintsy-web` monorepo at `apps/admin`, next to the web app (`apps/web`).
+It runs **only on your machine**, bound to `127.0.0.1:3001`, and has **no sign-in**. There is no
+deployment config, on purpose, and `pnpm build` refuses to run on Vercel.
 
 > [!WARNING]
-> **Publish goes live in the app immediately.** The dashboard writes straight to the
-> MongoDB `books` collection that the backend's GraphQL API serves. Flipping a book or an
-> episode to *Published* shows it to every user on their next fetch. Test against a local
-> MongoDB, never production.
-
-## How it fits together
-
-```
-dashboard ──inserts──▶ studio_jobs ◀──claims/updates── studio worker (studio/: pnpm worker)
-    │                                                       │
-    └──reads/writes──▶ books ◀──── inserts drafts ──────────┘
-                         │
-                         └──▶ backend GraphQL (published only) ──▶ mobile app
-```
-
-- Everything the dashboard touches lives in one database, `mintsy_studio`: `books`,
-  `studio_jobs` and `studio_workers`. The studio worker reads and writes the same database,
-  and the backend reads `books` from it. User data (accounts, entitlements, My List) is in a
-  separate database, `mintsy_app`, that the dashboard never accesses. The dashboard needs only
-  `readWrite` on `mintsy_studio` and creates no indexes; the worker creates them.
-- `books` is the catalog's source of truth. Books and episodes carry
-  `status: "draft" | "published"` (missing = published) and `updatedAt`.
-- The dashboard **inserts** jobs (`status: "queued"`, `log: []`, `createdAt`) and never
-  updates them; the worker owns them after that. The one exception: **Cancel queued jobs**
-  deletes a book's jobs while they're still `queued`. The worker's claim is atomic, so a job
-  is either claimed and finishes, or deleted and never runs.
-- Shapes: `.claude/skills/mintsy-contracts/SKILL.md` ("Catalog drafts", "Studio jobs"),
-  mirrored in `src/lib/types.ts`.
-
-## Workflow
-
-1. **New book**: pick the PDF and a book id (`^[a-z0-9][a-z0-9-]*$`, unique; it becomes the
-   app's book id and can't change). The PDF is saved to `UPLOAD_DIR/<bookId>.pdf` and an
-   `ingest` job is queued.
-2. **Ingest** (worker) creates the draft book and the chapter list. The book page shows the
-   live log.
-3. Per chapter: **Generate script** → **Review script** (edit title, summary, takeaways,
-   narration, or the raw script.json / scenes.json) → **Render**. A render creates or
-   replaces the episode as a **draft**, and sets its title, summary and takeaways from
-   script.json.
-   Or **Generate whole book** on the book page, which does steps up to a preview render for
-   every chapter at once (see below).
-4. **Metadata** (book page): the category must be one of the app's six chips (`Finance`,
-   `Business`, `Psychology`, `Productivity`, `History`, `Health`; `CATEGORIES` in
-   `src/lib/schemas.ts`, mirroring the app and studio). A stored book with any other
-   category is shown as invalid and can't be saved until you pick one. **Order** sets the
-   catalog position: the app features the book with the lowest order on Home and shows the
-   highest-order books as "Recently added".
-5. **Episode editor**: watch the video, fix text and transcript timing, then **Publish**.
-6. **Publish the book** with the toggle on the book page.
-
-### Generate whole book
-
-Queues, per chapter in order, a `script` job then a preview `render` job, and shows what it
-will do and cost before anything is queued. It skips the per-chapter script review. Nothing
-is uploaded or published: you review each preview on its chapter page and upload it from there.
-
-It only queues what's missing, so clicking it again retries failures without paying twice:
-
-| Chapter | Queued |
-|---|---|
-| Episode published or live, or an uploaded draft | nothing |
-| Has a queued or running job | nothing |
-| Local render newer than `script.json` and `scenes.json` | nothing |
-| Script job succeeded, or both files on disk | render |
-| Otherwise | script + render |
-
-Each job gets its own `createdAt` millisecond because the worker sorts on nothing else.
-
-If a script job fails, later chapters keep going. That chapter's render job still runs and, since
-the worker runs any missing earlier step, it **tries the script again (a second paid call)**. The
-dashboard shows the script's error as the cause.
-
-**Cancel queued jobs** deletes all of the book's queued jobs; the running one finishes.
-
-Publishing rules (also enforced by the API):
-
-- Episodes go live only as a contiguous run from episode 1: you can publish episode *n*
-  only when 1..*n*−1 are published, and unpublish only the highest published one.
-- Re-rendering an episode returns it to draft, which hides it and every later episode
-  from the app until you publish it again.
+> **Publish goes live in the app immediately.** Test against a local MongoDB, never production.
 
 ## Setup
 
 Needs Node 24+, pnpm, and a MongoDB you can reach locally.
 
 ```sh
-# from the mintsy-web repo root (one lockfile for both apps)
+# from the mintsy-web repo root (one lockfile for the workspace)
 pnpm install
 cp apps/admin/.env.example apps/admin/.env.local   # then edit
 ```
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `MONGODB_URI` | `mongodb://127.0.0.1:27017` | MongoDB connection string |
-| `MONGODB_DB` | `mintsy_studio` | Database holding `books`, `studio_jobs` and `studio_workers`; must match the studio worker's |
-| `MEDIA_BASE_URL` | `https://storage.googleapis.com/mintsy-media` | Public prefix for episode videos and thumbnails (`MEDIA_BASE_URL + "/" + path`) |
-| `UPLOAD_DIR` | `apps/admin/uploads` (the app's working directory) | Where PDFs are saved; the worker reads them from here, so it must be on the same machine |
-
-For a throwaway local database:
-
-```sh
-docker run -d --name mintsy-admin-mongo -p 127.0.0.1:27018:27017 mongo:7
-# MONGODB_URI=mongodb://127.0.0.1:27018
-```
-
 ## Run
 
-One command runs the dashboard and the studio worker together, both on the admin's
-`MONGODB_URI` / `MONGODB_DB` (from `apps/admin/.env.local`, defaults below), so they can't
-drift onto different databases. The worker still reads its keys from `studio/.env`.
-
 ```sh
-pnpm dev:studio      # from the mintsy-web repo root; Ctrl-C stops both
+pnpm dev:studio      # from the repo root: dashboard + studio worker on the same database; Ctrl-C stops both
+pnpm dev:admin       # or the dashboard alone, with `cd studio && pnpm worker` in a second terminal
 ```
 
-Or two terminals, both pointing at the same `MONGODB_URI` / `MONGODB_DB`:
+Checks, from `apps/admin`: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 
-```sh
-# 1. dashboard → http://127.0.0.1:3001 (from the mintsy-web repo root)
-pnpm dev:admin
+## Documentation
 
-# 2. studio worker (processes the queue one job at a time)
-cd studio && pnpm worker
-```
-
-Workers write a heartbeat to `studio_workers` every 5 seconds. If jobs are queued and no
-worker has beaten on the dashboard's database in the last 15 seconds, the dashboard says so
-(and names the database). The nav shows which database the dashboard is on.
-
-To try the whole flow without calling Claude, Kokoro, Remotion or the bucket, run the
-worker in dry-run mode against a local database:
-
-```sh
-cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=mintsy_studio pnpm worker
-```
-
-## Scripts
-
-| Script | What it does |
-|---|---|
-| `pnpm dev` | Dev server on 127.0.0.1:3001 (`pnpm dev:admin` from the repo root) |
-| `pnpm lint` | ESLint |
-| `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
-| `pnpm build` | Production build (checks everything compiles; refuses to run on Vercel) |
-
-## Code map
-
-| Path | What |
-|---|---|
-| `src/lib/types.ts` | Contract types (`BookDoc`, `EpisodeDoc`, `StudioJob`, results) |
-| `src/lib/mongo.ts` | The single MongoDB client |
-| `src/lib/schemas.ts` | zod schemas for every write |
-| `src/lib/status.ts` | Publish rules (contiguous run from episode 1) |
-| `src/lib/catalog.ts`, `src/lib/jobs.ts` | Reads, chapter-state derivation, job inserts |
-| `src/lib/generate-all.ts`, `src/lib/generate-all-plan.ts` | Generate whole book: what to queue, job order, progress |
-| `src/app/api/**` | Route handlers for all writes (JSON; PDF upload is multipart) |
-| `src/app/**/page.tsx` | Books, New book, Book, Script review, Episode editor, Jobs |
-
-Writes go through route handlers that refuse cross-origin browser requests, since there
-is no sign-in.
+The workflow, env vars, job rules and code map are in the hub repo:
+[`docs/services/admin.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/services/admin.md).
