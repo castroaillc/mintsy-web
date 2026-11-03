@@ -2,10 +2,10 @@
 
 ## iPhone app
 
-The Expo app talks to `https://api.getmintsy.com` directly.
+The Expo app talks to the API host directly: `https://api.getmintsy.com` from production builds, the `mintsy-api-preview` service from preview builds, and a local server from dev builds.
 
 * It uses Better Auth's React client with the Expo plugin (`@better-auth/expo/client`). The plugin stores the session cookie in SecureStore and sends `expo-origin: <scheme>://` so the backend trusts the request.
-* Schemes: `mintsy` (production builds) and `mintsy-dev` (dev builds). Both are trusted origins in `src/auth.ts`.
+* Schemes: `mintsy` (production builds), `mintsy-preview` (preview builds) and `mintsy-dev` (dev builds). All three are trusted origins in `src/auth.ts`, on every service.
 * GraphQL requests send the cookie explicitly as a `Cookie` header (from `authClient.getCookie()`), with `credentials: "omit"`.
 * Sign in with Google / Apple uses the native ID-token flow: the app gets an ID token on the device and posts it to `/api/auth/sign-in/social`. No browser redirect.
 * Email links (password reset, email change) redirect to app deep links: `<scheme>://reset-password` and `<scheme>://email-changed`.

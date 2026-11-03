@@ -1,6 +1,6 @@
 # Account flows
 
-The app (and web app) call these through the Better Auth client. `<scheme>` is `mintsy` (production) or `mintsy-dev` (dev builds). The web app uses `https://app.getmintsy.com/...` URLs instead of deep links.
+The app (and web app) call these through the Better Auth client. `<scheme>` is `mintsy` (production), `mintsy-preview` (preview builds) or `mintsy-dev` (dev builds). The web app uses `https://app.getmintsy.com/...` URLs instead of deep links.
 
 ## Password reset
 

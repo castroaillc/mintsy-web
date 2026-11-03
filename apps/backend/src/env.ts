@@ -19,8 +19,14 @@ const isProduction = process.env.NODE_ENV === "production";
  * The web app (mintsy-web, Next.js). The browser only talks to its own origin: Next.js rewrites
  * /api/auth/* and /graphql to this API, so session cookies are first-party on the web app's host.
  * localhost:3000 (next dev) is only trusted outside production.
+ *
+ * WEB_ORIGINS (comma-separated) replaces this list. Unset keeps the default; set but empty means no web app,
+ * which is what a service like mintsy-api-preview wants: nothing there should trust the production site.
  */
-const WEB_ORIGINS = ["https://app.getmintsy.com", ...(isProduction ? [] : ["http://localhost:3000"])];
+const WEB_ORIGINS =
+  process.env.WEB_ORIGINS === undefined
+    ? ["https://app.getmintsy.com", ...(isProduction ? [] : ["http://localhost:3000"])]
+    : list(process.env.WEB_ORIGINS);
 
 export const env = {
   isProduction,
@@ -55,7 +61,7 @@ export const env = {
   // Sign in with Google (native ID-token flow). Enabled when GOOGLE_CLIENT_ID or GOOGLE_IOS_CLIENT_ID is set.
   // ID tokens are accepted with either client ID as their audience (the iOS app's tokens carry the iOS one).
   googleClientId: process.env.GOOGLE_CLIENT_ID || undefined,
-  // Comma-separated: iOS clients are per bundle ID (com.getmintsy.app, com.getmintsy.app.dev)
+  // Comma-separated: iOS clients are per bundle ID (com.getmintsy.app, com.getmintsy.app.dev, com.getmintsy.app.preview)
   googleIosClientIds: list(process.env.GOOGLE_IOS_CLIENT_ID ?? ""),
   // Only needed for the browser redirect flow, not for native ID tokens
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || undefined,
@@ -63,8 +69,10 @@ export const env = {
   appleClientId: process.env.APPLE_CLIENT_ID || undefined,
   // Only needed for the browser redirect flow, not for native ID tokens
   appleClientSecret: process.env.APPLE_CLIENT_SECRET || undefined,
-  // Native ID tokens carry the app's bundle ID as their audience; comma-separated, defaults to prod + dev builds
-  appleAppBundleIdentifiers: list(process.env.APPLE_APP_BUNDLE_IDENTIFIER || "com.getmintsy.app,com.getmintsy.app.dev"),
+  // Native ID tokens carry the app's bundle ID as their audience; comma-separated, defaults to all three app variants
+  appleAppBundleIdentifiers: list(
+    process.env.APPLE_APP_BUNDLE_IDENTIFIER || "com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview",
+  ),
   corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())

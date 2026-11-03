@@ -29,14 +29,15 @@ Storage: MongoDB adapter on the shared client (`user`, `session`, `account`, `ve
 
 Better Auth rejects requests (403) whose origin, `redirectTo` or `callbackURL` isn't trusted. Trusted:
 
-| Origin                       | When                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| `CORS_ORIGINS` entries       | always                                                                    |
-| `https://app.getmintsy.com`  | always (web app)                                                          |
-| `http://localhost:3000`      | outside production (`next dev`)                                           |
-| `mintsy://`, `mintsy-dev://` | always (production and dev builds of the iPhone app)                      |
-| `exp://`, `exp://**`         | outside production (Expo Go / dev server)                                 |
-| `https://appleid.apple.com`  | while Apple sign-in is configured (Apple's form\_post callback, web only) |
+| Origin                                          | When                                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| `CORS_ORIGINS` entries                          | always                                                                    |
+| `https://app.getmintsy.com`                     | unless `WEB_ORIGINS` is set (web app)                                     |
+| `http://localhost:3000`                         | outside production, unless `WEB_ORIGINS` is set (`next dev`)              |
+| `WEB_ORIGINS` entries                           | when set; empty means no web app, as on the preview service               |
+| `mintsy://`, `mintsy-dev://`, `mintsy-preview://` | always (production, dev and preview builds of the app)                    |
+| `exp://`, `exp://**`                            | outside production (Expo Go / dev server)                                 |
+| `https://appleid.apple.com`                     | while Apple sign-in is configured (Apple's form\_post callback, web only) |
 
 The native app identifies its origin with the `expo-origin` header (for example `expo-origin: mintsy://`), set by the Better Auth Expo client.
 

@@ -90,10 +90,11 @@ export const auth = betterAuth({
     // The web app (redirectTo / callbackURL such as https://app.getmintsy.com/reset-password, and the
     // Origin header of requests proxied through it); http://localhost:3000 outside production only
     ...env.webOrigins,
-    // Mobile app deep-link schemes (mobile-app/app.config.ts): production and dev variants.
-    // These also allow the redirectTo / callbackURL values mintsy://reset-password, mintsy://email-changed.
+    // Mobile app deep-link schemes (apps/mobile/app.config.ts): production, dev and preview variants.
+    // These also allow the redirectTo / callbackURL values <scheme>://reset-password, <scheme>://email-changed.
     "mintsy://",
     "mintsy-dev://",
+    "mintsy-preview://",
     // Expo Go / dev server URLs, development only
     ...(env.isProduction ? [] : ["exp://", "exp://**"]),
     // Apple's browser flow posts the callback from this origin (form_post); not used by native ID tokens

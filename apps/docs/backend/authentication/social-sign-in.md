@@ -32,7 +32,7 @@ A provider is only configured when its client ID is set (`src/auth.ts`, `src/env
 | Provider | Variables                                                                                                              | Accepted ID-token audiences                                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Google   | `GOOGLE_CLIENT_ID` (web) and/or `GOOGLE_IOS_CLIENT_ID` (comma-separated); `GOOGLE_CLIENT_SECRET` for the web flow only | every configured Google client ID                                                                                         |
-| Apple    | `APPLE_CLIENT_ID` (Services ID); `APPLE_CLIENT_SECRET` for the web flow only; `APPLE_APP_BUNDLE_IDENTIFIER`            | every bundle ID in `APPLE_APP_BUNDLE_IDENTIFIER` (default `com.getmintsy.app,com.getmintsy.app.dev`) plus the Services ID |
+| Apple    | `APPLE_CLIENT_ID` (Services ID); `APPLE_CLIENT_SECRET` for the web flow only; `APPLE_APP_BUNDLE_IDENTIFIER`            | every bundle ID in `APPLE_APP_BUNDLE_IDENTIFIER` (default `com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview`) plus the Services ID |
 
 ## Errors
 
@@ -57,11 +57,11 @@ Client IDs and bundle IDs aren't secret (plain Cloud Run env vars); `GOOGLE_CLIE
 
 * Configure the OAuth consent screen.
 * Credentials → Create OAuth client ID as **Web application** (`GOOGLE_CLIENT_ID`, secret `GOOGLE_CLIENT_SECRET`, redirect URIs above).
-* Create one as **iOS** with bundle ID `com.getmintsy.app` (`GOOGLE_IOS_CLIENT_ID`). iOS clients are per bundle ID, so dev builds (`com.getmintsy.app.dev`) need a second iOS client; `GOOGLE_IOS_CLIENT_ID` takes a comma-separated list.
+* Create one as **iOS** with bundle ID `com.getmintsy.app` (`GOOGLE_IOS_CLIENT_ID`). iOS clients are per bundle ID, so dev builds (`com.getmintsy.app.dev`) and preview builds (`com.getmintsy.app.preview`) each need their own iOS client; `GOOGLE_IOS_CLIENT_ID` takes a comma-separated list.
 
 **Apple Developer → Identifiers**
 
-* Enable **Sign in with Apple** on the App IDs `com.getmintsy.app` and `com.getmintsy.app.dev`.
+* Enable **Sign in with Apple** on the App IDs `com.getmintsy.app`, `com.getmintsy.app.dev` and `com.getmintsy.app.preview`.
 * Create a **Services ID** (`APPLE_CLIENT_ID`) with Sign in with Apple enabled: domain `app.getmintsy.com`, return URL `https://app.getmintsy.com/api/auth/callback/apple` (web flow only).
 * For the web flow only: Keys → create a key with Sign in with Apple and generate the client-secret JWT (`APPLE_CLIENT_SECRET`, expires after at most 6 months).
 

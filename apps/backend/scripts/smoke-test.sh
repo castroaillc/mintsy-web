@@ -2,6 +2,7 @@
 # End-to-end auth smoke test against a running backend.
 # Usage: scripts/smoke-test.sh http://localhost:8080
 # Creates a throwaway user, so don't point it at production.
+# SMOKE_NO_WEB_ORIGIN=1 skips the check that https://app.getmintsy.com is trusted, for a server with WEB_ORIGINS= (no web app).
 set -euo pipefail
 
 BASE_URL="${1:?usage: $0 BASE_URL}"
@@ -114,11 +115,24 @@ fi
 echo "me.premium.store is null for a new user"
 gql '{"query":"{ me { premium { store } } }"}' | grep -q '"store":null' || fail "premium.store missing"
 
+# update-user: the password reset and sign-in routes are rate limited in production, and this script uses up those limits
+echo "app schemes: each variant is trusted, an unknown scheme isn't"
+for scheme in mintsy mintsy-dev mintsy-preview; do
+  code=$(status -b "$JAR" -X POST "$BASE_URL/api/auth/update-user" -H "$JSON" -H "expo-origin: $scheme://" -d '{"name":"Smoke Test"}')
+  [ "$code" = 200 ] || fail "update-user from $scheme:// returned $code, expected 200"
+done
+code=$(status -b "$JAR" -X POST "$BASE_URL/api/auth/update-user" -H "$JSON" -H "expo-origin: mintsy-unknown://" -d '{"name":"Smoke Test"}')
+[ "$code" = 403 ] || fail "update-user from an unknown scheme returned $code, expected 403"
+
 echo "web origin: trusted for sign-in and redirect URLs"
-code=$(status -X POST "$BASE_URL/api/auth/request-password-reset" -H "$JSON" -H "Origin: https://app.getmintsy.com" \
-  -H "X-Forwarded-Host: app.getmintsy.com" \
-  -d '{"email":"nobody-'$RANDOM'@example.com","redirectTo":"https://app.getmintsy.com/reset-password"}')
-[ "$code" = 200 ] || fail "web redirectTo returned $code, expected 200"
+if [ -z "${SMOKE_NO_WEB_ORIGIN:-}" ]; then
+  code=$(status -X POST "$BASE_URL/api/auth/request-password-reset" -H "$JSON" -H "Origin: https://app.getmintsy.com" \
+    -H "X-Forwarded-Host: app.getmintsy.com" \
+    -d '{"email":"nobody-'$RANDOM'@example.com","redirectTo":"https://app.getmintsy.com/reset-password"}')
+  [ "$code" = 200 ] || fail "web redirectTo returned $code, expected 200"
+else
+  echo "  skipped (SMOKE_NO_WEB_ORIGIN)"
+fi
 code=$(status -X POST "$BASE_URL/api/auth/sign-in/email" -H "$JSON" -H "Origin: https://evil.example.com" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"password1234\"}")
 [ "$code" = 403 ] || fail "untrusted web Origin returned $code, expected 403"

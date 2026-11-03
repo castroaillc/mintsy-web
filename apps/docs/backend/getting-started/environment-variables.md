@@ -24,6 +24,7 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 | `MONGODB_DB`         | database from `MONGODB_URI` | App data database (auth, push tokens, entitlements, My List, watch progress). Overrides the database name in the URI. `mintsy` on the single database, `mintsy_app` once split.                                                                                                                                                                                      |
 | `MONGODB_CATALOG_DB` | same database as app data   | Database holding the catalog (`books`), which the API only reads and never writes or indexes. Unset or empty means the catalog is in the app database. `mintsy_studio` in `.env.example`, the default of admin and the studio worker, and in production once split; unset on the single database. See [MongoDB collections](../architecture/mongodb-collections.md). |
 | `CORS_ORIGINS`       | empty                       | Comma-separated extra browser origins, added to both CORS and Better Auth's trusted origins. The web app's origin (`https://app.getmintsy.com`, plus `http://localhost:3000` outside production) is built in, so production sets this empty.                                                                                                                         |
+| `WEB_ORIGINS`        | built-in web app origins    | Comma-separated web app origins, trusted by CORS and Better Auth and allowed as `X-Forwarded-Host`. Unset keeps the built-in ones (`https://app.getmintsy.com`, plus `http://localhost:3000` outside production), which is what production uses. Set but empty means no web app, for the preview service. `scripts/smoke-test.sh` then needs `SMOKE_NO_WEB_ORIGIN=1`. |
 | `NODE_ENV`           | unset (`development`)       | `production` (set in the Docker image) turns off the OpenAPI auth reference, Apollo Sandbox and introspection, `exp://` trusted origins, and `http://localhost:3000` as a web origin.                                                                                                                                                                                |
 
 ## Media
@@ -65,7 +66,7 @@ A provider is only enabled when its client ID is set. Leave them empty locally.
 | `GOOGLE_CLIENT_SECRET`        | Web client secret. Only for the browser redirect flow (web app).                                                                  |
 | `APPLE_CLIENT_ID`             | Apple Services ID. Enables Apple sign-in.                                                                                         |
 | `APPLE_CLIENT_SECRET`         | ES256 client-secret JWT (expires after at most 6 months). Only for the browser redirect flow.                                     |
-| `APPLE_APP_BUNDLE_IDENTIFIER` | Comma-separated bundle IDs accepted as the audience of native ID tokens. Default `com.getmintsy.app,com.getmintsy.app.dev`.       |
+| `APPLE_APP_BUNDLE_IDENTIFIER` | Comma-separated bundle IDs accepted as the audience of native ID tokens. Default `com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview`.       |
 
 ## Set by the platform or the build
 
