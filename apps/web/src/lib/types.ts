@@ -3,7 +3,11 @@
  * iPhone app's types (mobile-app/src/data/types.ts). Tones are cover/thumbnail art colours, not theme colours.
  */
 
-export type TranscriptLine = { startSec: number; text: string };
+import { themes } from "@mintsy/brand";
+import { CATEGORIES, type Category, type TranscriptLine } from "@mintsy/shared";
+
+export { CATEGORIES, FREE_EPISODES } from "@mintsy/shared";
+export type { Category, TranscriptLine };
 
 export type Episode = {
   /** `<bookId>-<number>` */
@@ -22,8 +26,6 @@ export type Episode = {
   /** True when the viewer needs Premium to watch (number > FREE_EPISODES and not Premium). */
   locked: boolean;
 };
-
-export type Category = "Finance" | "Business" | "Psychology" | "Productivity" | "History" | "Health";
 
 export type Book = {
   id: string;
@@ -98,15 +100,11 @@ export type EpisodeProgress = {
 
 export type SavedKind = "BOOK" | "EPISODE";
 
-/** Episodes 1…FREE_EPISODES of every book are free; the rest need Premium. Mirrors backend/src/constants.ts. */
-export const FREE_EPISODES = 3;
-
-export const CATEGORIES = ["Finance", "Business", "Psychology", "Productivity", "History", "Health"] as const;
 export const CATEGORY_FILTERS = ["All", ...CATEGORIES] as const;
 export type CategoryFilter = (typeof CATEGORY_FILTERS)[number];
 
 /** Rotating thumbnail tints for episode cards (same as the app and the boards). */
-export const EPISODE_TINTS = ["#2B2850", "#2C3245", "#3F2A30", "#3A2B30"];
+export const EPISODE_TINTS: string[] = themes["ink-coral"].tints;
 
 /** Dark or light cover ink, whichever reads on the given tone. */
 export function coverInk(tone: string) {

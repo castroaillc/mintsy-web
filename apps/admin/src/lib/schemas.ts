@@ -1,3 +1,4 @@
+import { CATEGORIES } from "@mintsy/shared";
 import { z } from "zod";
 
 /** Same rule the studio worker enforces (jobs with other ids fail). */
@@ -9,17 +10,7 @@ export const bookIdSchema = z
   .max(64, "At most 64 characters")
   .regex(BOOK_ID_RE, "Lowercase letters, digits and hyphens, starting with a letter or digit (e.g. psychology-of-money)");
 
-/**
- * Categories the app knows. Mirrors mobile-app `src/data/types.ts` CATEGORIES (minus "All")
- * and studio `pipeline/steps/ingest.ts` CATEGORIES; change all three together. A book with
- * any other category never matches the app's category chips.
- */
-export const CATEGORIES = ["Finance", "Business", "Psychology", "Productivity", "History", "Health"] as const;
-export type Category = (typeof CATEGORIES)[number];
-
-export function isCategory(s: string): s is Category {
-  return (CATEGORIES as readonly string[]).includes(s);
-}
+export { CATEGORIES, isCategory, type Category } from "@mintsy/shared";
 
 const hex = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, "Use a #RRGGBB colour");
 

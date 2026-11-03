@@ -12,6 +12,7 @@
   "packageManager": "pnpm@12.15.0",
   "dependencies": {
     "@mintsy/brand": "workspace:*",
+    "@mintsy/shared": "workspace:*",
     "@revenuecat/purchases-js": "^1.73.1",
     "better-auth": "1.7.14",
     "clsx": "^2.1.1",
