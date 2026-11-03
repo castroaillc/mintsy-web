@@ -1,0 +1,19 @@
+{
+  "name": "mintsy-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev --host 127.0.0.1 --port 3002 --strictPort",
+    "build": "vitepress build",
+    "preview": "vitepress preview --host 127.0.0.1 --port 3002"
+  },
+  "devDependencies": {
+    "mermaid": "^11.17.2",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  },
+  "dependencies": {
+    "@mintsy/brand": "workspace:*"
+  }
+}

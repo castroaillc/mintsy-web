@@ -24,11 +24,11 @@ pnpm dev
 
 ## Documentation
 
-All docs live in the hub repo, at [`docs/backend/`](https://github.com/castroaillc/mintsy-hub/tree/main/docs/backend),
-published with GitBook. When you change the schema, update `docs/backend/graphql-api/` there too.
+All docs live in [`apps/docs/backend/`](../docs/backend/index.md). When you change the schema, update
+`apps/docs/backend/graphql-api/` too.
 
-- [Local setup](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/getting-started/local-setup.md)
-- [HTTP endpoints](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/architecture/http-endpoints.md)
-- [GraphQL API](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/graphql-api/README.md)
-- [Deployment](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/deployment/README.md)
-- [Media and signed URLs](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/features/media.md), including the `SIGNED_MEDIA` IAM setup
+- [Local setup](../docs/backend/getting-started/local-setup.md)
+- [HTTP endpoints](../docs/backend/architecture/http-endpoints.md)
+- [GraphQL API](../docs/backend/graphql-api/index.md)
+- [Deployment](../docs/backend/deployment/index.md)
+- [Media and signed URLs](../docs/backend/features/media.md), including the `SIGNED_MEDIA` IAM setup

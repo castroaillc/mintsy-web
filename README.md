@@ -1,13 +1,14 @@
 # mintsy-web
 
-A pnpm monorepo with two separate Next.js apps and the mintsy API. They share the lockfile and
-nothing else.
+A pnpm monorepo with two separate Next.js apps, the mintsy API and the docs site. They share the
+lockfile and nothing else.
 
 | App | Path | What it is | Runs where |
 |---|---|---|---|
 | `mintsy-web` | `apps/web` | The web app at app.getmintsy.com: browse, stream, My List, web checkout | Vercel (deployed) |
 | `mintsy-admin` | `apps/admin` | Content dashboard: books, PDF upload, studio jobs, draft/publish | Your machine only |
 | `mintsy-backend` | `apps/backend` | GraphQL API + Better Auth (api.getmintsy.com) | Cloud Run; deploys from this repo's `main` |
+| `mintsy-docs` | `apps/docs` | All mintsy documentation ([start here](apps/docs/index.md)) | Your machine only |
 
 > [!WARNING]
 > **The admin dashboard is local-only and must never be deployed.** It has no sign-in, and
@@ -24,6 +25,7 @@ pnpm install          # once, at the repo root
 pnpm dev:web          # web   → http://localhost:3000
 pnpm dev:admin        # admin → http://127.0.0.1:3001 (bound to localhost only)
 pnpm dev:backend      # API   → http://localhost:4000 (/graphql, /api/auth/*)
+pnpm dev:docs         # docs  → http://127.0.0.1:3002 (bound to localhost only)
 ```
 
 The backend needs a local MongoDB replica set: `docker compose -f apps/backend/docker-compose.yml up -d`.
@@ -36,9 +38,9 @@ workflow and the studio worker.
 ## Checks
 
 ```sh
-pnpm lint             # web + admin (the backend has no lint script)
-pnpm typecheck        # all three
-pnpm build            # all three
+pnpm lint             # web + admin (the backend and docs have no lint script)
+pnpm typecheck        # web, admin, backend
+pnpm build            # web, admin, backend, docs
 pnpm test:backend     # backend tests; need a local replica-set MongoDB (TEST_MONGODB_URI)
 ```
 

@@ -1,0 +1,13 @@
+/* Colors are set from @mintsy/brand tokens in ../config.ts, so only fonts are here. */
+@import '@mintsy/brand/css/fonts.css';
+
+:root {
+  --vp-font-family-base: 'Inter', system-ui, sans-serif;
+}
+
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.VPNavBarTitle .title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}

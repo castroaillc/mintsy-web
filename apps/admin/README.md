@@ -30,5 +30,5 @@ Checks, from `apps/admin`: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 
 ## Documentation
 
-The workflow, env vars, job rules and code map are in the hub repo:
-[`docs/services/admin.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/services/admin.md).
+The workflow, env vars, job rules and code map are in the docs:
+[`apps/docs/services/admin.md`](../docs/services/admin.md).

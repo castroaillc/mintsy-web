@@ -24,5 +24,5 @@ npm run logos        # regenerates the logo outlines (needs Python with fontTool
 
 ## Documentation
 
-How to use it in each app, the theme and every export are in the hub repo:
-[`docs/services/brand.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/services/brand.md).
+How to use it in each app, the theme and every export are in the docs:
+[`apps/docs/services/brand.md`](../../apps/docs/services/brand.md).

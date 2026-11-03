@@ -22,5 +22,5 @@ Checks: `npx expo lint`, `npx tsc --noEmit`, `pnpm test`. End-to-end tests: [`e2
 
 ## Documentation
 
-The architecture, Premium and store setup checklist, and release steps are in the hub repo:
-[`docs/services/mobile.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/services/mobile.md).
+The architecture, Premium and store setup checklist, and release steps are in the docs:
+[`apps/docs/services/mobile.md`](../docs/services/mobile.md).

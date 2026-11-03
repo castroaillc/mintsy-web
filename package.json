@@ -10,7 +10,8 @@
     "lint": "pnpm -r --no-bail lint",
     "typecheck": "pnpm -r --no-bail typecheck",
     "build": "pnpm -r --no-bail build",
-    "dev:mobile": "pnpm -C apps/mobile start"
+    "dev:mobile": "pnpm -C apps/mobile start",
+    "dev:docs": "pnpm --filter mintsy-docs dev"
   },
   "packageManager": "pnpm@12.15.0"
 }
