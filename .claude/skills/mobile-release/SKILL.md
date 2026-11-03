@@ -27,6 +27,10 @@ node scripts/eas-update.mjs production "message"
 
 Builds made before the three variants existed (preview build 6 and earlier) carry production's bundle ID, so `preview` updates no longer reach them.
 
+**Set `APP_VARIANT` on every other local EAS command too**, or it resolves the development app. For example, `APP_VARIANT=production npx eas-cli@latest submit --platform ios --profile production --id <build id>`.
+
+**EAS variables can be shared across environments.** Check with `eas env:list` first. `env:create --force` on one environment can remove a shared value from the others, so list every environment afterwards.
+
 **Never give a preview or production build a RevenueCat `test_` key.** RevenueCat crashes release-compiled builds on purpose when it finds one, and React Native has no override. Test Store keys are for debug builds only.
 
 **`package.json` scripts are a fingerprint input.** Adding one changes the runtime, so only change them alongside a native build.
