@@ -1,3 +1,4 @@
+import { getTheme } from "@mintsy/brand";
 import {
   AbsoluteFill,
   Easing,
@@ -26,7 +27,7 @@ export type IntroProps = {
   episodeTitle: string;
 };
 
-const BRAND = { background: "#0D0E12" };
+const BRAND = { background: getTheme("ink-coral", "dark").background };
 /** Pixels per wordmark unit: the wordmark's font units are 1000/em, so this draws it at 150px type. */
 const LOGO_SCALE = 0.15;
 /** How far below the frame's center the logo's box sits, so its baseline stays where it has always been. */

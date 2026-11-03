@@ -1,8 +1,9 @@
+import { getTheme } from "@mintsy/brand";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadSpaceGrotesk } from "@remotion/google-fonts/SpaceGrotesk";
 import { Easing, interpolate } from "remotion";
 
-// Same type and colors as the mintsy app (mobile-app/design/README.md)
+// Same type as the mintsy app; colors come from @mintsy/brand
 export const display = loadSpaceGrotesk("normal", {
   weights: ["500", "700"],
   subsets: ["latin"],
@@ -12,14 +13,16 @@ export const body = loadInter("normal", {
   subsets: ["latin"],
 }).fontFamily;
 
+const dark = getTheme("ink-coral", "dark");
+
 export const colors = {
-  background: "#0D0E12",
-  card: "#1D1F27",
-  border: "#2A2C36",
-  foreground: "#F2F2F5",
-  muted: "#A3A5B0",
-  accent: "#F5B83D",
-  accentInk: "#1C1C1C",
+  background: dark.background,
+  card: dark.card,
+  border: dark.border,
+  foreground: dark.foreground,
+  muted: dark.mutedForeground,
+  accent: dark.brand,
+  accentInk: dark.brandForeground,
 };
 
 /** 1280×720 frame; keep text inside these margins. */

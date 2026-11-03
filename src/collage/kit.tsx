@@ -1,3 +1,4 @@
+import { collage } from "@mintsy/brand";
 import { loadFont as loadOswald } from "@remotion/google-fonts/Oswald";
 import {
   AbsoluteFill,
@@ -17,19 +18,7 @@ export const condensed = loadOswald("normal", {
   subsets: ["latin"],
 }).fontFamily;
 
-export const palette = {
-  mint: "#4FDDB0",
-  teal: "#1E9E83",
-  pink: "#E8457A",
-  yellow: "#F2D134",
-  gold: "#F5B83D",
-  cream: "#F3E3C3",
-  slate: "#557572",
-  plum: "#2B1F4E",
-  ink: "#1E1B24",
-  skin: "#E9A56F",
-  white: "#FBF7EE",
-};
+export const palette = collage;
 
 /** Frame number for a time in seconds. */
 export function useAt() {

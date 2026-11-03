@@ -26,6 +26,8 @@ Staff run this from the admin dashboard (`mintsy-admin/`): it queues jobs in Mon
 
 ## Setup
 
+Colors and the logo come from `@mintsy/brand`, linked from `../mintsy-web/packages/brand`, so `mintsy-web` must be cloned next to this folder.
+
 ```sh
 pnpm install
 cp .env.example .env     # everything in it is optional except MONGODB_URI for the worker

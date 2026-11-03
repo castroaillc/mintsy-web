@@ -1,3 +1,4 @@
+import { getTheme, logoPaths } from "@mintsy/brand";
 /**
  * Still images in the collage style: the episode thumbnail (16:9) and the book cover (2:3).
  * Both are rendered with renderStill; they read at the app's smallest sizes (132pt thumbnails,
@@ -242,10 +243,14 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, author, category, c
           <div style={{ rotate: "-6deg" }}>
             <Sticker icon={emblem.icon} color={emblem.color} edge={420} />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: display, fontWeight: 700, fontSize: 44, color: ink }}>
-            <span style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: palette.pink, display: "inline-block" }} />
-            mintsy
-          </div>
+          <svg
+            viewBox={`0 0 ${logoPaths.wordmark.width} ${logoPaths.wordmark.height}`}
+            width={(logoPaths.wordmark.width * 44) / 1000}
+            height={(logoPaths.wordmark.height * 44) / 1000}
+          >
+            <path d={logoPaths.wordmark.letters} fill={ink} />
+            <path d={logoPaths.wordmark.dot} fill={getTheme("ink-coral", "dark").brand} />
+          </svg>
         </div>
       </AbsoluteFill>
       <PaperFinish vignette={0.2} />
