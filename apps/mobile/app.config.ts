@@ -35,9 +35,9 @@ const VARIANTS = {
     androidForeground: './assets/images/android-icon-foreground.png',
     googleIosUrlScheme: process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME,
     googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    // Prebuild auto-applies expo-dev-client with its default, so production builds still claim `exp+mintsy`. Listing it
-    // with `addGeneratedScheme: false` fixes that but changes the runtime: do it with the next production native build.
-    plugins: [] as [string, object][],
+    // Prebuild applies expo-dev-client by itself with its default, which would claim `exp+mintsy` here too. Listing it
+    // only turns that off: the dev client's native code stays out of Release builds either way.
+    plugins: [['expo-dev-client', { addGeneratedScheme: false }] as [string, object]],
   },
 };
 type AppVariant = keyof typeof VARIANTS;

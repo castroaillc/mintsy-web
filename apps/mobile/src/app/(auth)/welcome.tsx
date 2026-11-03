@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 
 import { FormAlert } from '@/components/auth/form-alert';
 import { SocialSignIn } from '@/components/auth/social-sign-in';
@@ -14,6 +14,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import type { Book } from '@/data/types';
+import { useRailInsets } from '@/hooks/use-rail-insets';
 import { useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { clearFlash, useFlash } from '@/lib/flash';
@@ -24,6 +25,13 @@ import { formatTime } from '@/lib/series';
 const FAN_LAYOUT = {
   narrow: { width: 342, height: 330, side: 128, sideTop: 54, sideInset: 22, main: 152, mainTop: 20, pillTop: 262 },
   wide: { width: 332, height: 318, side: 140, sideTop: 40, sideInset: 0, main: 168, mainTop: 0, pillTop: 278 },
+};
+
+/** Headline sizes. The open, rotated window is only 669 tall, so it gets a smaller one to fit without scrolling. */
+const HEADLINE = {
+  narrow: { fontSize: 34, lineHeight: 37, letterSpacing: -0.6 },
+  wide: { fontSize: 40, lineHeight: 42, letterSpacing: -0.8 },
+  shortWide: { fontSize: 32, lineHeight: 35, letterSpacing: -0.6 },
 };
 
 /** On phones the fan shrinks into the height the copy and buttons leave; below this scale it's dropped. */
@@ -41,7 +49,8 @@ const SAMPLE_COVERS: Book[] = [
 
 export default function WelcomeScreen() {
   const { books } = useCatalog();
-  const { wide, paneWidth, tightPanes } = useWideLayout();
+  const { wide, shortWide, paneWidth, tightPanes } = useWideLayout();
+  const insets = useRailInsets();
   // Same pick as Home: the first playable book in catalog order is featured; the next two fan out behind it
   const featured = books.find((b) => b.episodes.length > 0);
   const first = featured?.episodes[0];
@@ -106,7 +115,7 @@ export default function WelcomeScreen() {
     <VStack className="gap-3.5">
       <Text
         accessibilityRole="header"
-        style={{ fontSize: wide ? 40 : 34, lineHeight: wide ? 42 : 37, letterSpacing: wide ? -0.8 : -0.6 }}
+        style={HEADLINE[shortWide ? 'shortWide' : wide ? 'wide' : 'narrow']}
         className="font-display text-foreground"
       >
         Every great book, one 5-minute episode at a time.
@@ -152,28 +161,35 @@ export default function WelcomeScreen() {
     </VStack>
   );
 
-  // ── Wide: cover art pane left, pitch and sign-in right; everything fits, so nothing scrolls ──
+  // ── Wide: cover art pane left, pitch and sign-in right, which scrolls when a notice or larger text needs the room ──
   if (wide) {
     return (
       <Box className="flex-1 flex-row bg-background">
-        <SafeAreaView
-          edges={['top', 'bottom', 'left']}
-          style={{ width: paneWidth, backgroundColor: main.tint }}
+        <Box
+          style={{
+            width: paneWidth,
+            backgroundColor: main.tint,
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+          }}
           className="flex-none overflow-hidden"
         >
           <Box className="px-8 pt-7">{logo}</Box>
           <Box className={`flex-1 justify-center pb-16 ${tightPanes ? 'px-6' : 'px-[62px]'}`}>{fan}</Box>
-        </SafeAreaView>
-        <SafeAreaView edges={['top', 'bottom', 'right']} className="flex-1">
-          {/* Padding on an inner box: SafeAreaView's own padding is the insets */}
-          <Box className={`flex-1 justify-center py-8 ${tightPanes ? 'px-6' : 'px-14'}`}>
+        </Box>
+        <Box style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingRight: insets.right }} className="flex-1">
+          <ScrollView
+            alwaysBounceVertical={false}
+            contentContainerClassName={`min-h-full justify-center ${shortWide ? 'px-8 py-4' : `py-8 ${tightPanes ? 'px-6' : 'px-14'}`}`}
+          >
             <VStack className="w-full max-w-[420px] gap-[18px]">
               {noticeAlert}
               {pitch}
               {actions}
             </VStack>
-          </Box>
-        </SafeAreaView>
+          </ScrollView>
+        </Box>
       </Box>
     );
   }

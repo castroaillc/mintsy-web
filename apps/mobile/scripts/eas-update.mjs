@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Publishes an EAS update with the variant set: `eas update` doesn't read eas.json's env, and without APP_VARIANT it
 // resolves the development config, so the update lands on a runtime no preview or production build has.
-//   node scripts/eas-update.mjs <preview|production> "<message>"
-// Not a package.json script on purpose, until the next production native build: package.json `scripts` is a fingerprint
-// input, so adding one changes production's runtime and cuts the builds already out there off from updates.
+//   pnpm run update:preview "<message>"
+//   pnpm run update:production "<message>"
+// Those are package.json scripts, which are a fingerprint input: changing them changes every variant's runtime, so only
+// do it alongside a new native build.
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
@@ -22,7 +23,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const { status } = spawnSync('npx', args, { stdio: 'inherit', env: { ...process.env, ...env } });
     process.exit(status ?? 1);
   } catch (err) {
-    console.error(`${err.message}\nUsage: node scripts/eas-update.mjs <preview|production> "<message>"`);
+    console.error(`${err.message}\nUsage: pnpm run update:<preview|production> "<message>"`);
     process.exit(1);
   }
 }

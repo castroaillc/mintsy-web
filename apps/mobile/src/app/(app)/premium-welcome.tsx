@@ -9,6 +9,7 @@ import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useNotificationPermission } from '@/hooks/use-notification-permission';
+import { useRailInsets } from '@/hooks/use-rail-insets';
 import { useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { usePremium } from '@/lib/premium';
@@ -22,6 +23,7 @@ function longDate(iso: string) {
 export default function PremiumWelcomeScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId?: string }>();
   const { wide, paneWidth, tightPanes } = useWideLayout();
+  const insets = useRailInsets();
   const { periodType, expiresAt, willRenew } = usePremium();
   const { permission } = useNotificationPermission();
   const found = useCatalog().findEpisode(episodeId ?? '');
@@ -88,26 +90,38 @@ export default function PremiumWelcomeScreen() {
   if (wide) {
     return (
       <Box className="flex-1 flex-row bg-background">
-        <SafeAreaView
-          edges={['top', 'bottom', 'left']}
-          style={{ width: paneWidth, backgroundColor: found?.book.tint ?? '#2B2850' }}
-          className="flex-none items-center justify-center p-12"
+        <Box
+          style={{
+            width: paneWidth,
+            backgroundColor: found?.book.tint ?? '#2B2850',
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+          }}
+          className="flex-none"
         >
-          {hero(true)}
-        </SafeAreaView>
-        <SafeAreaView edges={['top', 'bottom', 'right']} className={`flex-1 justify-center py-12 ${tightPanes ? 'px-6' : 'px-14'}`}>
-          <VStack className="w-full max-w-[420px] gap-3.5">
-            {found ? (
-              <>
-                <Text className="font-inter-semibold text-[13px] uppercase tracking-[1px] text-muted-foreground">
-                  Pick up where you left off
-                </Text>
-                <UpNextEpisodeCard book={found.book} episode={found.episode} showBook />
-              </>
-            ) : null}
-            {actions}
-          </VStack>
-        </SafeAreaView>
+          <ScrollView alwaysBounceVertical={false} contentContainerClassName="min-h-full items-center justify-center p-12">
+            {hero(true)}
+          </ScrollView>
+        </Box>
+        <Box style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingRight: insets.right }} className="flex-1">
+          <ScrollView
+            alwaysBounceVertical={false}
+            contentContainerClassName={`min-h-full justify-center py-12 ${tightPanes ? 'px-6' : 'px-14'}`}
+          >
+            <VStack className="w-full max-w-[420px] gap-3.5">
+              {found ? (
+                <>
+                  <Text className="font-inter-semibold text-[13px] uppercase tracking-[1px] text-muted-foreground">
+                    Pick up where you left off
+                  </Text>
+                  <UpNextEpisodeCard book={found.book} episode={found.episode} showBook />
+                </>
+              ) : null}
+              {actions}
+            </VStack>
+          </ScrollView>
+        </Box>
       </Box>
     );
   }

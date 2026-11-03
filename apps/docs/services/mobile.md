@@ -42,10 +42,10 @@ Checks: `npx expo lint`, `npx tsc --noEmit`, `pnpm test` (`scripts/*.test.mjs`).
 | preview | Mintsy Preview | `com.getmintsy.app.preview` | `mintsy-preview` | `PREVIEW` | `preview` |
 | production | Mintsy | `com.getmintsy.app` | `mintsy` | none | `production` (auto-incremented build number, remote app version, submits to App Store Connect app `6827671481`) |
 
-- **Runtime:** `runtimeVersion` uses the fingerprint policy and the config differs per variant, so each variant has its own runtime, and an update only reaches its own builds. Environment variables that change the config count too: setting `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_PREVIEW` adds the Google plugin and changes preview's runtime. `package.json` `scripts` count as well, so adding a script changes every variant's runtime; only do that alongside a new native build.
+- **Runtime:** `runtimeVersion` uses the fingerprint policy and the config differs per variant, so each variant has its own runtime, and an update only reaches its own builds. Environment variables that change the config count too: setting `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_PREVIEW` adds the Google plugin and changes preview's runtime. `package.json` `scripts` count as well, so changing them changes every variant's runtime; only do that alongside a new native build.
 - **Icons:** `scripts/generate-variant-icons.py` makes the dev and preview icons from production's. `ios.icon` isn't set, so iOS uses the top-level `icon`; on Android `android.adaptiveIcon` takes precedence, so its foreground is per variant too. The monochrome (themed) Android icon is shared.
 - **Development builds read the config from the dev server,** so `Constants.expoConfig` follows the server's `APP_VARIANT`. Start the server with the variant of the build you open.
-- **QR codes:** the generated `exp+mintsy` scheme is claimed by development and turned off for preview. Production builds still claim it, because changing that changes production's runtime (see the comment in `app.config.ts`), so with both installed iOS may open the wrong one. Until the next production native build, run `npx expo start --dev-client --scheme mintsy-dev`.
+- **QR codes:** the generated `exp+mintsy` scheme is claimed by development only, so a dev QR code can't open a preview build or a production build made with this config. Production builds made before it still claim the scheme, so while one is installed next to a development build, iOS may open the wrong one: run `npx expo start --dev-client --scheme mintsy-dev` until it's replaced. Listing `expo-dev-client` for preview and production only sets the scheme: its native code is debug-only and stays out of their Release builds.
 
 Every variant is registered separately outside this code:
 
@@ -110,9 +110,23 @@ All of these are in `.env.example`.
 
 `app/(app)/player/[episodeId].tsx` renders a 16:9 panel with custom overlay controls (±10 s, play/pause, scrubber, captions, fullscreen), episode info, previous / speed / save / next, and Transcript and Key takeaways tabs. It unlocks rotation, and it has wide layouts for the iPhone Duo.
 
+| Pose | Window | Layout |
+|---|---|---|
+| Fully open, upright | about 669×951 | Side by side (`ArrangementView`, iOS 27.1+) |
+| Fully open, rotated | about 951×669 | The video fills the screen |
+| Half open, upright (horizontal fold) | about 669×951 | Tabletop: video above the fold, controls below |
+| Half open, on its side (vertical fold) | about 951×669 | Side by side, with no full-screen button, so nothing tappable sits in the fold. Controls clear the rail on both sides |
+| Folded, regular iPhones | compact | Phone layout; on its side the video fills the screen |
+
 - Episodes with a video use `useVideoClock`, which wraps an `expo-video` player and exposes the same interface as the simulated `usePlaybackClock` (used for episodes without one), so the rest of the screen is identical for both. A stream with a fallback that stalls in `loading` for 15 s falls back to the MP4 (`lib/stream-source.ts`, `hooks/use-video-clock.ts`).
 - The transcript highlights the active line, auto-scrolls ("following along"), offers "Back to current" after manual scrolling, and seeks on tap. Captions are drawn from the same transcript lines.
 - Position is tracked every whole second; finishing marks the episode complete and auto-advances if the preference is on. At the end of the last free episode it upsells instead of advancing into a locked one.
+
+## Wide layouts
+
+`useWideLayout` picks layouts from the window at render time, and its `shortWide` is iPhone Duo open and rotated (951×669). That window is short, so Welcome uses a smaller headline there, and Welcome, Paywall and Premium welcome scroll if a notice or a larger text size needs more room. The paywall's price, billing period, auto-renew terms and legal links all fit without scrolling at the default text size.
+
+`useRailInsets` clears the 84 pt system rail in that pose, on whichever side the window says it's on, because in modals the root provider's insets can read 0 on the rail side. Use it for screens without the player's `verticalBarBehaviorIOS="disabled"`; the player clears both sides itself.
 
 ## Premium
 
@@ -204,8 +218,8 @@ Native modules (`expo-video`, `expo-notifications`, `expo-secure-store`, `react-
 `eas update` doesn't read `eas.json`'s `env`, and without `APP_VARIANT` it resolves the development config and lands on a runtime no preview or production build has. Publish through the wrapper, which sets the variant, channel and environment together:
 
 ```sh
-node scripts/eas-update.mjs preview "What changed"
-node scripts/eas-update.mjs production "What changed"
+pnpm run update:preview "What changed"
+pnpm run update:production "What changed"
 ```
 
 With `--environment`, `eas update` uses only that EAS environment's variables and ignores `.env`, so every `EXPO_PUBLIC_*` the variant needs has to exist there. After publishing, compare the printed runtime with the build's.

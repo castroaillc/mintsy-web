@@ -7,6 +7,18 @@ import { Platform, useWindowDimensions } from 'react-native';
  */
 export const WIDE_MIN_WIDTH = 600;
 
+/**
+ * Below this window height (pt), landscape means a phone on its side. Covers iPhone Duo open (669) and leaves
+ * full-size iPad windows (744 and up) out.
+ */
+export const SIDEWAYS_MAX_HEIGHT = 700;
+
+/** Below this window height (pt), landscape has no status bar: regular iPhones and iPhone Duo folded. */
+export const PHONE_SIDEWAYS_MAX_HEIGHT = 500;
+
+/** Width (pt) of the system rail on iPhone Duo, which holds the status bar when the rail is drawn. */
+export const RAIL_WIDTH = 84;
+
 /** Left pane of the two-pane layouts, when the window has room for it (design: it ends near the fold). */
 const WIDE_PANE_WIDTH = 456;
 
@@ -22,7 +34,10 @@ export function useWideLayout() {
   const wide = width >= WIDE_MIN_WIDTH;
   // Narrow wide windows (iPhone Duo open and upright) split evenly, so the right pane keeps a phone's width
   const paneWidth = Math.min(WIDE_PANE_WIDTH, Math.round(width / 2));
-  return { width, height, wide, landscape: width > height, paneWidth, tightPanes: paneWidth < WIDE_PANE_WIDTH };
+  const landscape = width > height;
+  // Wide and short, with the system rail taking width too: iPhone Duo open and rotated
+  const shortWide = wide && landscape && height >= PHONE_SIDEWAYS_MAX_HEIGHT && height < SIDEWAYS_MAX_HEIGHT;
+  return { width, height, wide, landscape, shortWide, paneWidth, tightPanes: paneWidth < WIDE_PANE_WIDTH };
 }
 
 /** ArrangementView only lays its children out on iOS 27.1+; older systems render them without a container. */

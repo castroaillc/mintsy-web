@@ -31,7 +31,14 @@ import { VStack } from '@/components/ui/vstack';
 import { FREE_EPISODES, type Book, type Episode } from '@/data/types';
 import { usePlaybackClock, type PlaybackClock, type PlaybackClockOptions } from '@/hooks/use-playback-clock';
 import { useVideoClock } from '@/hooks/use-video-clock';
-import { READABLE_MAX_WIDTH, supportsArrangementView, useWideLayout } from '@/hooks/use-wide-layout';
+import {
+  PHONE_SIDEWAYS_MAX_HEIGHT,
+  RAIL_WIDTH,
+  READABLE_MAX_WIDTH,
+  SIDEWAYS_MAX_HEIGHT,
+  supportsArrangementView,
+  useWideLayout,
+} from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { useDownloads } from '@/lib/downloads';
 import { followPhoneOrientation } from '@/lib/orientation';
@@ -53,18 +60,6 @@ const PANEL_HEIGHT = 260;
 
 /** Clear band (pt) kept on each side of a half-folded device's fold; nothing tappable sits in it. */
 const FOLD_CLEARANCE = 24;
-
-/**
- * Below this window height (pt), landscape means a phone on its side: the video fills the screen.
- * Covers iPhone Duo open (669) and leaves full-size iPad windows (744 and up) on the split layout.
- */
-const SIDEWAYS_MAX_HEIGHT = 700;
-
-/** Below this window height (pt), landscape has no status bar: regular iPhones and iPhone Duo folded. */
-const PHONE_SIDEWAYS_MAX_HEIGHT = 500;
-
-/** Width (pt) of the system rail on iPhone Duo, which holds the status bar when the rail is drawn. */
-const RAIL_WIDTH = 84;
 
 /**
  * Share of the video frame's height, from the bottom, that its captions can take. They're part of the picture, not
@@ -303,7 +298,11 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const hinge = useHinge();
   const fold = useReservedRegions().find((r) => r.kind === 'division' && r.frame.width > r.frame.height);
   const tabletop = hinge?.status === 'partiallyOpen' && fold !== undefined;
-  const sideways = landscape && height < SIDEWAYS_MAX_HEIGHT && !tabletop;
+  const halfOpen = hinge?.status === 'partiallyOpen';
+  // Half open on its side, so the fold is vertical: full screen would put the video and scrubber across it
+  const sideFold = landscape && halfOpen && !tabletop;
+  // A phone on its side, or iPhone Duo fully open and rotated: the video fills the screen
+  const sideways = landscape && height < SIDEWAYS_MAX_HEIGHT && !halfOpen;
   // Below iOS 27.1 ArrangementView has no container, so wide windows keep the phone layout there
   const split = wide && !sideways && supportsArrangementView();
 
@@ -331,7 +330,8 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
 
   const [tab, setTab] = useState<Tab>('transcript');
   const [captions, setCaptions] = useState(prefs.captionsByDefault);
-  const [expanded, setExpanded] = useState(false);
+  const [wantsExpanded, setExpanded] = useState(false);
+  const expanded = wantsExpanded && !sideFold;
   const fullScreen = expanded || sideways;
   const { isSaved, toggle } = useSaved();
   const saved = isSaved('EPISODE', episode.id);
@@ -412,7 +412,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         className={captions ? 'border-2 border-brand' : ''}
         onPress={() => setCaptions((c) => !c)}
       />
-      {sideways ? null : (
+      {sideways || sideFold ? null : (
         <IconButton
           icon="fullscreen"
           accessibilityLabel={expanded ? 'Exit full screen' : 'Full screen'}
@@ -673,9 +673,17 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
       </Box>
     );
 
+    // On its side the rail can still be drawn while the insets report nothing there (see openSideways below).
+    // The same inset on both sides also keeps the panes centered on the fold.
+    const sideFoldInset = sideFold ? Math.max(insets.left, insets.right, RAIL_WIDTH) : undefined;
     return (
       <Box
-        style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}
+        style={{
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingLeft: sideFoldInset ?? insets.left,
+          paddingRight: sideFoldInset ?? insets.right,
+        }}
         className="flex-1 bg-background"
       >
         <SplitArrangement

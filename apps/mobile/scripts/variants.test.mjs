@@ -44,11 +44,16 @@ test('only production keeps the original icons; the others differ from it and ea
   assert.equal(new Set(icons.map((c) => c.android.adaptiveIcon.foregroundImage)).size, 3);
 });
 
-test('the dev client scheme is claimed by development and not by preview', async () => {
+test('the dev client scheme is claimed only by development', async () => {
   assert.equal(devClientPlugin(await configFor('development'))[1].addGeneratedScheme, true);
   assert.equal(devClientPlugin(await configFor('preview'))[1].addGeneratedScheme, false);
-  // Listing it here would change production's runtime; see app.config.ts
-  assert.equal(devClientPlugin(await configFor('production')), undefined);
+  assert.equal(devClientPlugin(await configFor('production'))[1].addGeneratedScheme, false);
+});
+
+test('the update aliases publish through the script with the right variant', async () => {
+  const { default: pkg } = await import('../package.json', { with: { type: 'json' } });
+  assert.equal(pkg.scripts['update:preview'], 'node scripts/eas-update.mjs preview');
+  assert.equal(pkg.scripts['update:production'], 'node scripts/eas-update.mjs production');
 });
 
 test('updates always carry a matching variant, channel and environment', () => {

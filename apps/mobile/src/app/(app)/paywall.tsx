@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { Icon } from '@/components/mintsy/icon';
@@ -21,6 +20,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { FREE_EPISODES } from '@/data/types';
+import { useRailInsets } from '@/hooks/use-rail-insets';
 import { useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { loadOffer, type Offer, type Plan } from '@/lib/offering';
@@ -39,8 +39,8 @@ function close() {
 /** Paywall modal (designs 18 / 33). `episodeId`: the episode the viewer was blocked on, carried to Welcome. */
 export default function PaywallScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId?: string }>();
-  const insets = useSafeAreaInsets();
-  const { wide, paneWidth, tightPanes } = useWideLayout();
+  const insets = useRailInsets();
+  const { wide, shortWide, paneWidth, tightPanes } = useWideLayout();
   const premium = usePremium();
   const { findEpisode } = useCatalog();
   const { progress } = useProgress();
@@ -195,13 +195,15 @@ export default function PaywallScreen() {
   if (wide) {
     return (
       <Box
-        style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingRight: insets.right }}
         className="flex-1 flex-row bg-background"
       >
         <ScrollView
           style={{ width: paneWidth }}
           className="flex-none border-r border-border"
-          contentContainerClassName="gap-[18px] px-10 pb-8 pt-5"
+          // The left pane holds the rail's inset when the rail is on that side, so the right pane keeps its width
+          contentContainerStyle={{ paddingLeft: insets.left + 40 }}
+          contentContainerClassName="gap-[18px] pb-8 pr-10 pt-5"
         >
           {closeButton}
           {blockedCard}
@@ -213,7 +215,11 @@ export default function PaywallScreen() {
             <BenefitList />
           </Box>
         </ScrollView>
-        <ScrollView className="flex-1" contentContainerClassName={`min-h-full justify-center py-8 ${tightPanes ? 'px-6' : 'px-12'}`}>
+        {/* All of the purchase terms fit without scrolling at 951×669; it only scrolls at larger text sizes */}
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName={`min-h-full justify-center py-8 ${tightPanes ? 'px-6' : shortWide ? 'px-8' : 'px-12'}`}
+        >
           <HStack className="mb-[18px] justify-end">{restoreButton}</HStack>
           {plans}
           {purchaseBlock}
