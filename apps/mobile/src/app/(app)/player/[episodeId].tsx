@@ -54,8 +54,14 @@ const PANEL_HEIGHT = 260;
 /** Clear band (pt) kept on each side of a half-folded device's fold; nothing tappable sits in it. */
 const FOLD_CLEARANCE = 24;
 
-/** Below this window height (pt), landscape means a phone on its side: the video fills the screen. */
-const SIDEWAYS_MAX_HEIGHT = 500;
+/**
+ * Below this window height (pt), landscape means a phone on its side: the video fills the screen.
+ * Covers iPhone Duo open (669) and leaves full-size iPad windows (744 and up) on the split layout.
+ */
+const SIDEWAYS_MAX_HEIGHT = 700;
+
+/** Below this window height (pt), landscape has no status bar: regular iPhones and iPhone Duo folded. */
+const PHONE_SIDEWAYS_MAX_HEIGHT = 500;
 
 function close() {
   if (router.canGoBack()) router.back();
@@ -290,10 +296,10 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
 
   // Layout is picked per render so folding, rotating and Split View switch it without losing state
   const { wide, landscape, height } = useWideLayout();
-  const sideways = landscape && height < SIDEWAYS_MAX_HEIGHT;
   const hinge = useHinge();
   const fold = useReservedRegions().find((r) => r.kind === 'division' && r.frame.width > r.frame.height);
   const tabletop = hinge?.status === 'partiallyOpen' && fold !== undefined;
+  const sideways = landscape && height < SIDEWAYS_MAX_HEIGHT && !tabletop;
   // Below iOS 27.1 ArrangementView has no container, so wide windows keep the phone layout there
   const split = wide && !sideways && supportsArrangementView();
 
@@ -682,35 +688,45 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   // The video tint runs edge to edge; controls add the side insets.
   // Full screen reaches the bottom edge, so the controls clear the home indicator
   const controlsBottom = fullScreen ? insets.bottom : 0;
+  // A phone on its side has the camera cutout on one short edge and nothing above the video. Insets can
+  // still report portrait values just after rotating, so use the largest one for both sides.
+  // iPhone Duo open keeps its status bar along the top, so it uses the real insets.
+  const phoneSideways = sideways && height < PHONE_SIDEWAYS_MAX_HEIGHT;
+  const sideInset = phoneSideways ? Math.max(insets.left, insets.right, insets.top) : 0;
+  const safeLeft = phoneSideways ? sideInset : insets.left;
+  const safeRight = phoneSideways ? sideInset : insets.right;
+  // Full screen runs the panel to the top edge, so no background shows above it
+  const controlsTop = fullScreen && !phoneSideways ? insets.top : 0;
   const panel = (
     <Box
       style={[{ backgroundColor: book.tint }, fullScreen ? { flex: 1 } : { height: PANEL_HEIGHT }]}
       className="w-full overflow-hidden"
     >
-      {videoLayer(insets.left + 24, insets.right + 24, 70)}
+      {videoLayer(safeLeft + 24, safeRight + 24, controlsTop + 70)}
 
       <HStack
-        style={{ paddingLeft: insets.left + 12, paddingRight: insets.right + 12 }}
-        className="absolute left-0 right-0 top-0 justify-between py-3"
+        style={{ paddingLeft: safeLeft + 12, paddingRight: safeRight + 12, paddingTop: controlsTop + 12 }}
+        className="absolute left-0 right-0 top-0 justify-between pb-3"
       >
         {closeButton}
         {viewButtons}
       </HStack>
 
-      <HStack style={{ right: insets.right + 20, bottom: controlsBottom + 44 }} className="absolute items-center gap-3.5">
+      <HStack style={{ right: safeRight + 20, bottom: controlsBottom + 44 }} className="absolute items-center gap-3.5">
         <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
         {playButton(60, 22)}
         <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
       </HStack>
 
-      <Box style={{ left: insets.left + 16, right: insets.right + 16, bottom: controlsBottom }} className="absolute">
+      <Box style={{ left: safeLeft + 16, right: safeRight + 16, bottom: controlsBottom }} className="absolute">
         <Scrubber positionSec={clock.positionSec} durationSec={episode.durationSec} onSeek={seekToLine} />
       </Box>
     </Box>
   );
 
   return (
-    <Box style={{ paddingTop: insets.top }} className="flex-1 bg-background">
+    <Box style={{ paddingTop: fullScreen ? 0 : insets.top }} className="flex-1 bg-background">
+      {fullScreen ? <StatusBar style="light" /> : null}
       {panel}
 
       {fullScreen ? null : (
