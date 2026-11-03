@@ -18,11 +18,18 @@ Profiles in `eas.json`: `development` (dev client, `Mintsy Dev`), a simulator va
 
 The fingerprint decides which builds an update can reach, so a change that alters it can't ship as an OTA update even if it looks JS-only.
 
-**Set the variant on every update.** `preview` and `production` builds use `APP_VARIANT=production`, and leaving it out publishes the development variant under a runtime no such build has:
+**Publish with the script.** `eas update` doesn't read the `env` block in `eas.json`, and without a variant it publishes development under a runtime no preview or production build has. The script sets the variant, channel and environment together:
 
 ```sh
-APP_VARIANT=production npx eas-cli@latest update --channel preview --environment preview --platform ios --message "..." --non-interactive
+node scripts/eas-update.mjs preview "message"
+node scripts/eas-update.mjs production "message"
 ```
+
+Builds made before the three variants existed (preview build 6 and earlier) carry production's bundle ID, so `preview` updates no longer reach them.
+
+**Never give a preview or production build a RevenueCat `test_` key.** RevenueCat crashes release-compiled builds on purpose when it finds one, and React Native has no override. Test Store keys are for debug builds only.
+
+**`package.json` scripts are a fingerprint input.** Adding one changes the runtime, so only change them alongside a native build.
 
 After publishing, compare the printed runtime with the build's (`eas build:view <id> --json`, `runtime.version`). "Published" alone doesn't mean a device will receive it.
 
