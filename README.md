@@ -28,5 +28,5 @@ pnpm dev                                 # Remotion Studio
 
 ## Documentation
 
-The pipeline steps, job kinds, video system, costs and env vars are in the hub repo:
-[`docs/services/studio.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/services/studio.md).
+The pipeline steps, job kinds, video system, costs and env vars are in the mintsy docs:
+[`apps/docs/services/studio.md`](https://github.com/castroaillc/mintsy-web/blob/main/apps/docs/services/studio.md).
