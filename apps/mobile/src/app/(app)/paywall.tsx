@@ -27,9 +27,6 @@ import { loadOffer, type Offer, type Plan } from '@/lib/offering';
 import { usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 
-/** Left pane of the wide (two-pane) layout, as in design 33. */
-const WIDE_INFO_WIDTH = 456;
-
 const STORE_NAME = Platform.OS === 'android' ? 'Google Play' : 'App Store';
 
 type LoadState = { status: 'loading' } | { status: 'ready'; offer: Offer } | { status: 'error' };
@@ -43,7 +40,7 @@ function close() {
 export default function PaywallScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId?: string }>();
   const insets = useSafeAreaInsets();
-  const { wide } = useWideLayout();
+  const { wide, paneWidth, tightPanes } = useWideLayout();
   const premium = usePremium();
   const { findEpisode } = useCatalog();
   const { progress } = useProgress();
@@ -202,7 +199,7 @@ export default function PaywallScreen() {
         className="flex-1 flex-row bg-background"
       >
         <ScrollView
-          style={{ width: WIDE_INFO_WIDTH }}
+          style={{ width: paneWidth }}
           className="flex-none border-r border-border"
           contentContainerClassName="gap-[18px] px-10 pb-8 pt-5"
         >
@@ -216,7 +213,7 @@ export default function PaywallScreen() {
             <BenefitList />
           </Box>
         </ScrollView>
-        <ScrollView className="flex-1" contentContainerClassName="min-h-full justify-center px-12 py-8">
+        <ScrollView className="flex-1" contentContainerClassName={`min-h-full justify-center py-8 ${tightPanes ? 'px-6' : 'px-12'}`}>
           <HStack className="mb-[18px] justify-end">{restoreButton}</HStack>
           {plans}
           {purchaseBlock}

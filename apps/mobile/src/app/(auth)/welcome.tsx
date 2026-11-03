@@ -20,9 +20,6 @@ import { clearFlash, useFlash } from '@/lib/flash';
 import { openLegalUrl, PRIVACY_URL, SHOW_TERMS, TERMS_URL } from '@/lib/legal';
 import { formatTime } from '@/lib/series';
 
-/** Left pane width of the wide layout (design 22). */
-const WIDE_ART_WIDTH = 456;
-
 /** Fan geometry: narrow from design 4, wide from design 22 (the fan's box is centered in the left pane). */
 const FAN_LAYOUT = {
   narrow: { width: 342, height: 330, side: 128, sideTop: 54, sideInset: 22, main: 152, mainTop: 20, pillTop: 262 },
@@ -44,7 +41,7 @@ const SAMPLE_COVERS: Book[] = [
 
 export default function WelcomeScreen() {
   const { books } = useCatalog();
-  const { wide } = useWideLayout();
+  const { wide, paneWidth, tightPanes } = useWideLayout();
   // Same pick as Home: the first playable book in catalog order is featured; the next two fan out behind it
   const featured = books.find((b) => b.episodes.length > 0);
   const first = featured?.episodes[0];
@@ -161,15 +158,15 @@ export default function WelcomeScreen() {
       <Box className="flex-1 flex-row bg-background">
         <SafeAreaView
           edges={['top', 'bottom', 'left']}
-          style={{ width: WIDE_ART_WIDTH, backgroundColor: main.tint }}
+          style={{ width: paneWidth, backgroundColor: main.tint }}
           className="flex-none overflow-hidden"
         >
           <Box className="px-8 pt-7">{logo}</Box>
-          <Box className="flex-1 justify-center px-[62px] pb-16">{fan}</Box>
+          <Box className={`flex-1 justify-center pb-16 ${tightPanes ? 'px-6' : 'px-[62px]'}`}>{fan}</Box>
         </SafeAreaView>
         <SafeAreaView edges={['top', 'bottom', 'right']} className="flex-1">
           {/* Padding on an inner box: SafeAreaView's own padding is the insets */}
-          <Box className="flex-1 justify-center px-14 py-8">
+          <Box className={`flex-1 justify-center py-8 ${tightPanes ? 'px-6' : 'px-14'}`}>
             <VStack className="w-full max-w-[420px] gap-[18px]">
               {noticeAlert}
               {pitch}

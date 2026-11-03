@@ -34,7 +34,7 @@ import { useVideoClock } from '@/hooks/use-video-clock';
 import { READABLE_MAX_WIDTH, supportsArrangementView, useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { useDownloads } from '@/lib/downloads';
-import { followPhoneOrientation, lockPortrait } from '@/lib/orientation';
+import { followPhoneOrientation } from '@/lib/orientation';
 import { usePreferences } from '@/lib/preferences';
 import { isEpisodeLocked, openPaywall, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
@@ -63,6 +63,15 @@ const SIDEWAYS_MAX_HEIGHT = 700;
 /** Below this window height (pt), landscape has no status bar: regular iPhones and iPhone Duo folded. */
 const PHONE_SIDEWAYS_MAX_HEIGHT = 500;
 
+/** Width (pt) of the system rail on iPhone Duo, which holds the status bar when the rail is drawn. */
+const RAIL_WIDTH = 84;
+
+/**
+ * Share of the video frame's height, from the bottom, that its captions can take. They're part of the picture, not
+ * app UI (studio `src/collage/polish.tsx`): a two-line pill is 102 px tall and 22 px off the bottom of a 720 px frame.
+ */
+const BURNED_CAPTION_SHARE = 124 / 720;
+
 function close() {
   if (router.canGoBack()) router.back();
   else router.replace('/');
@@ -75,12 +84,7 @@ function goToEpisode(episode: Episode) {
 
 export default function PlayerScreen() {
   // Per screen, not per episode, so autoplaying the next episode doesn't snap back to portrait
-  useFocusEffect(
-    useCallback(() => {
-      followPhoneOrientation();
-      return lockPortrait;
-    }, []),
-  );
+  useFocusEffect(useCallback(() => followPhoneOrientation(), []));
 
   return (
     <>
@@ -295,7 +299,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const goTo = useGoToEpisode();
 
   // Layout is picked per render so folding, rotating and Split View switch it without losing state
-  const { wide, landscape, height } = useWideLayout();
+  const { wide, landscape, width, height, tightPanes } = useWideLayout();
   const hinge = useHinge();
   const fold = useReservedRegions().find((r) => r.kind === 'division' && r.frame.width > r.frame.height);
   const tabletop = hinge?.status === 'partiallyOpen' && fold !== undefined;
@@ -633,8 +637,9 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
           {saveButton}
         </HStack>
 
-        <HStack className="items-center justify-center gap-[18px] py-2">
-          {transport(52, 72)}
+        {/* Upright on the open display the video column is under 400 wide */}
+        <HStack className={`flex-wrap items-center justify-center py-2 ${tightPanes ? 'gap-1.5' : 'gap-[18px]'}`}>
+          {tightPanes ? transport(44, 60) : transport(52, 72)}
           {speedButton}
         </HStack>
 
@@ -676,8 +681,9 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         <SplitArrangement
           primary={<Box className="flex-1">{videoColumn}</Box>}
           secondary={transcriptPane}
-          primaryWidth={{ minWidth: 420, idealWidth: 616, maxWidth: 680 }}
-          secondaryMinWidth={320}
+          // The minimums must add up to no more than 669, iPhone Duo open and upright
+          primaryWidth={{ minWidth: 380, idealWidth: 616, maxWidth: 680 }}
+          secondaryMinWidth={280}
         />
       </Box>
     );
@@ -690,13 +696,22 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const controlsBottom = fullScreen ? insets.bottom : 0;
   // A phone on its side has the camera cutout on one short edge and nothing above the video. Insets can
   // still report portrait values just after rotating, so use the largest one for both sides.
-  // iPhone Duo open keeps its status bar along the top, so it uses the real insets.
   const phoneSideways = sideways && height < PHONE_SIDEWAYS_MAX_HEIGHT;
-  const sideInset = phoneSideways ? Math.max(insets.left, insets.right, insets.top) : 0;
-  const safeLeft = phoneSideways ? sideInset : insets.left;
-  const safeRight = phoneSideways ? sideInset : insets.right;
+  // iPhone Duo open and rotated can still draw the rail over the video, on either side, while the insets report
+  // nothing there (this modal reads them from the app's root provider). The video stays edge to edge; controls clear it.
+  const openSideways = sideways && !phoneSideways;
+  const sideInset = phoneSideways
+    ? Math.max(insets.left, insets.right, insets.top)
+    : Math.max(insets.left, insets.right, RAIL_WIDTH);
+  const safeLeft = sideways ? sideInset : insets.left;
+  const safeRight = sideways ? sideInset : insets.right;
   // Full screen runs the panel to the top edge, so no background shows above it
   const controlsTop = fullScreen && !phoneSideways ? insets.top : 0;
+  // The open display letterboxes the 16:9 video, so its captions sit where the transport would: lift it above them
+  const videoHeight = Math.min(height, (width * 9) / 16);
+  const transportBottom = openSideways
+    ? (height - videoHeight) / 2 + videoHeight * BURNED_CAPTION_SHARE + 8
+    : controlsBottom + 44;
   const panel = (
     <Box
       style={[{ backgroundColor: book.tint }, fullScreen ? { flex: 1 } : { height: PANEL_HEIGHT }]}
@@ -712,7 +727,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         {viewButtons}
       </HStack>
 
-      <HStack style={{ right: safeRight + 20, bottom: controlsBottom + 44 }} className="absolute items-center gap-3.5">
+      <HStack style={{ right: safeRight + 20, bottom: transportBottom }} className="absolute items-center gap-3.5">
         <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
         {playButton(60, 22)}
         <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />

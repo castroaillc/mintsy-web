@@ -38,7 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'mintsy',
   owner: 'castroai',
   version: '1.0.0',
-  // Portrait everywhere except the player, which unlocks rotation (src/lib/orientation.ts)
+  // Small windows stay portrait except in the player; large windows and the player follow the device (src/lib/orientation.ts)
   orientation: 'default',
   icon: './assets/images/icon.png',
   scheme: variant.scheme,

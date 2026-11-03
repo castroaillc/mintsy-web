@@ -14,9 +14,6 @@ import { useCatalog } from '@/lib/catalog';
 import { usePremium } from '@/lib/premium';
 import { scheduleTrialEndingReminder } from '@/lib/reminders';
 
-/** Left pane width of the wide layout (design 34). */
-const WIDE_INFO_WIDTH = 456;
-
 function longDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
 }
@@ -24,7 +21,7 @@ function longDate(iso: string) {
 /** Shown after a purchase or restore (designs 19 / 34). `episodeId`: the episode the viewer was blocked on. */
 export default function PremiumWelcomeScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId?: string }>();
-  const { wide } = useWideLayout();
+  const { wide, paneWidth, tightPanes } = useWideLayout();
   const { periodType, expiresAt, willRenew } = usePremium();
   const { permission } = useNotificationPermission();
   const found = useCatalog().findEpisode(episodeId ?? '');
@@ -93,12 +90,12 @@ export default function PremiumWelcomeScreen() {
       <Box className="flex-1 flex-row bg-background">
         <SafeAreaView
           edges={['top', 'bottom', 'left']}
-          style={{ width: WIDE_INFO_WIDTH, backgroundColor: found?.book.tint ?? '#2B2850' }}
+          style={{ width: paneWidth, backgroundColor: found?.book.tint ?? '#2B2850' }}
           className="flex-none items-center justify-center p-12"
         >
           {hero(true)}
         </SafeAreaView>
-        <SafeAreaView edges={['top', 'bottom', 'right']} className="flex-1 justify-center px-14 py-12">
+        <SafeAreaView edges={['top', 'bottom', 'right']} className={`flex-1 justify-center py-12 ${tightPanes ? 'px-6' : 'px-14'}`}>
           <VStack className="w-full max-w-[420px] gap-3.5">
             {found ? (
               <>

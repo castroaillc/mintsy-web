@@ -22,7 +22,7 @@ import { authClient } from '@/lib/auth-client';
 import { CatalogProvider, useCatalog } from '@/lib/catalog';
 import { DownloadsProvider, useDownloads } from '@/lib/downloads';
 import { OnboardingProvider, useOnboarding } from '@/lib/onboarding';
-import { lockPortrait } from '@/lib/orientation';
+import { applyOrientationRule, useOrientationRule } from '@/lib/orientation';
 import { PremiumProvider } from '@/lib/premium';
 import { SavedProvider } from '@/lib/saved';
 import { ThemeModeProvider, useThemeMode } from '@/lib/theme-mode';
@@ -30,9 +30,12 @@ import { ThemeModeProvider, useThemeMode } from '@/lib/theme-mode';
 import '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
-lockPortrait();
+// Before the first render, so a small window doesn't flash landscape on launch
+applyOrientationRule();
 
 export default function RootLayout() {
+  useOrientationRule();
+
   return (
     <ThemeModeProvider>
       <CatalogProvider>

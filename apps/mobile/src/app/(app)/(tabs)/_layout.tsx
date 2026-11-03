@@ -3,15 +3,12 @@ import { styled } from 'nativewind';
 import type { ReactNode } from 'react';
 import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
 
-import { useWideLayout } from '@/hooks/use-wide-layout';
-
 function TintedTabsBase({ style, children }: { style?: StyleProp<TextStyle>; children: ReactNode }) {
-  const { wide, landscape } = useWideLayout();
   return (
     <NativeTabs
       tintColor={StyleSheet.flatten(style)?.color}
-      // Open display in landscape (iPhone Duo): tabs move into the sidebar. Unset elsewhere so phones keep the tab bar.
-      preferredPlacement={wide && landscape ? 'sidebar' : undefined}
+      // preferredPlacement stays unset, so iOS keeps the tab bar (in the rail on iPhone Duo open in landscape). Any value,
+      // even 'automatic', enables the sidebar mode, whose toggle needs a header, and these screens have none.
     >
       {children}
     </NativeTabs>

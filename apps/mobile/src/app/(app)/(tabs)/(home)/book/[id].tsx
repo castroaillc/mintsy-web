@@ -36,9 +36,6 @@ type Tab = (typeof TABS)[number]['value'];
 /** The wide layout shows the book's details in the left pane, so its right pane drops the About tab. */
 const WIDE_TABS = TABS.filter((t) => t.value !== 'about');
 
-/** Left pane width of the wide (two-pane) layout. */
-const WIDE_INFO_WIDTH = 456;
-
 function goBack() {
   if (router.canGoBack()) router.back();
   else router.replace('/');
@@ -67,7 +64,7 @@ function shareBook(book: Book) {
 
 function BookDetail({ book }: { book: Book }) {
   const insets = useSafeAreaInsets();
-  const { wide } = useWideLayout();
+  const { wide, paneWidth, tightPanes } = useWideLayout();
   const { progress, refreshBook } = useProgress();
   const { isPremium } = usePremium();
   const isLocked = useIsLocked();
@@ -235,11 +232,11 @@ function BookDetail({ book }: { book: Book }) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 flex-row bg-background">
         <ScrollView
-          style={{ width: WIDE_INFO_WIDTH }}
+          style={{ width: paneWidth }}
           className="flex-none"
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          contentContainerClassName="gap-3.5 px-7 pt-4"
+          contentContainerClassName={`gap-3.5 pt-4 ${tightPanes ? 'px-4' : 'px-7'}`}
         >
           <HStack className="justify-between">
             <IconButton icon="back" variant="surface" iconSize={20} accessibilityLabel="Back to browse" onPress={goBack} />
