@@ -1,5 +1,9 @@
 packages:
   - apps/*
+  # apps/mobile is its own workspace with its own lockfile, so Expo and React Native
+  # stay out of the backend image and the website's dependencies.
+  - '!apps/mobile'
+  - packages/*
 
 allowBuilds:
   sharp: false

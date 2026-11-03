@@ -1,0 +1,45 @@
+{
+  "name": "@mintsy/brand",
+  "version": "0.1.0",
+  "description": "mintsy brand: colors, typography, logos, icons and fonts for the admin and mobile app",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./tokens.json": "./dist/tokens.json",
+    "./css/*": "./css/*",
+    "./fonts/*": "./fonts/*",
+    "./assets/*": "./assets/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "css",
+    "fonts",
+    "assets",
+    "src",
+    "scripts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "logos": "python3 scripts/logos.py && node scripts/build.mjs",
+    "icons": "node scripts/icons.mjs"
+  }
+}

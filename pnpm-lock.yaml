@@ -168,6 +168,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@mintsy/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -290,6 +293,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@mintsy/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@revenuecat/purchases-js':
         specifier: ^1.73.1
         version: 1.73.1
@@ -345,6 +351,8 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+
+  packages/brand: {}
 
 packages:
 
