@@ -43,7 +43,7 @@ function rcBillingEvent(type: string, userId: string, at: number, extra: Record<
       period_type: "NORMAL",
       purchased_at_ms: at,
       expiration_at_ms: at + 365 * DAY,
-      environment: "SANDBOX",
+      environment: "PRODUCTION",
       entitlement_id: null,
       entitlement_ids: ["premium"],
       presented_offering_id: "default",
@@ -165,6 +165,49 @@ describe("RevenueCat webhook: Web Billing (RC_BILLING)", () => {
     const premium = await getPremium(userId);
     assert.equal(premium.active, true);
     assert.equal(premium.willRenew, false);
+  });
+
+  test("a SANDBOX event is ignored: no entitlement, and the event id isn't claimed", async () => {
+    const userId = randomId("rc-user");
+    userIds.push(userId);
+    const now = Date.now();
+    const purchase = rcBillingEvent("INITIAL_PURCHASE", userId, now, { environment: "SANDBOX", expiration_at_ms: now + DAY });
+    const res = await post(purchase);
+    assert.deepEqual(res, { status: 200, body: { status: "ignored", reason: "sandbox event in payload mode" } });
+    assert.equal(await entitlements.findOne({ userId }), null);
+    assert.equal(await revenueCatEvents.findOne({ _id: purchase.event.id }), null);
+    assert.equal((await getPremium(userId)).active, false);
+  });
+
+  test("a SANDBOX EXPIRATION can't end an active entitlement", async () => {
+    const userId = randomId("rc-user");
+    userIds.push(userId);
+    const now = Date.now();
+    await post(rcBillingEvent("INITIAL_PURCHASE", userId, now - 2000, { expiration_at_ms: now + 30 * DAY }));
+    const stored = await entitlements.findOne({ userId });
+    assert.equal(stored?.active, true);
+
+    const res = await post(rcBillingEvent("EXPIRATION", userId, now - 1000, { environment: "SANDBOX", expiration_at_ms: now - 1000 }));
+    assert.deepEqual(res.body, { status: "ignored", reason: "sandbox event in payload mode" });
+    assert.deepEqual(await entitlements.findOne({ userId }), stored);
+    assert.equal((await getPremium(userId)).active, true);
+
+    // The same event from production does end it, so the check above isn't passing by accident
+    await post(rcBillingEvent("EXPIRATION", userId, now, { expiration_at_ms: now - 1000 }));
+    assert.equal((await getPremium(userId)).active, false);
+  });
+
+  test("a SANDBOX TRANSFER can't move an active entitlement", async () => {
+    const from = randomId("rc-user");
+    const to = randomId("rc-user");
+    userIds.push(from, to);
+    const now = Date.now();
+    await post(rcBillingEvent("INITIAL_PURCHASE", from, now - 1000, { expiration_at_ms: now + 30 * DAY }));
+
+    const res = await post(rcBillingEvent("TRANSFER", from, now, { environment: "SANDBOX", entitlement_ids: null, transferred_from: [from], transferred_to: [to] }));
+    assert.deepEqual(res.body, { status: "ignored", reason: "sandbox event in payload mode" });
+    assert.equal((await getPremium(from)).active, true);
+    assert.equal(await entitlements.findOne({ userId: to }), null);
   });
 
   test("REST mode: a Web Billing subscriber maps to store rc_billing", () => {

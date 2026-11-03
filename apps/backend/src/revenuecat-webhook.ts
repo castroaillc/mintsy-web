@@ -180,6 +180,8 @@ async function handle(req: Request, res: Response) {
   if (!revenueCatRestConfigured() && !PAYLOAD_TYPES.has(event.type)) return ignore("unhandled type");
   if (!concernsPremium(event)) return ignore("not the premium entitlement");
   if (userIdsFor(event).length === 0) return ignore("anonymous app user id");
+  // Without the REST key the event itself is stored, so a sandbox EXPIRATION could end a real subscription.
+  if (!revenueCatRestConfigured() && event.environment === "SANDBOX") return ignore("sandbox event in payload mode");
 
   // Claim the event id; a duplicate delivery hits the unique _id
   try {

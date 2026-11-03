@@ -31,7 +31,7 @@ app: purchase / restore ──▶ refreshPremium ──REST GET /v1/subscribers/
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Auth               | `Authorization` must equal `REVENUECAT_WEBHOOK_AUTH` (constant-time compare). Unset → `503`; mismatch → `401`.                                                |
 | Validation         | Missing `event`, `event.id`, `event.type` or `event_timestamp_ms` → `400`.                                                                                    |
-| Ignored with `200` | `TEST` events; unhandled types (payload mode only); events for other entitlements; anonymous `$RCAnonymousID:` users with no real alias; duplicate event ids. |
+| Ignored with `200` | `TEST` events; unhandled types (payload mode only); events for other entitlements; anonymous `$RCAnonymousID:` users with no real alias; `SANDBOX` events (payload mode only); duplicate event ids. |
 | Idempotency        | The event id is inserted into `revenueCatEvents` (unique `_id`, kept 90 days). RevenueCat retries reuse the id, so they're ignored.                           |
 | Ordering           | Each entitlement stores `lastEventAtMs`; an event older than the newest one applied to that user is skipped as stale.                                         |
 | Errors             | Processing failure → `500` and the event id is released, so RevenueCat's retry is processed.                                                                  |
@@ -39,11 +39,30 @@ app: purchase / restore ──▶ refreshPremium ──REST GET /v1/subscribers/
 **Two modes:**
 
 * **REST mode** (`REVENUECAT_SECRET_API_KEY` set, recommended): every event triggers `GET https://api.revenuecat.com/v1/subscribers/{app_user_id}` and that state is stored. Note: this call creates the RevenueCat customer if it doesn't exist (the app's `logIn` does too).
-* **Payload mode** (no key): state comes from the event itself, for `INITIAL_PURCHASE`, `RENEWAL`, `PRODUCT_CHANGE`, `CANCELLATION`, `UNCANCELLATION`, `EXPIRATION`, `BILLING_ISSUE`, `TRANSFER`. `refreshPremium` then just returns what's stored and logs a warning.
+* **Payload mode** (no key): state comes from the event itself, for `INITIAL_PURCHASE`, `RENEWAL`, `PRODUCT_CHANGE`, `CANCELLATION`, `UNCANCELLATION`, `EXPIRATION`, `BILLING_ISSUE`, `TRANSFER`. `SANDBOX` events are ignored. `refreshPremium` then just returns what's stored and logs a warning.
 
 `TRANSFER` updates every user in `transferred_from` and `transferred_to`. Web Billing (`store: "RC_BILLING"`) and Stripe (`"STRIPE"`) events go through the same webhook and code path as App Store events (trial, renewal, cancellation, billing issue, expiration); see `test/revenuecat-webhook.test.ts`.
 
 `store` is stored lowercased (`app_store`, `rc_billing`, `stripe`, `play_store`, `promotional`, ...); clients use it to send users to the right place to manage their subscription.
+
+## Sandbox purchases
+
+Who gets an entitlement from a sandbox purchase is decided in RevenueCat, not in this backend. The production project's Sandbox Testing Access (Project settings → General, "Allow testing entitlements and in-app currency for") is set to **Allowed App User IDs only**. See [RevenueCat's docs](https://www.revenuecat.com/docs/projects/sandbox-access).
+
+* **It's a project-level setting.** It covers every app in the project, and both platform sandboxes and Test Store. The backend keeps no list of its own.
+* **List entries are App User IDs,** which for mintsy are Better Auth user ids (see [Identity](#identity)). A recreated account has a new id, so it has to be added again.
+* **Anyone else's sandbox purchase** is still recorded in RevenueCat but grants no entitlement. Removing an account from the list also removes the entitlements its sandbox purchases already granted.
+
+What the webhook does with `event.environment === "SANDBOX"` depends on the mode:
+
+* **REST mode:** nothing special. The event triggers the normal refetch, and `GET /v1/subscribers/{id}` returns what RevenueCat has granted, including sandbox entitlements for a listed account, so no `X-Is-Sandbox` header is needed.
+* **Payload mode:** the event is ignored with `200`, before its id is claimed. The event itself would be stored here, so a sandbox `EXPIRATION` could end a real subscription. A sandbox purchase therefore never unlocks Premium on a server without `REVENUECAT_SECRET_API_KEY`, even for a listed account; set the key to test real sandbox purchases.
+
+### App Review
+
+The demo account given to App Review must be on the list. A reviewer's purchase is a sandbox purchase, and it only unlocks Premium for an account on the list. For any other account the purchase goes through but the locked episodes stay locked. Check the list before submitting, and again whenever the demo account is recreated.
+
+Keep demo account credentials and listed ids out of these docs and the repo.
 
 ## Production setup
 
@@ -51,6 +70,7 @@ app: purchase / restore ──▶ refreshPremium ──REST GET /v1/subscribers/
 2. Store the exact same string as the secret `REVENUECAT_WEBHOOK_AUTH`, and a v1 secret API key (`sk_...`) as `REVENUECAT_SECRET_API_KEY`, in Secret Manager (project `mintsy-prod`).
 3. Grant the Cloud Run service account `roles/secretmanager.secretAccessor` on both and expose them to `mintsy-api` (`gcloud run services update ... --update-secrets`).
 4. Use RevenueCat's "Send test event": expect 200, logged as ignored.
+5. Set Sandbox Testing Access to **Allowed App User IDs only** and list the test accounts and the App Review demo account (see [Sandbox purchases](#sandbox-purchases)).
 
 ```sh
 printf '%s' 'Bearer <random>' | gcloud secrets create REVENUECAT_WEBHOOK_AUTH --project mintsy-prod --data-file=-
@@ -67,7 +87,7 @@ gcloud run services update mintsy-api --region us-central1 --project mintsy-prod
 
 ## Local test
 
-Set `REVENUECAT_WEBHOOK_AUTH=Bearer test` in `.env`, restart, and post an event:
+Set `REVENUECAT_WEBHOOK_AUTH=Bearer test` in `.env`, restart, and post an event. It has no `environment` field, so the sandbox guard doesn't apply:
 
 ```sh
 curl -X POST localhost:4000/webhooks/revenuecat -H 'Content-Type: application/json' -H 'Authorization: Bearer test' \
