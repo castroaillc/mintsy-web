@@ -1,0 +1,23 @@
+# From Welcome: Sign in with EMAIL / SIGNIN_PASSWORD (doesn't wait for the result).
+appId: com.getmintsy.app.dev
+---
+- scrollUntilVisible:
+    element: "Sign in"
+    direction: DOWN
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible:
+      id: "input-email"
+    timeout: 10000
+- tapOn:
+    id: "input-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${SIGNIN_PASSWORD}
+- scrollUntilVisible:
+    element:
+      id: "signin-submit"
+    direction: DOWN
+- tapOn:
+    id: "signin-submit"

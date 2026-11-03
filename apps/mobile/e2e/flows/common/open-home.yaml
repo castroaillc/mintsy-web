@@ -1,0 +1,9 @@
+# Relaunches the app (keeping state, so the session survives), reconnects to Metro and waits for Home.
+appId: com.getmintsy.app.dev
+---
+- launchApp:
+    stopApp: true
+- runFlow: connect.yaml
+- extendedWaitUntil:
+    visible: "Featured series"
+    timeout: 60000

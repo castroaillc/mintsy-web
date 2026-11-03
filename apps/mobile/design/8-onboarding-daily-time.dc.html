@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding: daily time</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 16px 24px 0; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div style="display: flex; align-items: center; gap: 12px; height: 44px">
+<a href="OnbInterests.dc.html" aria-label="Back" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div aria-label="Step 2 of 4" role="img" style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="height: 4px; border-radius: 2px; background: #2A2C36"></div>
+<div style="height: 4px; border-radius: 2px; background: #2A2C36"></div>
+</div>
+<a href="OnbReminders.dc.html" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: flex-end; font-size: 15px; font-weight: 500; color: #A3A5B0">Skip</a>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">Step 2 of 4</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; letter-spacing: -0.5px">How much time do you have each day?</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A5B0">Episodes are about 5 minutes. You can change this anytime.</p>
+</div>
+
+<div role="radiogroup" aria-label="Daily goal" style="display: flex; flex-direction: column; gap: 12px; margin-top: 28px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+<button role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" style="display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border-radius: 16px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: #F2F2F5; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="flex: none; width: 56px; height: 56px; border-radius: 12px; background: #1B1C24; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1">{{o.big}}</span>
+<span style="font-size: 11px; color: #A3A5B0">{{o.unit}}</span>
+</span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 16px; font-weight: 600">{{o.title}}</span>
+<span style="font-size: 14px; color: #A3A5B0">{{o.sub}}</span>
+</span>
+<span style="flex: none; width: 22px; height: 22px; border-radius: 11px; border: 2px solid {{o.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<span style="width: 10px; height: 10px; border-radius: 5px; background: {{o.dot}}"></span>
+</span>
+</button>
+</sc-for>
+</div>
+
+<p style="margin: 20px 0 0; font-size: 14px; line-height: 1.5; color: #C9CAD2">{{estimate}}</p>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 24px 32px; background: #0D0E12; border-top: 1px solid #1E2028">
+<a href="OnbReminders.dc.html" style="height: 54px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Continue</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 1 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const defs = [
+      { mins: 5, big: '5', unit: 'min', title: 'Quick', sub: '1 episode a day' },
+      { mins: 15, big: '15', unit: 'min', title: 'Steady', sub: '3 episodes a day' },
+      { mins: 30, big: '30', unit: 'min', title: 'Deep dive', sub: '6 episodes a day' },
+      { mins: 0, big: '?', unit: 'flex', title: 'I’ll decide as I go', sub: 'No daily goal' }
+    ];
+    const options = defs.map((d, i) => {
+      const on = this.state.sel === i;
+      return Object.assign({}, d, {
+        on,
+        bd: on ? accent : '#2A2C36',
+        bg: on ? '#1A1912' : '#15161C',
+        ring: on ? accent : '#4A4D5A',
+        dot: on ? accent : 'transparent',
+        pick: () => this.setState({ sel: i })
+      });
+    });
+    const cur = defs[this.state.sel];
+    let estimate = 'No pressure. Your progress is saved after every episode.';
+    if (cur.mins) {
+      const perDay = cur.mins / 5;
+      const days = Math.ceil(20 / perDay);
+      estimate = 'At ' + cur.mins + ' minutes a day, you’d finish a 20-chapter book in about ' + days + (days === 1 ? ' day.' : ' days.');
+    }
+    return { accent, options, estimate };
+  }
+}
+</script>
+</body>
+</html>

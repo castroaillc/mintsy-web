@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo check your email</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="none" top="back" back-href="DuoForgotPassword.dc.html" show-tabs="false" hint-size="84px,820px"></dc-import>
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 64px 48px; background: #24382F; display: flex; flex-direction: column; justify-content: center; gap: 16px">
+<div aria-hidden="true" style="width: 88px; height: 88px; border-radius: 44px; background: rgba(13,14,18,0.45); color: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg></div>
+<div style="font-size: 13px; font-weight: 600; color: #F5DFA0">Step 2 of 3</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; letter-spacing: -0.6px">Check your email</h1>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #D6E2DA">We sent a reset link to <b style="color: #FFFFFF; font-weight: 600">you@example.com</b>. It expires in 1 hour.</p>
+</section>
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 48px 56px">
+<div style="max-width: 420px; display: flex; flex-direction: column; gap: 12px">
+<a href="DuoResetPassword.dc.html" style="height: 54px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Open email app</a>
+<button onClick="{{resend}}" style="height: 54px; border-radius: 14px; border: 1px solid #343744; background: transparent; color: {{resendColor}}; font-family: Inter, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer">{{resendLabel}}</button>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #8B8D99">Don’t see it? Check spam, or make sure you used the email you signed up with.</p>
+<a href="DuoAuthSignIn.dc.html" style="height: 44px; display: flex; align-items: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Back to sign in</a>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sent: false };
+  }
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#F5B83D',
+      resendLabel: this.state.sent ? 'Sent again · resend in 30s' : 'Resend link',
+      resendColor: this.state.sent ? '#8B8D99' : '#F2F2F5',
+      resend: () => this.setState({ sent: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

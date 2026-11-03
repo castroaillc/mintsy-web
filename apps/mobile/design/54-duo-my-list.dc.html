@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo My List</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="list" top="none" hint-size="84px,820px"></dc-import>
+
+<section class="scroll" style="flex: none; width: 456px; box-sizing: border-box; padding: 24px 28px; border-right: 1px solid #1E2028; overflow-y: auto">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px">My List</h1>
+<div role="tablist" aria-label="Library sections" style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #15161C; border: 1px solid #23252E">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="height: 38px; border: 0; border-radius: 9px; background: {{t.bg}}; color: {{t.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+<ul style="list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{items}}" as="b" hint-placeholder-count="4">
+<li>
+<button onClick="{{b.pick}}" aria-pressed="{{b.on}}" style="display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px; border-radius: 14px; border: 1px solid {{b.bd}}; background: {{b.bgRow}}; color: #F2F2F5; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="flex: none; width: 48px; height: 72px; border-radius: 5px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 6px 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 8px; line-height: 1.1">{{b.title}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+<span style="font-size: 15px; font-weight: 600">{{b.title}}</span>
+<span style="font-size: 13px; color: #A3A5B0">{{b.meta}}</span>
+<sc-if value="{{b.hasBar}}" hint-placeholder-val="{{ false }}"><span style="height: 4px; border-radius: 2px; background: #23252E"><span style="display: block; height: 4px; border-radius: 2px; width: {{b.pct}}; background: {{accent}}"></span></span></sc-if>
+</span>
+</button>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section class="scroll" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 32px 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; gap: 22px; align-items: flex-end">
+<div style="flex: none; width: 150px; height: 225px; border-radius: 6px; background: {{cur.bg}}; color: {{cur.fg}}; box-sizing: border-box; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 18px 40px rgba(0,0,0,0.45)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.05">{{cur.title}}</div>
+<div style="font-size: 11px; font-weight: 500">{{cur.author}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.1">{{cur.title}}</h2>
+<div style="font-size: 15px; color: #A3A5B0">{{cur.author}}</div>
+<div style="font-size: 13px; color: #A3A5B0">{{cur.meta}}</div>
+</div>
+</div>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #C9CAD2">{{cur.desc}}</p>
+<div style="display: flex; gap: 10px">
+<a href="DuoPlayerOpen.dc.html" style="flex: 1; height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>{{cur.cta}}</a>
+<a href="DuoSeriesOpen.dc.html" style="flex: 1; height: 50px; border-radius: 12px; border: 1px solid #343744; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600">Open series</a>
+</div>
+<sc-if value="{{showRemove}}" hint-placeholder-val="{{ true }}">
+<button style="align-self: flex-start; height: 44px; padding: 0; border: 0; background: transparent; color: #A3A5B0; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">Remove from My List</button>
+</sc-if>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 0, sel: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const tabs = ['Saved', 'In progress', 'Finished'].map((label, i) => {
+      const on = this.state.tab === i;
+      return { label, on, bg: on ? '#F2F2F5' : 'transparent', fg: on ? '#15161B' : '#C9CAD2', pick: () => this.setState({ tab: i, sel: 0 }) };
+    });
+    const lists = [
+      [
+        { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', bg: '#F0EEE9', fg: '#1C1C1C', meta: '38 episodes · Saved 2 days ago', desc: 'How two systems of thinking shape our judgments, and where each leads us astray.', cta: 'Play Episode 1' },
+        { title: 'Atomic Habits', author: 'James Clear', bg: '#C9D6CF', fg: '#1C1C1C', meta: '20 episodes · Saved last week', desc: 'Small changes, compounded daily, and the system that makes them stick.', cta: 'Play Episode 1' },
+        { title: 'The Lean Startup', author: 'Eric Ries', bg: '#3A2F5B', fg: '#F2EEFA', meta: '14 episodes · Saved last week', desc: 'Build, measure, learn: testing ideas quickly before betting the company.', cta: 'Play Episode 1' },
+        { title: 'Sapiens', author: 'Yuval Noah Harari', bg: '#B9542F', fg: '#FFF4EE', meta: '20 episodes · Saved Oct 12', desc: 'A brief history of how one species came to run the planet.', cta: 'Play Episode 1' }
+      ],
+      [
+        { title: 'The Psychology of Money', author: 'Morgan Housel', bg: '#E7DFCF', fg: '#1C1C1C', meta: 'Episode 4 of 20 · 3 min left', pct: '15%', desc: 'Why doing well with money has less to do with how smart you are and more to do with how you behave.', cta: 'Resume Episode 4' },
+        { title: 'The Intelligent Investor', author: 'Benjamin Graham', bg: '#1E3557', fg: '#F4EFE6', meta: 'Episode 2 of 20 · 1 min left', pct: '8%', desc: 'The classic case for value investing and a margin of safety.', cta: 'Resume Episode 2' }
+      ],
+      [
+        { title: 'I Will Teach You to Be Rich', author: 'Ramit Sethi', bg: '#E2B34C', fg: '#1C1C1C', meta: 'Finished Oct 20 · 10 episodes', desc: 'A practical system for banking, saving, budgeting and investing.', cta: 'Watch again' }
+      ]
+    ];
+    const list = lists[this.state.tab];
+    const sel = Math.min(this.state.sel, list.length - 1);
+    const items = list.map((b, i) => Object.assign({}, b, {
+      on: i === sel,
+      hasBar: !!b.pct,
+      bd: i === sel ? accent : '#23252E',
+      bgRow: i === sel ? '#1A1912' : '#15161C',
+      pick: () => this.setState({ sel: i })
+    }));
+    return { accent, tabs, items, cur: list[sel], showRemove: this.state.tab === 0 };
+  }
+}
+</script>
+</body>
+</html>

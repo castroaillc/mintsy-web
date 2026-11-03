@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo onboarding: reminders</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="none" top="back" back-href="DuoOnbTime.dc.html" show-tabs="false" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 56px 48px; border-right: 1px solid #1E2028; display: flex; flex-direction: column; gap: 32px">
+<ol aria-label="Onboarding steps" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<li aria-current="{{s.current}}" style="display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: {{s.weight}}; color: {{s.fg}}">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 14px; border: 2px solid {{s.ring}}; background: {{s.fill}}; color: #15161B; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">{{s.mark}}</span>
+{{s.label}}
+</li>
+</sc-for>
+</ol>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">Step 3 of 4</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 36px; line-height: 1.08; letter-spacing: -0.6px">Want a daily nudge?</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A5B0">One reminder a day with your next episode. Change it anytime in Settings.</p>
+</div>
+</section>
+
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 56px 48px 32px">
+<div aria-hidden="true" style="height: 200px; border-radius: 22px; background: #24382F; display: flex; align-items: center; justify-content: center">
+<div style="width: 340px; box-sizing: border-box; padding: 14px; border-radius: 18px; background: rgba(23,24,31,0.92); border: 1px solid #343744; display: flex; gap: 12px; box-shadow: 0 14px 30px rgba(0,0,0,0.4)">
+<div style="flex: none; width: 38px; height: 38px; border-radius: 9px; background: #15161C; border: 1px solid #2A2C36; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; letter-spacing: -1px; margin-top: -5px">m<span style="color: {{accent}}">.</span></div>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #A3A5B0"><span style="font-weight: 600; color: #D4D5DC">mintsy</span><span>now</span></div>
+<div style="font-size: 14px; font-weight: 600">Episode 5 of 20 is ready</div>
+<div style="font-size: 13px; color: #C9CAD2">Getting Wealthy vs. Staying Wealthy · 5 min</div>
+</div>
+</div>
+</div>
+<div role="radiogroup" aria-label="Reminder time" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px">
+<sc-for list="{{times}}" as="t" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="height: 80px; border-radius: 14px; border: 1px solid {{t.bd}}; background: {{t.bg}}; color: #F2F2F5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: Inter, sans-serif; cursor: pointer">
+<span style="font-size: 13px; color: #A3A5B0">{{t.label}}</span>
+<span style="font-size: 17px; font-weight: 600">{{t.time}}</span>
+</button>
+</sc-for>
+</div>
+<div style="flex: 1"></div>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px">
+<a href="DuoOnbFirstBook.dc.html" style="height: 52px; padding: 0 18px; display: flex; align-items: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Not now</a>
+<a href="DuoOnbFirstBook.dc.html" style="min-width: 240px; height: 52px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Turn on reminders</a>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const step = 3;
+    const steps = ['Interests', 'Daily time', 'Reminders', 'First series'].map((label, i) => {
+      const n = i + 1, done = n < step, cur = n === step;
+      return { label, current: cur ? 'step' : 'false', mark: done ? '✓' : String(n), fill: done ? accent : 'transparent', ring: done || cur ? accent : '#3A3D49', fg: cur ? '#F2F2F5' : done ? '#C9CAD2' : '#8B8D99', weight: cur ? 600 : 500 };
+    });
+    const times = [['Morning', '8:00 AM'], ['Lunch', '12:30 PM'], ['Evening', '8:00 PM']].map(([label, time], i) => {
+      const on = this.state.sel === i;
+      return { label, time, on, bd: on ? accent : '#2A2C36', bg: on ? '#1A1912' : '#15161C', pick: () => this.setState({ sel: i }) };
+    });
+    return { accent, steps, times };
+  }
+}
+</script>
+</body>
+</html>

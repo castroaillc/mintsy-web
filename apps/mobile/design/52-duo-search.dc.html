@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo search results</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="search" top="none" hint-size="84px,820px"></dc-import>
+
+<section class="scroll" style="flex: none; width: 456px; box-sizing: border-box; padding: 24px 28px; border-right: 1px solid #1E2028; overflow-y: auto">
+<label for="ds-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search</label>
+<div style="display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 8px 0 14px; border-radius: 14px; background: #17181F; border: 1px solid {{accent}}; color: #8B8D99">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input id="ds-q" type="search" value="money" style="flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 16px">
+<button aria-label="Clear search" style="width: 32px; height: 32px; border-radius: 16px; border: 0; background: #2A2C36; color: #D4D5DC; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<h2 style="margin: 24px 0 10px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #A3A5B0">Books · 3</h2>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="3">
+<a href="DuoSeriesOpen.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 8px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<span style="flex: none; width: 56px; height: 84px; border-radius: 5px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 6px 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 9px; line-height: 1.1">{{b.title}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 600">{{b.title}}</span><span style="font-size: 13px; color: #A3A5B0">{{b.author}} · {{b.eps}} episodes</span></span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section class="scroll" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 24px 32px; overflow-y: auto">
+<h2 style="margin: 0 0 4px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">Episodes that mention “money”</h2>
+<div style="font-size: 13px; color: #A3A5B0">24 matches across 3 books</div>
+<ol style="list-style: none; margin: 8px 0 0; padding: 0">
+<sc-for list="{{episodes}}" as="e" hint-placeholder-count="5">
+<li style="border-bottom: 1px solid #1E2028">
+<a href="DuoPlayerOpen.dc.html" style="display: flex; gap: 14px; padding: 14px 0">
+<span style="flex: none; position: relative; width: 112px; height: 63px; border-radius: 8px; background: {{e.bg}}"><span style="position: absolute; left: 7px; top: 4px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; color: #F4EFE6">{{e.n}}</span></span>
+<span style="display: flex; flex-direction: column; gap: 5px; min-width: 0">
+<span style="font-size: 12px; font-weight: 600; color: {{accent}}">{{e.book}} · Episode {{e.n}} · at {{e.at}}</span>
+<span style="font-size: 15px; font-weight: 600">{{e.title}}</span>
+<span style="font-size: 14px; line-height: 1.45; color: #A3A5B0">“…{{e.pre}}<mark style="background: #3A3016; color: #FFE3A3; border-radius: 3px; padding: 0 2px">{{e.hit}}</mark>{{e.post}}…”</span>
+</span>
+</a>
+</li>
+</sc-for>
+</ol>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const books = [
+      { title: 'The Psychology of Money', author: 'Morgan Housel', eps: 20, bg: '#E7DFCF', fg: '#1C1C1C' },
+      { title: 'I Will Teach You to Be Rich', author: 'Ramit Sethi', eps: 10, bg: '#E2B34C', fg: '#1C1C1C' },
+      { title: 'Rich Dad Poor Dad', author: 'Robert T. Kiyosaki', eps: 10, bg: '#5B2333', fg: '#F7E9EC' }
+    ];
+    const episodes = [
+      { book: 'The Psychology of Money', n: 9, at: '1:42', title: 'Wealth Is What You Don’t See', pre: 'wealth is the ', hit: 'money', post: ' you chose not to spend', bg: '#24382F' },
+      { book: 'The Psychology of Money', n: 10, at: '0:18', title: 'Save Money', pre: 'you don’t need a reason to save ', hit: 'money', post: '. Savings buy options', bg: '#2C3245' },
+      { book: 'Rich Dad Poor Dad', n: 2, at: '2:05', title: 'Why Teach Financial Literacy?', pre: 'it’s not how much ', hit: 'money', post: ' you make, it’s how much you keep', bg: '#5B2333' },
+      { book: 'I Will Teach You to Be Rich', n: 4, at: '3:11', title: 'Conscious Spending', pre: 'spend ', hit: 'money', post: ' extravagantly on the things you love', bg: '#3B3426' },
+      { book: 'The Psychology of Money', n: 7, at: '0:52', title: 'Freedom', pre: 'the highest form of wealth is using ', hit: 'money', post: ' to control your time', bg: '#3A2B30' }
+    ];
+    return { accent, books, episodes };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Episode player and transcript</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1320px; position: relative; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; box-sizing: border-box; padding-bottom: 32px">
+
+<div style="position: relative; height: 260px; background: #24382F; overflow: hidden">
+<div style="position: absolute; left: 24px; right: 24px; top: 70px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.4px; color: #E7DFCF">CHAPTER 4</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.05; color: #F4EFE6; max-width: 250px">Confounding Compounding</div>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; padding: 12px">
+<a href="Book.dc.html" aria-label="Close player and return to series" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(13,14,18,0.55); display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"></path></svg>
+</a>
+<div style="display: flex; gap: 8px">
+<button aria-label="Captions" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(13,14,18,0.55); color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M10 10.5a2 2 0 1 0 0 3M17 10.5a2 2 0 1 0 0 3"></path></svg>
+</button>
+<button aria-label="Fullscreen" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(13,14,18,0.55); color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg>
+</button>
+</div>
+</div>
+<div style="position: absolute; right: 20px; bottom: 44px; display: flex; align-items: center; gap: 14px">
+<button aria-label="Back 10 seconds" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(13,14,18,0.55); color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"></path></svg>
+</button>
+<button onClick="{{togglePlay}}" aria-label="{{playLabel}}" style="width: 60px; height: 60px; border-radius: 30px; border: 0; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<sc-if value="{{playing}}" hint-placeholder-val="{{ true }}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1"></rect><rect x="14" y="4.5" width="4" height="15" rx="1"></rect></svg>
+</sc-if>
+<sc-if value="{{paused}}" hint-placeholder-val="{{ false }}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+</sc-if>
+</button>
+<button aria-label="Forward 10 seconds" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(13,14,18,0.55); color: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v4h-4"></path></svg>
+</button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="position: relative; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25)">
+<div style="height: 4px; border-radius: 2px; width: {{pct}}; background: {{accent}}"></div>
+<div style="position: absolute; top: -5px; left: {{pct}}; width: 14px; height: 14px; margin-left: -7px; border-radius: 7px; background: #FFFFFF"></div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; color: #F2F2F5"><span>{{timeNow}}</span><span>5:12</span></div>
+</div>
+</div>
+
+<section style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">Episode 4 of 20</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; line-height: 1.15">Confounding Compounding</h1>
+<a href="Book.dc.html" style="font-size: 14px; color: #A3A5B0">The Psychology of Money · Morgan Housel</a>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; margin-top: 10px">
+<sc-for list="{{ticks}}" as="t" hint-placeholder-count="20">
+<div style="height: 4px; border-radius: 2px; background: {{t.bg}}"></div>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; gap: 8px; padding: 16px 20px 0">
+<a href="#" aria-label="Previous episode" style="width: 48px; height: 44px; border-radius: 10px; border: 1px solid #2A2C36; background: #15161C; display: flex; align-items: center; justify-content: center; color: #F2F2F5; box-sizing: border-box">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 5v14L8 12z"></path><rect x="5" y="5" width="2.5" height="14" rx="1"></rect></svg>
+</a>
+<button onClick="{{cycleSpeed}}" aria-label="Playback speed {{speed}}" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A2C36; background: #15161C; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">{{speed}}</button>
+<button style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #2A2C36; background: #15161C; color: #F2F2F5; display: flex; align-items: center; gap: 6px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>
+Save
+</button>
+<a href="PlayerUpNext.dc.html" aria-label="Next episode" style="margin-left: auto; height: 44px; padding: 0 14px; border-radius: 10px; background: #F2F2F5; color: #15161B; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600">
+Next
+<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5v14l10-7z"></path><rect x="16.5" y="5" width="2.5" height="14" rx="1"></rect></svg>
+</a>
+</div>
+
+<div role="tablist" aria-label="Episode panels" style="display: flex; gap: 24px; padding: 0 20px; margin-top: 22px; border-bottom: 1px solid #23252E">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="2">
+<button role="tab" aria-selected="{{tb.on}}" onClick="{{tb.pick}}" style="height: 48px; padding: 0; border: 0; border-bottom: 3px solid {{tb.line}}; background: transparent; color: {{tb.fg}}; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer">{{tb.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{showTranscript}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 6px">
+<span style="font-size: 13px; color: #A3A5B0">Tap a line to jump there</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{accent}}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v14M6 12l6 6 6-6"></path></svg>
+Following along
+</span>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0 12px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="9">
+<li>
+<button onClick="{{l.seek}}" aria-current="{{l.current}}" style="display: flex; gap: 12px; width: 100%; padding: 12px 10px; border: 0; border-radius: 12px; background: {{l.bg}}; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="flex: none; width: 40px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.6; color: {{l.timeColor}}">{{l.t}}</span>
+<span style="font-size: 16px; line-height: 1.5; font-weight: {{l.weight}}; color: {{l.fg}}">{{l.x}}</span>
+</button>
+</li>
+</sc-for>
+</ol>
+</sc-if>
+
+<sc-if value="{{showTakeaways}}" hint-placeholder-val="{{ false }}">
+<ol style="margin: 0; padding: 16px 20px 0; list-style: none; display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{takeaways}}" as="k" hint-placeholder-count="3">
+<li style="display: flex; gap: 14px; padding: 16px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 14px; background: {{accent}}; color: #15161B; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{k.n}}</span>
+<span style="font-size: 15px; line-height: 1.5; color: #E4E5EA">{{k.x}}</span>
+</li>
+</sc-for>
+</ol>
+</sc-if>
+
+<section style="padding: 26px 20px 0">
+<h2 style="margin: 0 0 12px; font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700">Up next</h2>
+<a href="PlayerUpNext.dc.html" style="display: flex; gap: 14px; align-items: center; padding: 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<div style="flex: none; position: relative; width: 112px; height: 64px; border-radius: 8px; background: #2C3245">
+<div style="position: absolute; left: 8px; top: 6px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: #F4EFE6">5</div>
+<div style="position: absolute; right: 6px; bottom: 6px; height: 18px; padding: 0 5px; border-radius: 4px; background: rgba(13,14,18,0.82); font-size: 11px; font-weight: 600; display: flex; align-items: center">5:03</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 600; color: #A3A5B0">Episode 5 of 20</div>
+<div style="font-size: 15px; font-weight: 600; line-height: 1.25">Getting Wealthy vs. Staying Wealthy</div>
+</div>
+</a>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { line: 4, playing: true, speed: 1, tab: 'transcript' };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const total = 312;
+    const raw = [
+      [0, 'Compounding is easy to explain and hard to feel. Our instincts expect growth in straight lines.'],
+      [38, 'But growth that builds on itself curves upward, and most of the curve shows up late.'],
+      [75, 'In a long investing life, the biggest gains usually arrive in the final decades, not the first.'],
+      [112, 'That makes time the variable people underrate the most.'],
+      [124, 'Many investors chase the highest possible return. This chapter argues for a different target.'],
+      [161, 'Aim for good returns you can stay with, through downturns, boredom and the urge to tinker.'],
+      [200, 'Quitting early is the most expensive mistake, because it resets the clock compounding depends on.'],
+      [242, 'The same idea reaches beyond money. Skills, relationships and reputation compound too.'],
+      [275, 'Takeaway: protect the streak. Staying in the game is the strategy.']
+    ];
+    const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const cur = this.state.line;
+    const lines = raw.map((r, i) => {
+      const current = i === cur;
+      const past = i < cur;
+      return {
+        t: fmt(r[0]),
+        x: r[1],
+        current,
+        bg: current ? '#1D1F27' : 'transparent',
+        fg: current ? '#FFFFFF' : past ? '#8B8D99' : '#C9CAD2',
+        weight: current ? 600 : 400,
+        timeColor: current ? accent : '#8B8D99',
+        seek: () => this.setState({ line: i })
+      };
+    });
+    const now = raw[cur][0];
+    const pct = Math.round((now / total) * 100) + '%';
+    const ticks = Array.from({ length: 20 }, (_, i) => ({
+      bg: i < 3 ? accent : i === 3 ? '#F2F2F5' : '#2A2C36'
+    }));
+    const speeds = [1, 1.25, 1.5, 2];
+    const speed = speeds[this.state.speed % speeds.length] + '×';
+    const tabs = [['transcript', 'Transcript'], ['takeaways', 'Key takeaways']].map(([id, label]) => {
+      const on = this.state.tab === id;
+      return {
+        label,
+        on,
+        fg: on ? '#F2F2F5' : '#A3A5B0',
+        line: on ? accent : 'transparent',
+        pick: () => this.setState({ tab: id })
+      };
+    });
+    const takeaways = [
+      { n: 1, x: 'Compounding rewards time far more than it rewards a high rate of return.' },
+      { n: 2, x: 'Choose returns you can sustain for decades over returns you can’t live with.' },
+      { n: 3, x: 'Avoid moves that interrupt the process. Staying invested is the edge.' }
+    ];
+    return {
+      accent,
+      lines,
+      pct,
+      timeNow: fmt(now),
+      ticks,
+      speed,
+      tabs,
+      takeaways,
+      showTranscript: this.state.tab === 'transcript',
+      showTakeaways: this.state.tab === 'takeaways',
+      playing: this.state.playing,
+      paused: !this.state.playing,
+      playLabel: this.state.playing ? 'Pause' : 'Play',
+      togglePlay: () => this.setState({ playing: !this.state.playing }),
+      cycleSpeed: () => this.setState({ speed: this.state.speed + 1 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mintsy Premium paywall</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 900px; position: relative; box-sizing: border-box; padding: 12px 24px 28px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; height: 44px">
+<a href="BookFree.dc.html" aria-label="Close" style="width: 44px; height: 44px; margin-left: -10px; border-radius: 22px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+<button style="height: 44px; padding: 0; border: 0; background: transparent; color: #A3A5B0; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">Restore purchases</button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<div style="flex: none; position: relative; width: 44px; height: 66px; border-radius: 4px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 5px 4px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 7px; line-height: 1.1">The Psychology of Money</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 12px; font-weight: 600; color: {{accent}}">3 free episodes watched</div>
+<div style="font-size: 14px; line-height: 1.35">Episode 4 of 20 · Confounding Compounding is next</div>
+</div>
+</div>
+
+<h1 style="margin: 26px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px; line-height: 1.08; letter-spacing: -0.6px">Keep going with mintsy<span style="color: {{accent}}">.</span> Premium</h1>
+<p style="margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: #A3A5B0">Every episode of every book. Free accounts get the first 3 episodes of each series.</p>
+
+<ul style="list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{benefits}}" as="b" hint-placeholder-count="4">
+<li style="display: flex; align-items: flex-start; gap: 12px; font-size: 15px; line-height: 1.4">
+<span style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: #2A2416; color: {{accent}}; display: flex; align-items: center; justify-content: center">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</span>
+<span><b style="font-weight: 600">{{b.title}}</b> <span style="color: #A3A5B0">{{b.sub}}</span></span>
+</li>
+</sc-for>
+</ul>
+
+<div role="radiogroup" aria-label="Choose a plan" style="display: flex; flex-direction: column; gap: 10px; margin-top: 26px">
+<sc-for list="{{plans}}" as="p" hint-placeholder-count="2">
+<button role="radio" aria-checked="{{p.on}}" onClick="{{p.pick}}" style="position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border-radius: 16px; border: 2px solid {{p.bd}}; background: {{p.bg}}; color: #F2F2F5; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="flex: none; width: 22px; height: 22px; border-radius: 11px; border: 2px solid {{p.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<span style="width: 10px; height: 10px; border-radius: 5px; background: {{p.dot}}"></span>
+</span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 16px; font-weight: 600">{{p.name}}</span>
+<span style="font-size: 13px; color: #A3A5B0">{{p.sub}}</span>
+</span>
+<span style="font-size: 16px; font-weight: 600">{{p.price}}</span>
+<sc-if value="{{p.best}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; top: -11px; right: 16px; height: 22px; padding: 0 9px; border-radius: 11px; background: {{accent}}; color: #15161B; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; display: flex; align-items: center">BEST VALUE · SAVE [X]%</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+
+<a href="PremiumSuccess.dc.html" style="margin-top: 20px; height: 56px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700">Start [TRIAL LENGTH] free trial</a>
+<p style="margin: 12px 0 0; text-align: center; font-size: 12px; line-height: 1.5; color: #8B8D99">{{fineprint}} Renews automatically unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your App Store settings.</p>
+<p style="margin: 8px 0 0; text-align: center; font-size: 12px; color: #8B8D99"><a href="#" style="color: #C9CAD2; text-decoration: underline">Terms</a> · <a href="#" style="color: #C9CAD2; text-decoration: underline">Privacy Policy</a></p>
+
+<a href="BookFree.dc.html" style="margin-top: 10px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Not now, keep browsing free episodes</a>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { plan: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const benefits = [
+      { title: 'All episodes, every book.', sub: 'No more stopping at Episode 3.' },
+      { title: 'Full transcripts and key takeaways', sub: 'for every chapter.' },
+      { title: 'Download for offline', sub: 'on flights and commutes.' },
+      { title: 'New series every week.', sub: '' }
+    ];
+    const defs = [
+      { name: 'Yearly', sub: 'Just [MONTHLY EQUIV]/month, billed yearly', price: '[YEARLY PRICE]', best: true, fine: 'Free for [TRIAL LENGTH], then [YEARLY PRICE]/year.' },
+      { name: 'Monthly', sub: 'Billed every month', price: '[MONTHLY PRICE]', best: false, fine: 'Free for [TRIAL LENGTH], then [MONTHLY PRICE]/month.' }
+    ];
+    const plans = defs.map((d, i) => {
+      const on = this.state.plan === i;
+      return Object.assign({}, d, {
+        on,
+        bd: on ? accent : '#2A2C36',
+        bg: on ? '#1A1912' : '#15161C',
+        ring: on ? accent : '#4A4D5A',
+        dot: on ? accent : 'transparent',
+        pick: () => this.setState({ plan: i })
+      });
+    });
+    return { accent, benefits, plans, fineprint: defs[this.state.plan].fine };
+  }
+}
+</script>
+</body>
+</html>

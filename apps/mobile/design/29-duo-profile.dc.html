@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="profile" top="none" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 28px 32px; border-right: 1px solid #1E2028; display: flex; flex-direction: column; gap: 20px">
+<header style="display: flex; align-items: center; justify-content: space-between">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px">Profile</h1>
+<a href="DuoSettings.dc.html" aria-label="Settings" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid #2A2C36; background: #17181F; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg>
+</a>
+</header>
+<div style="display: flex; align-items: center; gap: 16px">
+<div aria-hidden="true" style="flex: none; width: 76px; height: 76px; border-radius: 38px; background: #24382F; border: 2px solid {{accent}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px">S</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 20px; font-weight: 600">Steve</div>
+<div style="font-size: 14px; color: #A3A5B0">Member since Oct 2026</div>
+</div>
+<a href="DuoProfileEdit.dc.html" style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #343744; box-sizing: border-box; display: flex; align-items: center; font-size: 14px; font-weight: 600">Edit</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">5</div><div style="font-size: 12px; color: #A3A5B0">day streak</div></div>
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">12</div><div style="font-size: 12px; color: #A3A5B0">episodes watched</div></div>
+<div style="padding: 14px 12px; border-radius: 14px; background: #15161C; border: 1px solid #23252E"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">1h 2m</div><div style="font-size: 12px; color: #A3A5B0">time learning</div></div>
+</div>
+<div style="padding: 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-size: 15px; font-weight: 600">This week</h2><span style="font-size: 13px; color: #A3A5B0">Goal: 15 min a day</span></div>
+<div role="img" aria-label="Minutes watched each day this week; goal met on 5 of 7 days" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: end; height: 120px; margin-top: 16px">
+<sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 100%; height: {{d.h}}; border-radius: 6px; background: {{d.bg}}"></div><span style="font-size: 11px; font-weight: 500; color: {{d.labelColor}}">{{d.day}}</span></div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="flex: 1; min-width: 0; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 24px">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700">In progress</h2><a href="#" style="font-size: 14px; color: #A3A5B0">See all</a></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{inProgress}}" as="b" hint-placeholder-count="2">
+<a href="DuoSeriesOpen.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 10px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<span style="flex: none; width: 48px; height: 72px; border-radius: 5px; background: {{b.cover}}; color: {{b.coverFg}}; box-sizing: border-box; padding: 6px 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 8px; line-height: 1.1">{{b.title}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 15px; font-weight: 600">{{b.title}}</span>
+<span style="font-size: 13px; color: #A3A5B0">{{b.meta}}</span>
+<span style="height: 4px; border-radius: 2px; background: #23252E"><span style="display: block; height: 4px; border-radius: 2px; width: {{b.pct}}; background: {{accent}}"></span></span>
+</span>
+</a>
+</sc-for>
+</div>
+</div>
+<div>
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700">Your interests</h2><a href="DuoProfileEdit.dc.html" style="font-size: 14px; color: {{accent}}">Edit</a></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span style="height: 34px; padding: 0 14px; border-radius: 17px; background: #1B1C24; font-size: 14px; color: #D4D5DC; display: flex; align-items: center">Finance</span>
+<span style="height: 34px; padding: 0 14px; border-radius: 17px; background: #1B1C24; font-size: 14px; color: #D4D5DC; display: flex; align-items: center">Psychology</span>
+<span style="height: 34px; padding: 0 14px; border-radius: 17px; background: #1B1C24; font-size: 14px; color: #D4D5DC; display: flex; align-items: center">Productivity</span>
+</div>
+</div>
+<nav aria-label="Library" style="border-radius: 16px; background: #15161C; border: 1px solid #23252E; overflow: hidden">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<a href="{{r.href}}" style="display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 16px; border-top: {{r.border}}; font-size: 15px">
+<span>{{r.label}}</span>
+<span style="display: flex; align-items: center; gap: 8px; color: #A3A5B0; font-size: 14px">{{r.value}}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span>
+</a>
+</sc-for>
+</nav>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const mins = [18, 15, 22, 6, 16, 15, 0];
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const week = mins.map((m, i) => ({ day: days[i], h: Math.max(6, Math.round((m / 25) * 98)) + 'px', bg: m >= 15 ? accent : m > 0 ? '#4A4D5A' : '#23252E', labelColor: i === 6 ? '#F2F2F5' : '#8B8D99' }));
+    const inProgress = [
+      { title: 'The Psychology of Money', meta: 'Episode 4 of 20 · 15%', pct: '15%', cover: '#E7DFCF', coverFg: '#1C1C1C' },
+      { title: 'The Intelligent Investor', meta: 'Episode 2 of 20 · 8%', pct: '8%', cover: '#1E3557', coverFg: '#F4EFE6' }
+    ];
+    const rows = [['My List', '6 series', '#'], ['Downloads', '3 episodes', '#'], ['Finished', '1 series', '#'], ['Settings', '', 'DuoSettings.dc.html']].map(([label, value, href], i) => ({ label, value, href, border: i ? '1px solid #23252E' : '0' }));
+    return { accent, week, inProgress, rows };
+  }
+}
+</script>
+</body>
+</html>

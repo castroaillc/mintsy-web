@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding: first series</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 16px 24px 0; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div style="display: flex; align-items: center; gap: 12px; height: 44px">
+<a href="OnbReminders.dc.html" aria-label="Back" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+</a>
+<div aria-label="Step 4 of 4" role="img" style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+<div style="height: 4px; border-radius: 2px; background: {{accent}}"></div>
+</div>
+<div style="width: 44px"></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">Step 4 of 4</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; letter-spacing: -0.5px">Start your first series</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #A3A5B0">Picked from your interests. You can add more later.</p>
+</div>
+
+<div role="radiogroup" aria-label="First series" style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{b.on}}" onClick="{{b.pick}}" style="display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px; border-radius: 16px; border: 1px solid {{b.bd}}; background: {{b.bg}}; color: #F2F2F5; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+<span style="flex: none; width: 72px; height: 108px; border-radius: 6px; background: {{b.cover}}; color: {{b.coverFg}}; box-sizing: border-box; padding: 8px 7px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 11px; line-height: 1.1">{{b.title}}</span>
+<span style="font-size: 8px; font-weight: 500">{{b.author}}</span>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; font-weight: 600; color: {{accent}}">{{b.tag}}</span>
+<span style="font-size: 16px; font-weight: 600; line-height: 1.25">{{b.title}}</span>
+<span style="font-size: 13px; color: #A3A5B0">{{b.author}}</span>
+<span style="font-size: 13px; color: #A3A5B0">{{b.meta}}</span>
+</span>
+<span style="flex: none; width: 22px; height: 22px; border-radius: 11px; border: 2px solid {{b.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<span style="width: 10px; height: 10px; border-radius: 5px; background: {{b.dot}}"></span>
+</span>
+</button>
+</sc-for>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 24px 28px; background: #0D0E12; display: flex; flex-direction: column; gap: 6px">
+<a href="Player.dc.html" style="height: 54px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>
+Start Episode 1
+</a>
+<a href="Main.dc.html" style="height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Browse all series instead</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const defs = [
+      { title: 'The Psychology of Money', author: 'Morgan Housel', tag: 'Because you picked Finance', meta: '20 episodes · 1 hr 41 min', cover: '#E7DFCF', coverFg: '#1C1C1C' },
+      { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', tag: 'Because you picked Psychology', meta: '38 episodes · 3 hr 10 min', cover: '#F0EEE9', coverFg: '#1C1C1C' },
+      { title: 'Atomic Habits', author: 'James Clear', tag: 'Because you picked Productivity', meta: '20 episodes · 1 hr 40 min', cover: '#C9D6CF', coverFg: '#1C1C1C' }
+    ];
+    const books = defs.map((d, i) => {
+      const on = this.state.sel === i;
+      return Object.assign({}, d, {
+        on,
+        bd: on ? accent : '#2A2C36',
+        bg: on ? '#1A1912' : '#15161C',
+        ring: on ? accent : '#4A4D5A',
+        dot: on ? accent : 'transparent',
+        pick: () => this.setState({ sel: i })
+      });
+    });
+    return { accent, books };
+  }
+}
+</script>
+</body>
+</html>

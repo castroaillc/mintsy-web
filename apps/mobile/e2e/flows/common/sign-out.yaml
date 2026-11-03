@@ -1,0 +1,17 @@
+# From Settings: Sign out and confirm; ends on Welcome.
+appId: com.getmintsy.app.dev
+---
+- scrollUntilVisible:
+    element: "Sign out"
+    direction: DOWN
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Sign out?"
+    timeout: 5000
+# The alert's button (right of Cancel), not the page's Sign out button
+- tapOn:
+    text: "Sign out"
+    rightOf: "Cancel"
+- extendedWaitUntil:
+    visible: "Every great book, one 5-minute episode at a time."
+    timeout: 20000

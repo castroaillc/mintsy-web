@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My List</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<header style="padding: 16px 20px 0">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px">My List</h1>
+</header>
+
+<div role="tablist" aria-label="Library sections" style="margin: 16px 20px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: #15161C; border: 1px solid #23252E">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="height: 38px; border: 0; border-radius: 9px; background: {{t.bg}}; color: {{t.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="height: 560px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; padding: 0 40px">
+<div aria-hidden="true" style="width: 72px; height: 72px; border-radius: 36px; background: #15161C; border: 1px solid #23252E; color: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></div>
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700">Nothing saved yet</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #A3A5B0">Tap + on any series to save it here for later.</p>
+<a href="Main.dc.html" style="margin-top: 8px; height: 48px; padding: 0 22px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; font-size: 15px; font-weight: 600">Browse series</a>
+</div>
+</sc-if>
+
+<sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 8px 20px 0; display: flex; justify-content: space-between; align-items: baseline">
+<span style="font-size: 13px; color: #A3A5B0">{{countLabel}}</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 4px 20px 100px; display: flex; flex-direction: column; gap: 10px; height: 620px; overflow-y: auto; box-sizing: border-box">
+<sc-for list="{{items}}" as="b" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 14px; padding: 10px; border-radius: 14px; background: #15161C; border: 1px solid #23252E">
+<a href="Book.dc.html" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px">
+<span style="flex: none; width: 56px; height: 84px; border-radius: 5px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 6px 5px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 9px; line-height: 1.1">{{b.title}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+<span style="font-size: 15px; font-weight: 600">{{b.title}}</span>
+<span style="font-size: 13px; color: {{b.metaColor}}">{{b.meta}}</span>
+<sc-if value="{{b.hasBar}}" hint-placeholder-val="{{ false }}">
+<span style="height: 4px; border-radius: 2px; background: #23252E"><span style="display: block; height: 4px; border-radius: 2px; width: {{b.pct}}; background: {{accent}}"></span></span>
+</sc-if>
+</span>
+</a>
+<button aria-label="{{b.actionLabel}}" style="flex: none; width: 44px; height: 44px; border-radius: 22px; border: 1px solid #2A2C36; background: transparent; color: {{b.actionColor}}; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer">
+<sc-if value="{{b.isSaved}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></sc-if>
+<sc-if value="{{b.isPlay}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg></sc-if>
+<sc-if value="{{b.isReplay}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"></path></svg></sc-if>
+</button>
+</li>
+</sc-for>
+</ul>
+</sc-if>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0">
+<dc-import name="TabBar" active="list" accent="{{accent}}" hint-size="390px,84px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const tabs = ['Saved', 'In progress', 'Finished'].map((label, i) => {
+      const on = this.state.tab === i;
+      return { label, on, bg: on ? '#F2F2F5' : 'transparent', fg: on ? '#15161B' : '#C9CAD2', pick: () => this.setState({ tab: i }) };
+    });
+    const base = { hasBar: false, pct: '0%', isSaved: false, isPlay: false, isReplay: false, metaColor: '#A3A5B0' };
+    const saved = [
+      { title: 'Thinking, Fast and Slow', bg: '#F0EEE9', fg: '#1C1C1C', meta: '38 episodes · Saved 2 days ago' },
+      { title: 'Atomic Habits', bg: '#C9D6CF', fg: '#1C1C1C', meta: '20 episodes · Saved last week' },
+      { title: 'The Lean Startup', bg: '#3A2F5B', fg: '#F2EEFA', meta: '14 episodes · Saved last week' },
+      { title: 'Sapiens', bg: '#B9542F', fg: '#FFF4EE', meta: '20 episodes · Saved Oct 12' }
+    ].map((b) => Object.assign({}, base, b, { isSaved: true, actionLabel: 'Remove from My List', actionColor: accent }));
+    const progress = [
+      { title: 'The Psychology of Money', bg: '#E7DFCF', fg: '#1C1C1C', meta: 'Episode 4 of 20 · 3 min left', pct: '15%' },
+      { title: 'The Intelligent Investor', bg: '#1E3557', fg: '#F4EFE6', meta: 'Episode 2 of 20 · 1 min left', pct: '8%' },
+      { title: 'Rich Dad Poor Dad', bg: '#5B2333', fg: '#F7E9EC', meta: 'Episode 2 of 10 · 4 min left', pct: '12%' }
+    ].map((b) => Object.assign({}, base, b, { hasBar: true, isPlay: true, actionLabel: 'Resume', actionColor: '#F2F2F5' }));
+    const finished = [
+      { title: 'I Will Teach You to Be Rich', bg: '#E2B34C', fg: '#1C1C1C', meta: 'Finished Oct 20 · 10 episodes' }
+    ].map((b) => Object.assign({}, base, b, { isReplay: true, actionLabel: 'Watch again', actionColor: '#F2F2F5', metaColor: '#9CC7AE' }));
+    const lists = [saved, progress, finished];
+    const labels = ['4 saved series', '3 series in progress', '1 finished series'];
+    const empty = this.props.empty === true || this.props.empty === 'true';
+    return {
+      accent, tabs,
+      items: lists[this.state.tab],
+      countLabel: labels[this.state.tab],
+      showEmpty: empty,
+      showList: !empty
+    };
+  }
+}
+</script>
+</body>
+</html>

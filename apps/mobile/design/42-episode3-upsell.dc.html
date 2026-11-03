@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Episode 3 ends, free user</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding-bottom: 28px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+<div style="position: relative; height: 260px; background: #1A1810; overflow: hidden">
+<div style="position: absolute; left: 0; right: 0; top: 0; display: flex; padding: 12px">
+<a href="BookFree.dc.html" aria-label="Close player" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(13,14,18,0.55); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"></path></svg></a>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 64px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 0 32px">
+<div aria-hidden="true" style="width: 56px; height: 56px; border-radius: 28px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.15">Episode 4 is part of Premium</div>
+<div style="font-size: 14px; color: #C9CAD2">Confounding Compounding · 5:12</div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 12px; height: 4px; border-radius: 2px; background: #6B6E7A"></div>
+</div>
+
+<section style="padding: 20px 20px 0; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6FCF97">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+Episode 3 of 20 complete
+</div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; line-height: 1.12">You’ve watched the 3 free episodes</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #A3A5B0">Keep going with The Psychology of Money and every other book on mintsy.</p>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; margin-top: 8px">
+<sc-for list="{{ticks}}" as="t" hint-placeholder-count="20"><div style="height: 4px; border-radius: 2px; background: {{t.bg}}"></div></sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8B8D99"><span>3 free</span><span>17 more with Premium</span></div>
+</section>
+
+<ul style="list-style: none; margin: 18px 20px 0; padding: 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E; display: flex; flex-direction: column; gap: 12px">
+<li style="display: flex; gap: 10px; align-items: center; font-size: 14px"><span style="color: {{accent}}">●</span>All 20 episodes of this book, and every other book</li>
+<li style="display: flex; gap: 10px; align-items: center; font-size: 14px"><span style="color: {{accent}}">●</span>Full transcripts and key takeaways</li>
+<li style="display: flex; gap: 10px; align-items: center; font-size: 14px"><span style="color: {{accent}}">●</span>Download episodes for offline</li>
+</ul>
+
+<div style="flex: 1"></div>
+<div style="padding: 0 20px; display: flex; flex-direction: column; gap: 6px">
+<a href="Premium.dc.html" style="height: 54px; border-radius: 14px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700">Continue with Premium</a>
+<div style="text-align: center; font-size: 13px; color: #A3A5B0">[TRIAL LENGTH] free, then [YEARLY PRICE]/year. Cancel anytime.</div>
+<a href="Main.dc.html" style="height: 44px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #A3A5B0">Not now, find another book</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const ticks = Array.from({ length: 20 }, (_, i) => ({ bg: i < 3 ? accent : '#2A2C36' }));
+    return { accent, ticks };
+  }
+}
+</script>
+</body>
+</html>

@@ -9,7 +9,8 @@
     "test:backend": "pnpm --filter mintsy-backend test",
     "lint": "pnpm -r --no-bail lint",
     "typecheck": "pnpm -r --no-bail typecheck",
-    "build": "pnpm -r --no-bail build"
+    "build": "pnpm -r --no-bail build",
+    "dev:mobile": "pnpm -C apps/mobile start"
   },
   "packageManager": "pnpm@12.15.0"
 }
