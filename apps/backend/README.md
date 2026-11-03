@@ -11,12 +11,8 @@ Node + TypeScript + Express 5, Apollo Server (GraphQL), Better Auth (email/passw
 
 ## Documentation
 
-Full documentation lives in [`docs/`](docs/README.md) and is published with GitBook Git Sync
-(`.gitbook.yaml`, project directory `apps/backend`). Start with [`docs/README.md`](docs/README.md); the
-table of contents is [`docs/SUMMARY.md`](docs/SUMMARY.md). It covers local setup, environment variables,
-architecture and MongoDB collections, the full GraphQL reference, authentication, Premium, push, media,
-the catalog and deployment. When you change the schema, update `docs/graphql-api/` too (see
-[`docs/graphql-api/changing-the-schema.md`](docs/graphql-api/changing-the-schema.md)).
+Full documentation lives in the hub repo, at [`docs/backend/`](https://github.com/castroaillc/mintsy-hub/tree/main/docs/backend),
+and is published with GitBook. When you change the schema, update `docs/backend/graphql-api/` there too.
 
 ## Setup
 
@@ -55,8 +51,8 @@ The GraphQL context carries the Better Auth session (`ctx.session`); see the `me
 ## Notes
 
 - MongoDB must be a replica set (Atlas always is) because Better Auth uses transactions.
-- Local dev keeps app data in `mintsy` (`MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true` in `.env.example`) and reads the catalog from `mintsy_studio` (`MONGODB_CATALOG_DB=mintsy_studio`), the default of the studio worker and admin dashboard, so the API serves what the admin publishes. An existing local `.env` needs that same line, and books already in the local `mintsy` database won't appear until they're copied or re-created; see [Local setup](docs/getting-started/local-setup.md#local-mongodb). If your existing local `.env` still points at `/backend`, change it to `/mintsy`; your old local data stays in the `backend` database (copy it over with `mongodump`/`mongorestore --nsFrom 'backend.*' --nsTo 'mintsy.*'` if you need it).
-- `MONGODB_CATALOG_DB` (optional) puts the catalog in its own database on the same connection; unset, `books` is in the app database, as on the flat production database and in the tests. The API only reads the catalog database: it never writes there or creates indexes (studio owns them). See [`docs/architecture/mongodb-collections.md`](docs/architecture/mongodb-collections.md).
+- Local dev keeps app data in `mintsy` (`MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true` in `.env.example`) and reads the catalog from `mintsy_studio` (`MONGODB_CATALOG_DB=mintsy_studio`), the default of the studio worker and admin dashboard, so the API serves what the admin publishes. An existing local `.env` needs that same line, and books already in the local `mintsy` database won't appear until they're copied or re-created; see [Local setup](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/getting-started/local-setup.md#local-mongodb). If your existing local `.env` still points at `/backend`, change it to `/mintsy`; your old local data stays in the `backend` database (copy it over with `mongodump`/`mongorestore --nsFrom 'backend.*' --nsTo 'mintsy.*'` if you need it).
+- `MONGODB_CATALOG_DB` (optional) puts the catalog in its own database on the same connection; unset, `books` is in the app database, as on the flat production database and in the tests. The API only reads the catalog database: it never writes there or creates indexes (studio owns them). See [`docs/architecture/mongodb-collections.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/architecture/mongodb-collections.md).
 - Better Auth is mounted before `express.json()`, which it requires.
 
 ## Scripts
@@ -197,7 +193,7 @@ enforced in the UI. With `SIGNED_MEDIA=true` the bucket is private and the API h
 - `Episode.videoUrl`: signed for **~1 hour** (60–90 min left when issued), and only for unlocked episodes.
 - `Episode.hlsUrl`: **always null while `SIGNED_MEDIA` is on**, so HLS isn't available and clients fall back to
   `videoUrl`. A V4 signed URL covers one object, while a player fetches HLS playlists and segments by relative
-  path, so a signed master playlist would 403 on its segments. See [`docs/features/media.md`](docs/features/media.md).
+  path, so a signed master playlist would 403 on its segments. See [`docs/features/media.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/features/media.md).
 - `Episode.thumbnailUrl`: signed for **~7 days** (the V4 maximum). Thumbnails are allowed to be public, but
   a private bucket makes every object private and studio uploads both into the same bucket, so they're
   signed too. Trade-off: no public CDN URLs for thumbnails, but no second bucket and no studio change.
@@ -471,7 +467,7 @@ of each episode the viewer can unlock, in order, deduplicated, first 5. Free vie
 
 ## Deploy (production)
 
-Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`, until the split to `mintsy_app` + `mintsy_studio`; see [`docs/deployment/README.md`](docs/deployment/README.md#splitting-the-database)).
+Production runs on **Google Cloud Run** (`mintsy-api`, us-central1) at **https://api.getmintsy.com**, with **MongoDB Atlas** (Free cluster, database `mintsy`, until the split to `mintsy_app` + `mintsy_studio`; see [`docs/deployment/README.md`](https://github.com/castroaillc/mintsy-hub/blob/main/docs/backend/deployment/README.md#splitting-the-database)).
 
 - **CI/CD** (`.github/workflows/backend.yml` at the repo root) runs on pushes and pull requests that touch `apps/backend/**` or the workflow:
   1. **Typecheck & build:** `pnpm typecheck` and `pnpm build`, after `pnpm install --frozen-lockfile --filter mintsy-backend...` at the root.
