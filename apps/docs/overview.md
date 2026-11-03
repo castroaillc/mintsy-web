@@ -72,6 +72,7 @@ Web doesn't call the API.
 | Action | Result |
 |---|---|
 | Push to `mintsy-web` `main` touching `apps/backend/**` or `backend.yml` | Deploys the API to Cloud Run |
+| Running `Backend CI/CD` manually from `main` with `preview_ref` set | Deploys that ref to the Cloud Run service `mintsy-api-preview` only, see [Preview deploys](backend/deployment/index.md#preview-deploys) |
 | Push to `mintsy-web` `main` touching `apps/web`, `packages/` or the root workspace files | Vercel deploys the website |
 | Push to `mintsy-web` `main` touching only `apps/docs` | Nothing deploys |
 | Publishing in admin against Atlas | Live in the app immediately |

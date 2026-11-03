@@ -36,6 +36,29 @@ Check what's running at any time:
 curl -s https://api.getmintsy.com/version
 ```
 
+## Preview deploys
+
+The Cloud Run service `mintsy-api-preview` (same project and region) runs the same image with its own env vars and secrets: database `mintsy_app_preview`, read-only `mintsy_studio`, and its own auth secret. It deploys only when someone asks, and never from a push:
+
+```sh
+gh workflow run backend.yml --repo castroaillc/mintsy-web --ref main -f preview_ref=<branch, tag or full commit SHA>
+```
+
+Always run it from `main`. Workload Identity trusts only `refs/heads/main`, and the `deploy-preview` job doesn't run from any other ref. `preview_ref` chooses the code to build, so a branch can be tried on preview before it reaches `main`. Leaving it empty runs CI only, with no deploy.
+
+The `deploy-preview` job:
+
+1. Checks out `preview_ref` and builds the image from the repository root, before it has any Google credentials.
+2. Authenticates as `github-deployer`, then pushes `.../mintsy/api:<sha>`.
+3. Runs `gcloud run services update mintsy-api-preview --image .../mintsy/api:<sha>`. Only the image changes; env vars, secrets and scaling stay as configured on the service. If the service doesn't exist, this fails rather than creating it.
+4. Runs the health and version checks against the preview service's URL, as in production.
+
+The `smoke-preview` job then runs `scripts/smoke-test.sh` from `preview_ref` against the preview URL, with `SMOKE_NO_WEB_ORIGIN=1`. It has no Google credentials, refuses any URL that isn't the preview service's, and waits 60 seconds first, because the script can run at most once a minute. A failure here leaves the new image serving.
+
+The `check` and `integration` jobs also run on a manual run, but they test `main`, not `preview_ref`, and they don't gate the preview deploy. A preview run can show red from `main` alone, or green with a `preview_ref` that wouldn't pass them.
+
+Nothing in a preview run can start the production `deploy` job, which requires a push to `main`.
+
 ## Production configuration
 
 Configured on the Cloud Run service, not in the repo.

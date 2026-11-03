@@ -17,10 +17,18 @@ on:
       - "!apps/backend/.gitbook.yaml"
       - ".github/workflows/backend.yml"
   workflow_dispatch:
+    inputs:
+      preview_ref:
+        description: "Branch, tag or full commit SHA to deploy to mintsy-api-preview (run this workflow from main). Empty: CI only, no deploy."
+        required: false
+        default: ""
+        type: string
 
 concurrency:
-  # Cancel superseded CI runs on the same branch; never cancel a production deploy mid-way
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded CI runs on the same branch; never cancel a production deploy mid-way.
+  # Preview dispatches get their own group: a new run replaces a pending run in its group whatever
+  # cancel-in-progress says, so sharing the main group could drop a queued production deploy.
+  group: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.preview_ref != '' && format('{0}-preview', github.workflow) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
@@ -169,3 +177,120 @@ jobs:
           done
           echo "::error::$URL/version does not report commit $GITHUB_SHA"
           exit 1
+
+  deploy-preview:
+    name: Deploy to Cloud Run (preview)
+    # Manual only: run this workflow from main with preview_ref set. The run's ref stays refs/heads/main, which
+    # is what Workload Identity trusts, and this file always comes from main, so a branch can't change these steps.
+    # No needs: check and integration test main on a dispatch, not preview_ref, so they can't gate this job.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.preview_ref != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation (no stored keys)
+    env:
+      PREVIEW_SERVICE: mintsy-api-preview # not $SERVICE, which is production's
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      url: ${{ steps.service.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.preview_ref }}
+          persist-credentials: false
+
+      - name: Resolve commit
+        id: commit
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "PREVIEW_SHA=$SHA" >> "$GITHUB_ENV"
+
+      # Before auth, so the checked-out ref's Dockerfile builds without Google credentials on the runner
+      - name: Build image
+        run: |
+          docker build -f apps/backend/Dockerfile -t "$IMAGE:$PREVIEW_SHA" \
+            --build-arg GIT_SHA="$PREVIEW_SHA" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/884851838962/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: github-deployer@mintsy-prod.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Push image
+        run: |
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker push "$IMAGE:$PREVIEW_SHA"
+
+      # Only swaps the image; env vars, secrets and scaling stay as configured on the service.
+      # services update, not deploy: it fails if the service doesn't exist instead of creating a bare one.
+      - name: Deploy
+        run: |
+          gcloud run services update "$PREVIEW_SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --image "$IMAGE:$PREVIEW_SHA" \
+            --quiet
+
+      - name: Service URL
+        id: service
+        run: |
+          URL=$(gcloud run services describe "$PREVIEW_SERVICE" --project "$PROJECT_ID" --region "$REGION" --format 'value(status.url)')
+          case "$URL" in
+            https://mintsy-api-preview-*) echo "url=$URL" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Unexpected preview URL: $URL"; exit 1 ;;
+          esac
+
+      - name: Health check
+        env:
+          URL: ${{ steps.service.outputs.url }}
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 "$URL/health"
+
+      - name: Version check (serving this commit)
+        env:
+          URL: ${{ steps.service.outputs.url }}
+        run: |
+          for i in $(seq 1 10); do
+            BODY=$(curl --fail --silent --show-error "$URL/version" || true)
+            echo "$BODY"
+            if printf '%s' "$BODY" | grep -qF "\"commit\":\"$PREVIEW_SHA\""; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::$URL/version does not report commit $PREVIEW_SHA"
+          exit 1
+
+  smoke-preview:
+    name: Smoke test (preview)
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    # A separate job with no id-token: the script comes from preview_ref, so it must not run where Google credentials exist
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.deploy-preview.outputs.sha }}
+          persist-credentials: false
+
+      - name: Smoke test
+        env:
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.url }}
+          SMOKE_NO_WEB_ORIGIN: "1" # the preview service has WEB_ORIGINS= (no web app)
+        run: |
+          # This script must never run against production
+          case "$PREVIEW_URL" in
+            https://mintsy-api-preview-*) ;;
+            *) echo "::error::Refusing to smoke test '$PREVIEW_URL'"; exit 1 ;;
+          esac
+          # At most one run per minute: preview runs are serial (concurrency above), so this wait spaces them out
+          sleep 60
+          scripts/smoke-test.sh "$PREVIEW_URL"
