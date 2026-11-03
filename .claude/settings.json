@@ -1,0 +1,28 @@
+{
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(set -e)"
+    ],
+    "deny": [
+      "Read(./**/.env)",
+      "Edit(./**/.env)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(pnpm seed:catalog:*)",
+      "Bash(pnpm run pipeline publish:*)",
+      "Bash(gcloud:*)",
+      "Bash(npx eas-cli@latest submit:*)",
+      "Bash(npx eas-cli@latest update:*)",
+      "Bash(npx eas-cli@latest build:*)",
+      "Bash(eas submit:*)",
+      "Bash(eas update:*)",
+      "Bash(eas build:*)",
+      "Bash(gh pr merge:*)"
+    ]
+  },
+  "enabledPlugins": {}
+}
