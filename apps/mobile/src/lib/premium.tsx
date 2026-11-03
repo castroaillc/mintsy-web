@@ -7,6 +7,7 @@ import { FREE_EPISODES, type Episode } from '@/data/types';
 import { authClient } from '@/lib/auth-client';
 import { useCatalog } from '@/lib/catalog';
 import { graphql } from '@/lib/graphql';
+import { APP_VARIANT } from '@/lib/variant';
 
 /** RevenueCat entitlement that unlocks every episode. */
 export const ENTITLEMENT_ID = 'premium';
@@ -49,10 +50,18 @@ export function isWebStore(store: string | null) {
 
 // ── RevenueCat setup ────────────────────────────────────────────────
 
-const API_KEY = Platform.select({
-  ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
-  android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
-});
+// Keys belong to one RevenueCat app and so one bundle id, so preview never borrows production's: without its own key
+// purchases are simply off. Never put a `test_` key in the preview ones: the SDK aborts release builds that use one.
+const API_KEY =
+  APP_VARIANT === 'preview'
+    ? Platform.select({
+        ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY_PREVIEW,
+        android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY_PREVIEW,
+      })
+    : Platform.select({
+        ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+        android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+      });
 
 let configured = false;
 

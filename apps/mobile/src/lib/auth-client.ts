@@ -9,7 +9,7 @@ export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [
     expoClient({
-      // mintsy or mintsy-dev, depending on the build variant (see app.config.ts)
+      // mintsy, mintsy-preview or mintsy-dev, depending on the build variant (see app.config.ts)
       scheme: Constants.expoConfig?.scheme as string,
       storagePrefix: 'mintsy',
       storage: SecureStore,

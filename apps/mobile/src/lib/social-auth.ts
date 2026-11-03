@@ -1,10 +1,10 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import { useEffect, useState } from 'react';
 import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { authClient } from '@/lib/auth-client';
+import { APP_VARIANT } from '@/lib/variant';
 
 /**
  * Native "Sign in with Apple" / "Sign in with Google": the provider's SDK returns an ID token and Better Auth's
@@ -17,12 +17,14 @@ export type SocialProvider = 'apple' | 'google';
 /** `cancelled` isn't an error: the screen stays put with no message. */
 export type SocialSignInResult = { status: 'success' } | { status: 'cancelled' } | { status: 'error'; message: string };
 
-// iOS client IDs are per bundle id: Mintsy Dev (com.getmintsy.app.dev) and Mintsy (com.getmintsy.app) each have one.
-// Both names are written out so Expo inlines them at build time. The web client ID is shared.
-const IS_DEV_VARIANT = Constants.expoConfig?.extra?.appVariant !== 'production';
-const GOOGLE_IOS_CLIENT_ID = IS_DEV_VARIANT
-  ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_DEV
-  : process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+// iOS client IDs are per bundle id, so each variant has its own. No fallback between them: a client ID only works in
+// the app it was issued for, so a variant without one hides the button. The web client ID is shared.
+// All names are written out so Expo inlines them at build time.
+const GOOGLE_IOS_CLIENT_ID = {
+  development: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_DEV,
+  preview: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_PREVIEW,
+  production: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+}[APP_VARIANT];
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
 const GENERIC_ERROR = 'We couldn’t sign you in. Try again.';

@@ -34,14 +34,28 @@ Checks: `npx expo lint`, `npx tsc --noEmit`, `pnpm test` (`scripts/*.test.mjs`).
 
 ## Build variants
 
-`app.config.ts` switches on `APP_VARIANT` (set per EAS profile) so dev and production install side by side:
+`app.config.ts` switches on `APP_VARIANT` so all three install side by side. Unset means development, and an unknown value fails rather than building the wrong app.
 
-| Variant | Name | Bundle ID | URL scheme |
-|---|---|---|---|
-| development | Mintsy Dev | `com.getmintsy.app.dev` | `mintsy-dev` |
-| production | Mintsy | `com.getmintsy.app` | `mintsy` |
+| Variant | Name | Bundle ID / package | URL scheme | Icon band | EAS profile, channel, environment |
+|---|---|---|---|---|---|
+| development | Mintsy Dev | `com.getmintsy.app.dev` | `mintsy-dev` | `DEV` | `development` (and `development-simulator`) |
+| preview | Mintsy Preview | `com.getmintsy.app.preview` | `mintsy-preview` | `PREVIEW` | `preview` |
+| production | Mintsy | `com.getmintsy.app` | `mintsy` | none | `production` (auto-incremented build number, remote app version, submits to App Store Connect app `6827671481`) |
 
-The backend trusts both schemes as auth origins. EAS profiles (`eas.json`), each with a channel of the same name except the simulator variant, which inherits `development`: `development` (dev client, internal), `development-simulator`, `preview` (production variant, internal), `production` (auto-incremented build number, remote app version, submits to App Store Connect app `6827671481`).
+- **Runtime:** `runtimeVersion` uses the fingerprint policy and the config differs per variant, so each variant has its own runtime, and an update only reaches its own builds. Environment variables that change the config count too: setting `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_PREVIEW` adds the Google plugin and changes preview's runtime. `package.json` `scripts` count as well, so adding a script changes every variant's runtime; only do that alongside a new native build.
+- **Icons:** `scripts/generate-variant-icons.py` makes the dev and preview icons from production's. `ios.icon` isn't set, so iOS uses the top-level `icon`; on Android `android.adaptiveIcon` takes precedence, so its foreground is per variant too. The monochrome (themed) Android icon is shared.
+- **Development builds read the config from the dev server,** so `Constants.expoConfig` follows the server's `APP_VARIANT`. Start the server with the variant of the build you open.
+- **QR codes:** the generated `exp+mintsy` scheme is claimed by development and turned off for preview. Production builds still claim it, because changing that changes production's runtime (see the comment in `app.config.ts`), so with both installed iOS may open the wrong one. Until the next production native build, run `npx expo start --dev-client --scheme mintsy-dev`.
+
+Every variant is registered separately outside this code:
+
+| Service | What each variant needs |
+|---|---|
+| Backend | Its scheme in `trustedOrigins` (`apps/backend/src/auth.ts`) and its bundle ID in `APPLE_APP_BUNDLE_IDENTIFIER` (`apps/backend/src/env.ts`). Preview's aren't there yet: until they are, email sign-in returns 403 `INVALID_ORIGIN` and Apple sign-in is rejected |
+| Apple | App ID with Sign in with Apple and Push Notifications; ad hoc devices (`eas device:create`) and a provisioning profile for internal builds; an App Store Connect app with its own subscriptions before StoreKit can sell anything |
+| Google | One iOS OAuth client per bundle ID (`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID_*`), listed in the backend's `GOOGLE_IOS_CLIENT_ID`. Unset: the button is hidden |
+| RevenueCat | One app per bundle ID, with its own public key. Preview reads only `EXPO_PUBLIC_REVENUECAT_*_KEY_PREVIEW`, which must be platform keys: a `test_` key aborts release builds. Unset: purchases are off |
+| Expo push | One project for all variants; each bundle ID needs push credentials on EAS |
 
 ## Navigation
 
@@ -84,11 +98,11 @@ Derived views (stats, recommendations, series status) live in `lib/series.ts`, `
 ## Backend integration
 
 - `EXPO_PUBLIC_API_URL` (default `http://localhost:4000`) is the API base for both auth and GraphQL. The iOS simulator reaches the host through localhost; the Android emulator needs `http://10.0.2.2:4000`, and a physical device needs your LAN IP.
-- Auth: `authClient` (`lib/auth-client.ts`) for sign-up/in/out, session, profile updates, `requestPasswordReset`, `resetPassword`, `changeEmail`, `changePassword` and `deleteUser`. Email links return through `RESET_PASSWORD_URL` / `EMAIL_CHANGED_URL` (`lib/deep-links.ts`, built with `Linking.createURL`, so `mintsy://…` or `mintsy-dev://…` per build).
+- Auth: `authClient` (`lib/auth-client.ts`) for sign-up/in/out, session, profile updates, `requestPasswordReset`, `resetPassword`, `changeEmail`, `changePassword` and `deleteUser`. Email links return through `RESET_PASSWORD_URL` / `EMAIL_CHANGED_URL` (`lib/deep-links.ts`, built with `Linking.createURL`, so `mintsy://…`, `mintsy-preview://…` or `mintsy-dev://…` per build).
 - GraphQL operations: `books` and `book(id)`, `me { premium { ... } }` and `refreshPremium`, `me { savedBookIds savedEpisodeIds }` and `setSaved`, `setProgress` and the progress fields on `me`, `registerPushToken`, `unregisterPushToken`, `sendTestPush`. The catalog query retries without `locked` and `coverUrl` for older backends (`lib/catalog-query.ts`).
 - `EXPO_PUBLIC_HLS_ENABLED`: stream over HLS when the API offers `Episode.hlsUrl`. On only when exactly `true`, and never on web. Don't enable it for a build pointing at an API without `hlsUrl`: the catalog request fails and the app loses every book.
-- RevenueCat public SDK keys: `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`. Without the key for a platform, purchases are off there and the paywall shows its retry state.
-- Google sign-in: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID(_DEV)`, `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME(_DEV)`. Leave a variant's variables empty to hide the Google button in that build.
+- RevenueCat public SDK keys: `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`, and `EXPO_PUBLIC_REVENUECAT_IOS_KEY_PREVIEW`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY_PREVIEW` for the preview variant, which never uses the others. Without the key for a platform, purchases are off there and the paywall shows its retry state.
+- Google sign-in: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID(_DEV|_PREVIEW)`, `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME(_DEV|_PREVIEW)`. Leave a variant's variables empty to hide the Google button in that build.
 
 All of these are in `.env.example`.
 
@@ -135,7 +149,7 @@ Steve does these steps. This repo doesn't record which are done, so check the co
 
 **RevenueCat**
 
-- [ ] Create the project **mintsy** and add the apps: App Store (`com.getmintsy.app`) and Play Store (`com.getmintsy.app`). For dev builds also add `com.getmintsy.app.dev` or test with the production bundle id.
+- [ ] Create the project **mintsy** and add the apps: App Store (`com.getmintsy.app`) and Play Store (`com.getmintsy.app`). For dev builds also add `com.getmintsy.app.dev` or test with the production bundle id. For Mintsy Preview add an App Store app for `com.getmintsy.app.preview`, with its own subscriptions in App Store Connect.
 - [ ] Products: import both products from each store.
 - [ ] Entitlements: create **`premium`** and attach all four products (2 per store).
 - [ ] Offerings: create **`default`** (make it Current) with the packages **`$rc_monthly`** (Monthly) and **`$rc_annual`** (Annual), each holding the App Store and Play Store product.
@@ -186,6 +200,15 @@ APP_VARIANT=production npx eas-cli@latest submit -p ios --profile production --i
 ```
 
 Native modules (`expo-video`, `expo-notifications`, `expo-secure-store`, `react-native-purchases`, `expo-mail-composer`, `expo-clipboard`, and the local module `modules/backup-exclusion`) require a new build. JS-only changes can ship over the air with `eas update` to the matching channel; `runtimeVersion` uses the `fingerprint` policy, so an update only reaches builds it can run on.
+
+`eas update` doesn't read `eas.json`'s `env`, and without `APP_VARIANT` it resolves the development config and lands on a runtime no preview or production build has. Publish through the wrapper, which sets the variant, channel and environment together:
+
+```sh
+node scripts/eas-update.mjs preview "What changed"
+node scripts/eas-update.mjs production "What changed"
+```
+
+With `--environment`, `eas update` uses only that EAS environment's variables and ignores `.env`, so every `EXPO_PUBLIC_*` the variant needs has to exist there. After publishing, compare the printed runtime with the build's.
 
 ## Known gaps
 
