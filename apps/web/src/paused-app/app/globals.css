@@ -1,0 +1,401 @@
+@import "tailwindcss";
+
+/*
+ * mintsy web: Ink & Coral desktop tokens, taken from the "Desktop" boards (design/Desk*.dc.html).
+ * Utilities: bg-bg, bg-nav, bg-card, bg-raised, bg-raised-2, border-line…, text-ink…, bg-coral…
+ */
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-grotesk), system-ui, sans-serif;
+
+  /* Surfaces */
+  --color-bg: #0e0d18;
+  --color-nav: #13111e;
+  --color-card: #181626;
+  --color-raised: #1b1929;
+  --color-raised-2: #201d2e;
+  --color-raised-3: #221f31; /* current transcript line in the player */
+  --color-hero: #2b2850; /* default hero / thumbnail tint */
+
+  /* Borders */
+  --color-line: #2a2740;
+  --color-line-2: #332f4a;
+  --color-line-3: #3d3956;
+  --color-line-hover: #45405e;
+  --color-line-strong: #57516f;
+
+  /* Text */
+  --color-ink: #f4f2f8;
+  --color-ink-2: #dad6e6;
+  --color-ink-3: #cfcbde;
+  --color-ink-4: #aca6c2;
+  --color-ink-5: #9690ae;
+  --color-ink-6: #7a7394;
+
+  /* Coral */
+  --color-coral: #ff6b57;
+  --color-coral-hover: #ff8e7d;
+  --color-on-coral: #1a1424;
+
+  /* Premium upsell card */
+  --color-upsell: #3f2a30;
+  --color-upsell-line: #5a2a2e;
+
+  /* Errors (DeskStates, DeskSignInError, DeskDeleteAccount) */
+  --color-error-bg: #2a1719;
+  --color-error-icon: #ffb4ae;
+  --color-error-ink: #ffd9d6;
+  --color-error-toast: #3a1a1c;
+  --color-danger: #ff6467;
+  --color-undo: #b8321f;
+
+  /* Info / finished / "ACTIVE" badge */
+  --color-info: #8fd3ff;
+
+  /* Offline banner */
+  --color-offline-bg: #1b2230;
+  --color-offline-ink: #c8d6f2;
+
+  /* Cover ink on generated covers */
+  --color-cover-dark: #1c1c1c;
+  --color-cover-light: #f4efe6;
+
+  --radius-pill: 999px;
+}
+
+html {
+  background: var(--color-bg);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: var(--color-ink-6);
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* Visible focus everywhere (keyboard only) */
+:focus-visible {
+  outline: 2px solid var(--color-coral);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* ---------- Shell (from the boards' <helmet> style block) ---------- */
+
+.dk {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.dk-shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.dk-nav {
+  flex: none;
+  width: 248px;
+  box-sizing: border-box;
+  padding: 24px 16px;
+  border-right: 1px solid var(--color-line);
+  background: var(--color-nav);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+}
+
+.dk-navlist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dk-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.dk-pad {
+  padding: 32px 48px 64px;
+}
+
+.dk-navitem:hover {
+  background: var(--color-raised-2);
+  color: var(--color-ink);
+}
+
+.dk-btn {
+  transition: background-color 0.12s ease;
+}
+.dk-btn:hover {
+  background: var(--color-coral-hover);
+}
+
+.dk-ghost:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+}
+
+.dk-light:hover {
+  background: #ffffff;
+}
+
+.dk-card:hover {
+  border-color: var(--color-line-hover);
+}
+
+.dk-row:hover {
+  background: var(--color-raised);
+}
+
+.dk-link:hover {
+  color: var(--color-coral-hover);
+}
+
+.dk-cover {
+  transition: transform 0.15s ease;
+}
+a:hover > .dk-cover,
+.dk-cover:hover {
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-cover,
+  .dk-btn {
+    transition: none;
+  }
+  a:hover > .dk-cover,
+  .dk-cover:hover {
+    transform: none;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Auth pages: two columns; the brand panel collapses below 980px */
+.dk-auth {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100dvh;
+}
+.dk-auth-side {
+  flex: 1 1 520px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 40px 48px;
+  background: var(--color-hero);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 100dvh;
+}
+
+@container (max-width: 980px) {
+  .dk-auth-side {
+    min-height: 0 !important;
+    padding: 24px !important;
+    flex-basis: 100% !important;
+  }
+  .dk-auth-side > div {
+    display: none !important;
+  }
+}
+
+@container (max-width: 860px) {
+  .dk-shell {
+    flex-direction: column;
+  }
+  .dk-nav {
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line);
+    gap: 12px;
+    overflow: visible;
+    z-index: 20;
+  }
+  .dk-navlist {
+    flex-direction: row;
+    gap: 2px;
+  }
+  .dk-navlabel,
+  .dk-hide-sm {
+    display: none !important;
+  }
+  .dk-pad {
+    padding: 24px 20px 48px;
+  }
+}
+
+@container (max-width: 520px) {
+  .dk-pad {
+    padding: 20px 16px 40px;
+  }
+  .dk-hide-xs {
+    display: none !important;
+  }
+  .dk-ep-actions {
+    padding-left: 12px !important;
+  }
+  .dk-onb-header {
+    padding: 16px !important;
+  }
+}
+
+/* Visually hidden, still read by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Loading skeleton pulse (static under reduced motion) */
+@keyframes dk-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+.dk-skel {
+  background: var(--color-raised-2);
+  animation: dk-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dk-skel {
+    animation: none;
+  }
+}
+
+/* Native range input for the player's scrubber, styled to the 4px track + 14px knob */
+.dk-scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dk-scrub::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--color-coral) var(--pct, 0%), rgba(255, 255, 255, 0.25) var(--pct, 0%));
+}
+.dk-scrub::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.dk-scrub::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-coral);
+}
+.dk-scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 0;
+}
+.dk-scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 0;
+}
+
+/* Full-screen player: the video fills the frame */
+.dk-frame:fullscreen {
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+video::cue {
+  background: rgba(14, 13, 24, 0.78);
+  color: #ffffff;
+  font-family: var(--font-sans);
+}
+
+/* Toasts: bottom-left of the content area (right of the side nav), max 400px */
+.dk-toast-wrap {
+  position: fixed;
+  z-index: 60;
+  bottom: 24px;
+  left: 24px;
+  width: min(400px, calc(100vw - 48px));
+  pointer-events: none;
+}
+.dk-toast-wrap > * {
+  pointer-events: auto;
+}
+.dk-shell .dk-toast-wrap {
+  left: calc(248px + 48px);
+  width: min(400px, calc(100vw - 248px - 96px));
+}
+@container (max-width: 860px) {
+  .dk-shell .dk-toast-wrap {
+    left: 20px;
+    width: min(400px, calc(100vw - 40px));
+  }
+}
+@container (max-width: 520px) {
+  .dk-shell .dk-toast-wrap,
+  .dk-toast-wrap {
+    left: 16px;
+    bottom: 16px;
+    width: calc(100vw - 32px);
+  }
+}
