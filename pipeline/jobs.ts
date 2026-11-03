@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import type { BookDoc, EpisodeDoc } from "@mintsy/shared";
 import type { Db, ObjectId } from "mongodb";
 
 import { runEpisode, type StepName } from "./episode";
@@ -65,24 +66,6 @@ export interface CoverResult {
   coverPath?: string;
 }
 export type JobResult = IngestResult | ScriptResult | RenderResult | PreviewResult | CoverResult;
-
-type ContentStatus = "draft" | "published";
-type EpisodeDoc = CatalogEpisode & { status?: ContentStatus; updatedAt?: Date };
-interface BookDoc {
-  _id: string;
-  title: string;
-  author: string;
-  category: string;
-  coverTone: string;
-  tint: string;
-  description: string;
-  order: number;
-  episodes: EpisodeDoc[];
-  /** Rendered cover in the media bucket (cover job with upload). */
-  coverPath?: string;
-  status?: ContentStatus;
-  updatedAt?: Date;
-}
 
 const DEFAULT_COVER_TONE = "#E7DFCF";
 const DEFAULT_TINT = "#3B3426";

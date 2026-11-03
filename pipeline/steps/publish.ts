@@ -2,26 +2,17 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import type { EpisodeDoc } from "@mintsy/shared";
+
 import { bookDir, CATALOG_PATH, files, MEDIA_BUCKET } from "../paths";
 import { readJson, run, writeJson } from "../util";
 import { encodeHls, MASTER_PLAYLIST, uploadHls } from "./hls";
 import type { BookInfo } from "./ingest";
 import type { Script } from "./script";
-import type { TranscriptLine, Voice } from "./voice";
+import type { Voice } from "./voice";
 
 /** Episode fields shared by catalog.json (legacy) and the `books` collection. */
-export type CatalogEpisode = {
-  number: number;
-  title: string;
-  summary: string;
-  durationSec: number;
-  transcript: TranscriptLine[];
-  takeaways: string[];
-  videoPath?: string;
-  thumbnailPath?: string;
-  /** HLS master playlist, `books/<bookId>/<chapter>-<hash>/master.m3u8`. Older episodes don't have one. */
-  hlsPath?: string;
-};
+export type CatalogEpisode = Omit<EpisodeDoc, "status" | "updatedAt">;
 type CatalogBook = Omit<BookInfo, "chapters"> & { id: string; order: number; episodes: CatalogEpisode[] };
 
 async function shortHash(file: string) {

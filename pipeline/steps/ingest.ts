@@ -2,13 +2,14 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { extractText, getDocumentProxy } from "unpdf";
+import { CATEGORIES } from "@mintsy/shared";
 import { z } from "zod";
 
 import { generate } from "../claude";
 import { bookDir, files } from "../paths";
 import { readJson, writeJson } from "../util";
 
-export const CATEGORIES = ["Finance", "Business", "Psychology", "Productivity", "History", "Health"] as const;
+export { CATEGORIES };
 
 export const BookInfo = z.object({
   title: z.string(),
