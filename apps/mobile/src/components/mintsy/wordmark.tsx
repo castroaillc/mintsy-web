@@ -1,5 +1,8 @@
+import { getTheme, logoPaths } from '@mintsy/brand';
+import { useColorScheme } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
 import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
 
 type WordmarkProps = {
   /** `text` = "mintsy." wordmark; `tile` = the square "m." app mark. */
@@ -10,10 +13,21 @@ type WordmarkProps = {
   onTint?: boolean;
 };
 
+/** The official logo outlines. They're in 1000-unit em squares, so a scale of `size / 1000` matches a font size. */
+function Outline({ path, size, letters, dot }: { path: typeof logoPaths.wordmark; size: number; letters: string; dot: string }) {
+  return (
+    <Svg width={(path.width * size) / 1000} height={(path.height * size) / 1000} viewBox={`0 0 ${path.width} ${path.height}`}>
+      <Path d={path.letters} fill={letters} />
+      <Path d={path.dot} fill={dot} />
+    </Svg>
+  );
+}
+
 export function Wordmark({ variant = 'text', size, onTint }: WordmarkProps) {
+  const colors = getTheme('ink-coral', useColorScheme() === 'dark' ? 'dark' : 'light');
+
   if (variant === 'tile') {
     const edge = size ?? 40;
-    const font = Math.round(edge * 0.7);
     return (
       <Box
         accessible
@@ -22,24 +36,18 @@ export function Wordmark({ variant = 'text', size, onTint }: WordmarkProps) {
         style={{ width: edge, height: edge, borderRadius: Math.round(edge / 4) }}
         className="items-center justify-center border border-border bg-card"
       >
-        {/* Space Grotesk sits low in its line box; nudge the glyphs up to center them */}
-        <Text
-          style={{ fontSize: font, lineHeight: font, marginTop: -Math.round(font * 0.2) }}
-          className="font-display tracking-[-1px] text-foreground"
-        >
-          m<Text style={{ fontSize: font, lineHeight: font }} className="font-display text-brand">.</Text>
-        </Text>
+        <Outline path={logoPaths.mark} size={Math.round(edge * 0.7)} letters={colors.foreground} dot={colors.brand} />
       </Box>
     );
   }
-  const font = size ?? 22;
   return (
-    <Text
-      accessibilityRole="header"
-      style={{ fontSize: font, letterSpacing: font >= 26 ? -0.6 : -0.5 }}
-      className={`font-display ${onTint ? 'text-on-tint' : 'text-foreground'}`}
-    >
-      mintsy<Text style={{ fontSize: font }} className="font-display text-brand">.</Text>
-    </Text>
+    <Box accessible accessibilityRole="header" accessibilityLabel="mintsy">
+      <Outline
+        path={logoPaths.wordmark}
+        size={size ?? 22}
+        letters={onTint ? colors.onTint : colors.foreground}
+        dot={colors.brand}
+      />
+    </Box>
   );
 }

@@ -1,3 +1,5 @@
+import { themes } from '@mintsy/brand';
+
 /** Catalog types and client-side constants. The catalog itself comes from the backend (`src/lib/catalog.tsx`). Tones are cover/thumbnail art colors, not theme colors. */
 
 export type TranscriptLine = { startSec: number; text: string };
@@ -84,7 +86,7 @@ export const CATEGORIES = ['All', 'Finance', 'Business', 'Psychology', 'Producti
 export type CategoryFilter = (typeof CATEGORIES)[number];
 
 /** Rotating thumbnail tints for episode cards. */
-export const EPISODE_TINTS = ['#2B2850', '#2C3245', '#3F2A30', '#3A2B30'];
+export const EPISODE_TINTS: string[] = themes['ink-coral'].tints;
 
 /** Dark or light cover ink, whichever reads on the given tone. */
 export function coverInk(tone: string) {
