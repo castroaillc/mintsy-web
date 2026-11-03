@@ -14,6 +14,9 @@ importers:
       '@mintsy/brand':
         specifier: link:../mintsy-web/packages/brand
         version: link:../mintsy-web/packages/brand
+      '@mintsy/shared':
+        specifier: link:../mintsy-web/packages/shared
+        version: link:../mintsy-web/packages/shared
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
