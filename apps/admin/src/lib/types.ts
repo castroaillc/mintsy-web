@@ -1,4 +1,4 @@
-/** Studio job shapes, matching studio/pipeline/jobs.ts. Catalog shapes come from @mintsy/shared. */
+/** Studio job shapes, matching apps/studio/pipeline/jobs.ts. Catalog shapes come from @mintsy/shared. */
 import type { ObjectId } from "mongodb";
 
 export type { BookDoc, ContentStatus, EpisodeDoc, TranscriptLine } from "@mintsy/shared";
@@ -26,7 +26,7 @@ export interface RenderResult {
   thumbnailPath: string;
 }
 
-/** render with preview: true (rendered in studio/work only). */
+/** render with preview: true (rendered in apps/studio/work only). */
 export interface PreviewResult {
   durationSec: number;
   preview: true;
@@ -80,7 +80,7 @@ export type JobView = Omit<StudioJob, "_id" | "createdAt" | "startedAt" | "finis
   hasEdits: boolean;
 };
 
-/** `studio_workers`: one heartbeat doc per running studio worker (written by studio/pipeline/worker.ts every 5s). */
+/** `studio_workers`: one heartbeat doc per running studio worker (written by apps/studio/pipeline/worker.ts every 5s). */
 export type StudioWorkerDoc = {
   _id: string;
   pid: number;

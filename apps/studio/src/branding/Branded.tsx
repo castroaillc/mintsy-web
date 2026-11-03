@@ -11,7 +11,7 @@ import { INTRO_FRAMES } from "../episode/timing";
 import { pauseLevel } from "../collage/polish";
 import { Intro, type IntroProps } from "./Intro";
 
-/** Brand audio lives in studio/brand/ and is copied into each render's public dir under brand/. */
+/** Brand audio lives in apps/studio/brand/ and is copied into each render's public dir under brand/. */
 export const BRAND_FILES = ["brand/intro-sting.mp3", "brand/music-bed.mp3"];
 
 const STING_VOLUME = 0.85;

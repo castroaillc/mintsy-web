@@ -1,5 +1,5 @@
 /**
- * Local narration with Kokoro (studio/tts/kokoro_tts.py), the voice step's only provider.
+ * Local narration with Kokoro (apps/studio/tts/kokoro_tts.py), the voice step's only provider.
  * One Python process per voice step keeps the model loaded across scenes.
  */
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
@@ -22,7 +22,7 @@ type Word = { word: string; start: number; end: number };
 type Reply = { id: number; ok: true; durationSec: number; words: Word[] } | { id: number; ok: false; error: string };
 
 const TTS_DIR = path.join(STUDIO_DIR, "tts");
-const SETUP = "Setup: brew install uv espeak-ng && (cd studio/tts && uv sync)";
+const SETUP = "Setup: brew install uv espeak-ng && (cd apps/studio/tts && uv sync)";
 
 export class KokoroTts {
   private proc: ChildProcessWithoutNullStreams;
@@ -33,7 +33,7 @@ export class KokoroTts {
 
   constructor() {
     // `uv run` would otherwise build a missing environment itself: a ~1 GB download in the middle of a job
-    if (!existsSync(path.join(TTS_DIR, ".venv"))) throw new Error(`Kokoro isn't set up: studio/tts/.venv is missing. ${SETUP}`);
+    if (!existsSync(path.join(TTS_DIR, ".venv"))) throw new Error(`Kokoro isn't set up: apps/studio/tts/.venv is missing. ${SETUP}`);
     this.proc = spawn("uv", ["run", "--project", TTS_DIR, "--quiet", "python", "-I", path.join(TTS_DIR, "kokoro_tts.py")], {
       cwd: TTS_DIR,
       env: { ...process.env, KOKORO_WARM_VOICE: kokoroVoices()[0] },

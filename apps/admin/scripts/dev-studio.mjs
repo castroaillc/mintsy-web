@@ -2,16 +2,16 @@
 // MongoDB settings from the admin's env files, so the worker can't consume a different
 // database's queue than the one the dashboard writes to.
 //
-// The worker's own studio/.env still supplies everything else (API keys, bucket); only
+// The worker's own apps/studio/.env still supplies everything else (API keys, bucket); only
 // MONGODB_URI / MONGODB_DB / UPLOAD_DIR are passed from here (dotenv never overrides them).
-// Set STUDIO_DIR if studio/ isn't at ../../../studio from this app.
+// Set STUDIO_DIR to run the worker from a different studio checkout.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const adminDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const studioDir = path.resolve(process.env.STUDIO_DIR ?? path.join(adminDir, "../../../studio"));
+const studioDir = path.resolve(process.env.STUDIO_DIR ?? path.join(adminDir, "../studio"));
 
 // Same files and precedence as `next dev` (earlier files and the real environment win).
 for (const name of [".env.development.local", ".env.local", ".env.development", ".env"]) {

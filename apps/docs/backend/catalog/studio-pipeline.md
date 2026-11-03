@@ -1,6 +1,6 @@
 # Studio pipeline
 
-The studio project (`studio/`, repo `castroaillc/mintsy-studio`) turns a book PDF into episode videos. It feeds the catalog by writing to MongoDB directly, not through this API. The admin dashboard drives it through a job queue.
+The studio project (`apps/studio`) turns a book PDF into episode videos. It feeds the catalog by writing to MongoDB directly, not through this API. The admin dashboard drives it through a job queue.
 
 ```
 admin dashboard ──insert job──▶ studio_jobs ◀──claim / update── studio worker (pnpm worker)

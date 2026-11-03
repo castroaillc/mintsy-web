@@ -86,7 +86,7 @@ export const createJobSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("render"),
     chapter: z.number().int().min(1),
-    /** Render locally only (studio/work), no upload and no change to the catalog. */
+    /** Render locally only (apps/studio/work), no upload and no change to the catalog. */
     preview: z.boolean().optional(),
     scriptJson: scriptJsonSchema.optional(),
     scenesJson: scenesJsonSchema.optional(),

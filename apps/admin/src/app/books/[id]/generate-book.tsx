@@ -247,7 +247,7 @@ function PlanDetails({ plan, unselected, onChange }: { plan: Plan; unselected: S
 
       {rebuilds > 0 && (
         <p className="text-xs text-destructive">
-          {plural(rebuilds, "chapter has", "chapters have")} a finished script job but no script files in studio/work. The render job writes them again with Claude.
+          {plural(rebuilds, "chapter has", "chapters have")} a finished script job but no script files in apps/studio/work. The render job writes them again with Claude.
         </p>
       )}
 

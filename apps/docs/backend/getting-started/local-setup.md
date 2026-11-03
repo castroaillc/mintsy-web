@@ -63,7 +63,7 @@ The replica set is required: Better Auth uses MongoDB transactions, which don't 
 * **App data:** `mintsy`, from `MONGODB_URI=mongodb://localhost:27017/mintsy?directConnection=true`.
 * **Catalog (`books`):** `mintsy_studio`, from `MONGODB_CATALOG_DB=mintsy_studio`. The studio worker and admin dashboard default to this database, so the local API serves what you publish from the local admin.
 
-Admin and the worker must also be on this MongoDB. Admin's default `MONGODB_URI` is `mongodb://127.0.0.1:27017`, which is this one; the worker has no default, so set it in `studio/.env`. Publishes from a separate throwaway MongoDB, such as the one on port 27018 on the [Admin](../../services/admin.md#setup) page, don't reach the local API.
+Admin and the worker must also be on this MongoDB. Admin's default `MONGODB_URI` is `mongodb://127.0.0.1:27017`, which is this one; the worker has no default, so set it in `apps/studio/.env`. Publishes from a separate throwaway MongoDB, such as the one on port 27018 on the [Admin](../../services/admin.md#setup) page, don't reach the local API.
 
 ::: warning
 An existing local `.env` needs the same line: add `MONGODB_CATALOG_DB=mintsy_studio` and restart the API. The startup log should say `catalog: mintsy_studio`.

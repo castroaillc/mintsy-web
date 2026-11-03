@@ -8,7 +8,7 @@ import { booksCol, jobsCol } from "@/lib/mongo";
 import { bookIdSchema, coverJobSchema } from "@/lib/schemas";
 import { coverPath } from "@/lib/studio-work";
 
-/** GET /api/books/:id/cover serves the locally rendered cover (studio/work/<book>/cover.jpg). */
+/** GET /api/books/:id/cover serves the locally rendered cover (apps/studio/work/<book>/cover.jpg). */
 export async function GET(_req: Request, ctx: RouteContext<"/api/books/[id]/cover">) {
   const { id } = await ctx.params;
   const book = bookIdSchema.safeParse(id);

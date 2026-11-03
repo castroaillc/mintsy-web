@@ -1,7 +1,8 @@
 # mintsy-web
 
-A pnpm monorepo with two separate Next.js apps, the mintsy API and the docs site. They share the
-lockfile and nothing else.
+A pnpm monorepo with two separate Next.js apps, the mintsy API and the docs site, which share the
+root lockfile and nothing else, plus the mobile app and the studio pipeline, which are their own pnpm
+workspaces with their own lockfiles.
 
 | App | Path | What it is | Runs where |
 |---|---|---|---|
@@ -9,6 +10,7 @@ lockfile and nothing else.
 | `mintsy-admin` | `apps/admin` | Content dashboard: books, PDF upload, studio jobs, draft/publish | Your machine only |
 | `mintsy-backend` | `apps/backend` | GraphQL API + Better Auth (api.getmintsy.com) | Cloud Run; deploys from this repo's `main` |
 | `mintsy-docs` | `apps/docs` | All mintsy documentation ([start here](apps/docs/index.md)) | Your machine only |
+| `studio` | `apps/studio` | Book PDF to episode video; its worker runs the admin's jobs. Own workspace: `pnpm install` in that folder | Your machine only |
 
 > [!WARNING]
 > **The admin dashboard is local-only and must never be deployed.** It has no sign-in, and
@@ -26,6 +28,7 @@ pnpm dev:web          # web   → http://localhost:3000
 pnpm dev:admin        # admin → http://127.0.0.1:3001 (bound to localhost only)
 pnpm dev:backend      # API   → http://localhost:4000 (/graphql, /api/auth/*)
 pnpm dev:docs         # docs  → http://127.0.0.1:3002 (bound to localhost only)
+pnpm dev:worker       # studio worker; needs `pnpm install` in apps/studio first
 ```
 
 The backend needs a local MongoDB replica set: `docker compose -f apps/backend/docker-compose.yml up -d`.
@@ -33,7 +36,7 @@ The backend needs a local MongoDB replica set: `docker compose -f apps/backend/d
 Each app reads its own env file: copy `apps/web/.env.example` to `apps/web/.env.local`,
 `apps/admin/.env.example` to `apps/admin/.env.local`, and `apps/backend/.env.example` to
 `apps/backend/.env`. See `apps/backend/README.md` for the API, and `apps/admin/README.md` for the admin
-workflow and the studio worker.
+workflow and the studio worker, and `apps/studio/README.md` for the pipeline.
 
 ## Checks
 

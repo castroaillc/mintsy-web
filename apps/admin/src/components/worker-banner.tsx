@@ -46,12 +46,12 @@ export function WorkerBanner({
       <AlertDescription className="space-y-1">
         <p>
           Start the dashboard and worker together with <Code>pnpm dev:studio</Code> (mintsy-web root), or run{" "}
-          <Code>cd studio &amp;&amp; pnpm worker</Code>.
+          <Code>pnpm dev:worker</Code>.
         </p>
         {db && (
           <p>
             If a worker is already running, it&apos;s on a different database: set <Code>MONGODB_DB={db}</Code> in{" "}
-            <Code>studio/.env</Code> and restart it.
+            <Code>apps/studio/.env</Code> and restart it.
           </p>
         )}
       </AlertDescription>

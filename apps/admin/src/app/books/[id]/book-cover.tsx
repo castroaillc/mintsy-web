@@ -13,7 +13,7 @@ import { useJobs } from "@/hooks/use-jobs";
 import { callApi } from "@/lib/client-api";
 import type { JobView } from "@/lib/types";
 
-/** Book cover: the local render (studio/work) next to the one the apps show, with render/publish actions. */
+/** Book cover: the local render (apps/studio/work) next to the one the apps show, with render/publish actions. */
 export function BookCoverCard({
   bookId,
   local,

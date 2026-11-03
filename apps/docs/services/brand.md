@@ -16,7 +16,7 @@ Everything is generated from **`src/tokens.mjs`**. Change a color there, run `np
 
 ## Install
 
-In `mintsy-web`, add it to an app's `package.json` and run `pnpm install` in that app's workspace. `apps/mobile` is its own pnpm workspace, so install there separately. Studio links it from `../mintsy-web/packages/brand`.
+In `mintsy-web`, add it to an app's `package.json` and run `pnpm install` in that app's workspace. `apps/mobile` is its own pnpm workspace, so install there separately. `apps/studio` is too, and links it from `../../packages/brand`.
 
 ```jsonc
 "@mintsy/brand": "workspace:*"

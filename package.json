@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r --no-bail typecheck",
     "build": "pnpm -r --no-bail build",
     "dev:mobile": "pnpm -C apps/mobile start",
+    "dev:worker": "pnpm -C apps/studio worker",
     "dev:docs": "pnpm --filter mintsy-docs dev"
   },
   "packageManager": "pnpm@12.15.0"

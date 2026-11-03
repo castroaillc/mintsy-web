@@ -5,7 +5,7 @@ import { env } from "./env";
 import { readFile } from "node:fs/promises";
 
 /**
- * Read-only access to the studio worker's output folder (studio/work/<book>/ep-NN), so the
+ * Read-only access to the studio worker's output folder (apps/studio/work/<book>/ep-NN), so the
  * dashboard can preview a render before it's uploaded. Same machine as the worker, like UPLOAD_DIR.
  * Layout is owned by studio (pipeline/paths.ts, pipeline/steps/voice.ts).
  */

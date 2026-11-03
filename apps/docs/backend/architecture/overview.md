@@ -15,7 +15,7 @@ Data is stored in two MongoDB databases on one cluster: `mintsy_app` holds the c
 | iPhone app (`mobile-app`, Expo)            | Calls `https://api.getmintsy.com` directly. Better Auth Expo client keeps the session cookie in SecureStore and sends it as a `Cookie` header.       |
 | Web app (`apps/web`, app.getmintsy.com)    | The browser only talks to app.getmintsy.com. Next.js rewrites `/api/auth/*` and `/graphql` to this API, so cookies are first-party on the web host.  |
 | Admin dashboard (`apps/admin`, local only) | Writes the `books` and `studio_jobs` collections directly in MongoDB; it doesn't call this API.                                                      |
-| Studio worker (`studio`)                   | Writes draft books and episodes to `books` directly, and uploads media to `gs://mintsy-media`. See [Studio pipeline](../catalog/studio-pipeline.md). |
+| Studio worker (`apps/studio`)              | Writes draft books and episodes to `books` directly, and uploads media to `gs://mintsy-media`. See [Studio pipeline](../catalog/studio-pipeline.md). |
 | RevenueCat                                 | Posts subscription events to `/webhooks/revenuecat`; the API also calls RevenueCat's REST API.                                                       |
 | Expo push service                          | The API sends push messages through it.                                                                                                              |
 | Resend                                     | The API sends transactional email through it.                                                                                                        |

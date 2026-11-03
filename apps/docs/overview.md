@@ -3,7 +3,7 @@
 | Service | Where | What it is | Runs on |
 |---|---|---|---|
 | [Backend](backend/index.md) | `mintsy-web/apps/backend` | Express, Apollo GraphQL and Better Auth API | Cloud Run, `api.getmintsy.com` |
-| [Studio](services/studio.md) | `mintsy-studio` | Book PDF to episode video (Claude, Kokoro, Remotion) | A staff machine |
+| [Studio](services/studio.md) | `mintsy-web/apps/studio` | Book PDF to episode video (Claude, Kokoro, Remotion) | A staff machine |
 | [Admin](services/admin.md) | `mintsy-web/apps/admin` | Content dashboard: upload, review, edit, publish | A staff machine, `127.0.0.1:3001`, never deployed |
 | [Mobile](services/mobile.md) | `mintsy-web/apps/mobile` | Expo and React Native app, iOS first | App Store through EAS |
 | [Web](services/web.md) | `mintsy-web/apps/web` | Landing, privacy and support pages | Vercel, `getmintsy.com` |
@@ -82,7 +82,7 @@ Web doesn't call the API.
 | Service | Used for | Configured in |
 |---|---|---|
 | Google Cloud `mintsy-prod` | Cloud Run, Artifact Registry, Secret Manager, Cloud Storage, Vertex AI | GitHub Actions through Workload Identity, which trusts only `castroaillc/mintsy-web` on `main` |
-| MongoDB Atlas | Both databases | Backend: `MONGODB_URI` secret. Studio: `studio/.env`. Admin: `apps/admin/.env.local`. |
+| MongoDB Atlas | Both databases | Backend: `MONGODB_URI` secret. Studio: `apps/studio/.env`. Admin: `apps/admin/.env.local`. |
 | Vercel `castro-ais-projects` | Website | Project `mintsy-web` |
 | Expo / EAS `castroai/mintsy` | Builds, TestFlight, push | `eas.json`, `app.config.ts` |
 | App Store Connect, app `6827671481` | App and subscriptions | `eas.json` |

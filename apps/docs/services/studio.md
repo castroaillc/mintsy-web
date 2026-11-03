@@ -1,4 +1,6 @@
-# Studio (`mintsy-studio`)
+# Studio (`mintsy-web/apps/studio`)
+
+This app is its own pnpm workspace with its own lockfile, so Remotion stays out of the backend image. Install with `pnpm install` in `apps/studio`.
 
 A TypeScript pipeline plus a Remotion project that turns a book PDF into finished episodes, one ~5-minute narrated, animated video per chapter: script, animated scenes, narration, rendered MP4, HLS, and a **draft** episode in MongoDB `books`, the catalog's source of truth. Staff drive it from the [admin dashboard](admin.md), which queues jobs that `pnpm worker` runs on a staff machine, and publish the drafts there. The CLI still works for hand runs.
 
@@ -14,7 +16,7 @@ flowchart TD
   Scenes -->|Kokoro, local, word timestamps| Voice["voice: one clip set per voice, voices/index.json, voice.json<br/>cue times, word times, sentence transcript"]
   Voice -->|Remotion| Render["render: episode.mp4 + thumbnail.jpg"]
   Render -->|"upload, encodes HLS (worker render and upload jobs)"| Out["gs://mintsy-media + draft episode in MongoDB books"]
-  Render -.->|"publish (legacy CLI)"| Legacy["mintsy-web/apps/backend/scripts/catalog.json"]
+  Render -.->|"publish (legacy CLI)"| Legacy["apps/backend/scripts/catalog.json"]
 ```
 
 Every step writes a file in `work/<book>/ep-<nn>/` (`book.json` and `pages.json` in `work/<book>/`) that can be read and edited. A step is skipped when its output exists, so hand edits survive. `--from <step>` regenerates from that step on (for example `--from scenes` after editing `script.json`, `--from render` after changing a template), and `--to <step>` stops early (for example `--to scenes` to review before voicing).
@@ -41,7 +43,7 @@ The `--book` id becomes the book's id in the app; use the existing id (for examp
 | voice | `pipeline/steps/voice.ts`, `pipeline/tts.ts`, `tts/kokoro_tts.py` | Kokoro narrates each scene locally in every voice in `KOKORO_VOICES` (default `af_heart,am_michael,bm_george`); the Python process starts only when a clip isn't cached. Writes `audio/kokoro-<voice>/NN.mp3` + `NN.json`, `voices/kokoro-<voice>.json`, `voices/index.json`, and `voice.json`, a copy of the first voice's track (default `kokoro-af_heart`) that the render uses. The other voices are stored for a future in-app choice. Cached per scene by hash of voice + speed + text, so only changed narration is voiced again. Kokoro returns word timestamps, which `wordsToAlignment` spreads over the characters of the text; these give each cue's time, each word's time and one transcript line per sentence, offset by the 4.5 s intro. |
 | render | `pipeline/steps/render.ts` | Bundles Remotion with the episode folder as the public dir, picks `CollageEpisode` or `Episode` from the scenes' format, renders 1280×720 H.264 at CRF 20, moves the MP4 index to the front with ffmpeg (faststart), and renders the thumbnail: the designed `CollageThumbnail` at 528 px for collage with polish on, otherwise a 264-px frame. Writes `props.json` for Studio previews. |
 | upload (worker `render` and `upload` jobs) | `pipeline/steps/publish.ts › uploadMedia`, `pipeline/steps/hls.ts`, `pipeline/transcode.sh` | Encodes `episode.mp4` to HLS with local ffmpeg (1080p/720p/360p H.264 + AAC fMP4, no upscaling, aligned 6 s keyframes) into `hls/`, uploads with `gcloud storage cp` under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg` and `books/<book>/<chapter>-<hash8>/master.m3u8` + `stream_N/`, `master.m3u8` last; `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs). The worker then upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft, always, even if it was published. Any encode or upload failure fails the job and saves nothing. The MP4 stays: offline downloads and existing app builds use it. |
-| publish (legacy CLI) | `pipeline/steps/publish.ts` | Same encode and upload, but upserts the book and episode into `mintsy-web/apps/backend/scripts/catalog.json` instead of MongoDB. `pnpm seed:catalog` now only inserts missing books, so this no longer updates an existing catalog. Use a worker `render` job to get episodes into MongoDB. |
+| publish (legacy CLI) | `pipeline/steps/publish.ts` | Same encode and upload, but upserts the book and episode into `apps/backend/scripts/catalog.json` instead of MongoDB. `pnpm seed:catalog` now only inserts missing books, so this no longer updates an existing catalog. Use a worker `render` job to get episodes into MongoDB. |
 
 **Episodes voiced before Kokoro** have flat `audio/NN.mp3` + `NN.json` clips and only `voice.json`, with no `voices/`. `--from render` keeps using that audio. Rerunning the voice step (`--from voice` or earlier, or any worker `render` job, which always reruns it) narrates the whole episode again with Kokoro, changing its narrator and duration, replaces `voice.json` and leaves the flat clips unused. Video already in the bucket isn't affected until that happens.
 
@@ -135,7 +137,7 @@ The script prompt (`pipeline/steps/script.ts`) requires narration in our own wor
 
 ## Setup and configuration
 
-Colors and the logo come from `@mintsy/brand`, and categories and catalog types from `@mintsy/shared`. Both are linked from `../mintsy-web/packages/`, so `mintsy-web` must be cloned next to this folder.
+Colors and the logo come from `@mintsy/brand`, and categories and catalog types from `@mintsy/shared`. Both are linked from `../../packages/`. In `apps/studio`:
 
 ```sh
 pnpm install
@@ -147,9 +149,9 @@ brew install uv espeak-ng ffmpeg
 
 Tools: Node 24, pnpm, `ffmpeg` and `ffprobe` on `PATH` (narration encodes MP3 with them, every upload encodes HLS), and, for uploads, `gcloud` signed in with access to `gs://mintsy-media`.
 
-Narration needs no API key, but without `tts/.venv` a voice step with clips to make stops with an error giving the commands above. The first narration downloads the Kokoro model weights from Hugging Face. See `tts/README.md` in the studio repo for voices and the output layout.
+Narration needs no API key, but without `tts/.venv` a voice step with clips to make stops with an error giving the commands above. The first narration downloads the Kokoro model weights from Hugging Face. See `apps/studio/tts/README.md` for voices and the output layout.
 
-`studio/.env`:
+`apps/studio/.env`:
 
 | Variable | Default | |
 |---|---|---|

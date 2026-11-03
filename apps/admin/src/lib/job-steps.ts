@@ -1,7 +1,7 @@
 import type { JobView } from "./types";
 
 /**
- * Turns a studio job's log into pipeline steps. The worker (studio/pipeline/episode.ts)
+ * Turns a studio job's log into pipeline steps. The worker (apps/studio/pipeline/episode.ts)
  * prints an unindented `<step>:` header when a step starts (or `<step>: <file> exists,
  * skipping`), then indented detail lines such as Claude token counts. Dry runs print
  * `<step>: (dry run)`. Lines before the first header (the `▶ …` banner) belong to no step.

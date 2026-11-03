@@ -110,7 +110,7 @@ async function idle(ms: number) {
 }
 
 async function main() {
-  if (!MONGODB_URI) throw new Error("Set MONGODB_URI in studio/.env (see .env.example)");
+  if (!MONGODB_URI) throw new Error("Set MONGODB_URI in apps/studio/.env (see .env.example)");
   const client = await new MongoClient(MONGODB_URI).connect();
   const jobs = client.db(MONGODB_DB).collection<StudioJob>("studio_jobs");
   await jobs.createIndex({ status: 1, createdAt: 1 });

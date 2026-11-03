@@ -81,5 +81,5 @@ export async function publish(bookId: string, chapter: number, epDir: string) {
   const episode: CatalogEpisode = { ...fields, ...media };
   entry.episodes = [...entry.episodes.filter((e) => e.number !== chapter), episode].sort((a, b) => a.number - b.number);
   await writeJson(CATALOG_PATH, catalog);
-  console.log(`  updated ${path.relative(process.cwd(), CATALOG_PATH)}; run \`pnpm --filter mintsy-backend seed:catalog\` from mintsy-web/ to load it`);
+  console.log(`  updated ${path.relative(process.cwd(), CATALOG_PATH)}; run \`pnpm --filter mintsy-backend seed:catalog\` from the repo root to load it`);
 }

@@ -1,4 +1,4 @@
-# studio/tts: local narration (Kokoro)
+# apps/studio/tts: local narration (Kokoro)
 
 The voice step's only narration provider, so this setup is required. When a voice step has a
 clip that isn't cached, the pipeline starts `kokoro_tts.py` and sends it one scene at a time; it
@@ -9,7 +9,7 @@ timings for cues, captions and the render.
 
 ```sh
 brew install uv espeak-ng       # uv runs the environment; espeak-ng is the phonemizer fallback for words Kokoro's dictionary lacks
-cd studio/tts && uv sync        # Python 3.12 + Kokoro (~1 GB with PyTorch); model weights download on first run
+cd apps/studio/tts && uv sync        # Python 3.12 + Kokoro (~1 GB with PyTorch); model weights download on first run
 ```
 
 Without `tts/.venv` the voice step stops with an error giving these commands instead of installing anything itself.

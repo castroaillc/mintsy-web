@@ -9,7 +9,7 @@ const TYPES: Record<string, string> = { mp4: "video/mp4", jpg: "image/jpeg", mp3
 
 /**
  * GET /api/books/:id/chapters/:n/preview/<file> serves a render's local output from
- * studio/work (episode.mp4, thumbnail.jpg, audio clips), with Range support so video seeks.
+ * apps/studio/work (episode.mp4, thumbnail.jpg, audio clips), with Range support so video seeks.
  */
 export async function GET(req: Request, { params }: RouteContext<"/api/books/[id]/chapters/[n]/preview/[...file]">) {
   const { id, n, file } = await params;

@@ -4,7 +4,9 @@ Turns a book PDF into mintsy episodes: one ~5-minute narrated, animated video pe
 
 ## Setup
 
-Colors and the logo come from `@mintsy/brand`, and categories and catalog types from `@mintsy/shared`. Both are linked from `../mintsy-web/packages/`, so `mintsy-web` must be cloned next to this folder.
+Colors and the logo come from `@mintsy/brand`, and categories and catalog types from `@mintsy/shared`. Both are linked from `../../packages/`.
+
+This folder is its own pnpm workspace with its own lockfile, so Remotion stays out of the backend image. Install and run it from here, or use `pnpm dev:worker` at the repo root for the worker.
 
 ```sh
 pnpm install
@@ -29,4 +31,4 @@ pnpm dev                                 # Remotion Studio
 ## Documentation
 
 The pipeline steps, job kinds, video system, costs and env vars are in the mintsy docs:
-[`apps/docs/services/studio.md`](https://github.com/castroaillc/mintsy-web/blob/main/apps/docs/services/studio.md).
+[`apps/docs/services/studio.md`](../docs/services/studio.md).

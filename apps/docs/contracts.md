@@ -19,17 +19,17 @@ Paths starting `apps/` or `packages/` are in `mintsy-web`.
 | GraphQL schema | Backend | Mobile | `apps/backend/src/graphql/schema.ts` ↔ `apps/mobile/src/lib/graphql.ts`, `catalog.tsx`, `src/data/types.ts` |
 | Auth (Better Auth, `/api/auth/*`) | Backend | Mobile | `apps/backend/src/auth.ts` ↔ `apps/mobile/src/lib/auth-client.ts`, `deep-links.ts`, `src/app/+native-intent.tsx` |
 | Catalog (`books`) | Backend (format, public filtering) | Studio writes drafts, admin edits and publishes | `apps/backend/src/catalog.ts` |
-| Studio jobs (`studio_jobs`) | Studio | Admin creates jobs and reads results | `studio/pipeline/jobs.ts` ↔ `apps/admin/src/lib/jobs.ts` |
+| Studio jobs (`studio_jobs`) | Studio | Admin creates jobs and reads results | `apps/studio/pipeline/jobs.ts` ↔ `apps/admin/src/lib/jobs.ts` |
 | Media | Studio | Backend stores paths and issues URLs, mobile streams | `gs://mintsy-media`, `apps/backend/src/media.ts` |
 | Free tier (`FREE_EPISODES = 3`) | Backend enforces | Mobile and web read it from `@mintsy/shared` | `apps/backend/src/constants.ts` is a hand-kept copy of the value in `packages/shared/index.js`; the two must match. |
-| Book categories | Studio, admin, mobile | | `studio/pipeline/steps/ingest.ts`, `apps/admin/src/lib/schemas.ts`, `apps/mobile/src/data/types.ts`. Change all three together. |
+| Book categories | Studio, admin, mobile | | `apps/studio/pipeline/steps/ingest.ts`, `apps/admin/src/lib/schemas.ts`, `apps/mobile/src/data/types.ts`. Change all three together. |
 | Premium (RevenueCat) | Backend (entitlements), mobile (purchases) | Web (privacy policy) | `apps/backend/src/entitlements.ts`, `revenuecat-webhook.ts` ↔ `apps/mobile/src/lib/premium.tsx`, `offering.ts` |
 | Email (Resend) | Backend | Web (privacy policy) | `apps/backend/src/email.ts` |
 | My List | Backend | Mobile | `apps/backend/src/saved.ts` ↔ `apps/mobile/src/lib/saved.tsx` |
 | Watch progress | Backend | Mobile | `apps/backend/src/progress.ts` ↔ `apps/mobile/src/lib/progress.tsx` |
 | Support contacts | Mobile | Web must serve `/support` | `apps/mobile/src/lib/support.ts` ↔ `apps/web/src/app/support/page.tsx` |
-| Brand (`@mintsy/brand`) | `packages/brand` | Mobile, web, admin, studio | `packages/brand/src/tokens.mjs` generates everything. Studio links it from `../mintsy-web/packages/brand`. |
-| Free tier, categories, catalog types (`@mintsy/shared`) | `packages/shared` | Mobile, web, admin, studio | `packages/shared/index.js` and `index.d.ts`. Studio links it from `../mintsy-web/packages/shared`. The backend doesn't use it yet: `FREE_EPISODES` in `apps/backend/src/constants.ts` must be kept equal by hand. |
+| Brand (`@mintsy/brand`) | `packages/brand` | Mobile, web, admin, studio | `packages/brand/src/tokens.mjs` generates everything. Studio links it from `../../packages/brand`. |
+| Free tier, categories, catalog types (`@mintsy/shared`) | `packages/shared` | Mobile, web, admin, studio | `packages/shared/index.js` and `index.d.ts`. Studio links it from `../../packages/shared`. The backend doesn't use it yet: `FREE_EPISODES` in `apps/backend/src/constants.ts` must be kept equal by hand. |
 | Book ids | Studio | Backend, mobile | `--book <id>` becomes the catalog `_id` and `work/<id>/` |
 
 ## MongoDB
@@ -78,7 +78,7 @@ interface StudioJob {
 }
 ```
 
-`studio/pipeline/jobs.ts` has the exact types.
+`apps/studio/pipeline/jobs.ts` has the exact types.
 
 - **Admin** inserts jobs with `status: "queued"`, `log: []` and a `createdAt` that strictly increases within a batch. It never updates a job. It may delete a book's jobs while they're queued.
 - **Worker** (`pnpm worker`) atomically claims the oldest queued job and runs one at a time. A job is either claimed and finishes, or deleted and never runs.

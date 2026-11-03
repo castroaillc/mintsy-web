@@ -3,7 +3,7 @@
  * reads progress back from its jobs. Pure, so the API route and the browser share it.
  *
  * The result is local previews only: every render job is `preview: true`, which the worker renders
- * in studio/work with no upload and no write to `books` (studio/pipeline/jobs.ts).
+ * in apps/studio/work with no upload and no write to `books` (apps/studio/pipeline/jobs.ts).
  */
 import type { JobKind, JobStatus, NewStudioJob } from "./types";
 
@@ -31,7 +31,7 @@ export const SKIP_LABEL: Record<SkipReason, string> = {
 export type ChapterFacts = {
   number: number;
   title: string;
-  /** PDF pages in the chapter, when studio/work has the book's book.json. */
+  /** PDF pages in the chapter, when apps/studio/work has the book's book.json. */
   pages: number | null;
   episodeStatus: "draft" | "published" | null;
   active: boolean;
@@ -39,9 +39,9 @@ export type ChapterFacts = {
   scriptJobSucceeded: boolean;
   /** That job ran in dry run, which writes no files, so missing files mean nothing. */
   scriptJobDryRun: boolean;
-  /** script.json and scenes.json both exist in studio/work. */
+  /** script.json and scenes.json both exist in apps/studio/work. */
   scriptOnDisk: boolean;
-  /** script.json exists in studio/work, so a run that needs Claude only pays for scenes. */
+  /** script.json exists in apps/studio/work, so a run that needs Claude only pays for scenes. */
   scriptJsonOnDisk: boolean;
   /** The local render exists and is newer than script.json and scenes.json. */
   renderCurrent: boolean;

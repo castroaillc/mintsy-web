@@ -49,7 +49,7 @@ The nav shows which database the dashboard is on.
 
 1. **New book:** pick the PDF and a book id (`^[a-z0-9][a-z0-9-]*$`, unique; it becomes the app's book id and can't change). The PDF is saved to `UPLOAD_DIR/<bookId>.pdf` (200 MB at most) and an `ingest` job is queued.
 2. **Ingest** (worker) creates the draft book and the chapter list, and renders a local cover. The book page shows the live log.
-3. **Per chapter:** **Generate script** → **Review script** → **Render**. A full render creates or replaces the episode as a **draft**, and sets its title, summary and takeaways from `script.json`. A preview render stays in `studio/work` until you upload it from the chapter page. Or use **Generate whole book** on the book page (see below).
+3. **Per chapter:** **Generate script** → **Review script** → **Render**. A full render creates or replaces the episode as a **draft**, and sets its title, summary and takeaways from `script.json`. A preview render stays in `apps/studio/work` until you upload it from the chapter page. Or use **Generate whole book** on the book page (see below).
 4. **Metadata** (book page): the category must be one of the app's six chips (`Finance`, `Business`, `Psychology`, `Productivity`, `History`, `Health`; `CATEGORIES` from `@mintsy/shared`, re-exported by `src/lib/schemas.ts`). A stored book with any other category is shown as invalid and can't be saved until you pick one. **Order** sets the catalog position: the app features the book with the lowest order on Home and shows the highest-order books as "Recently added".
 5. **Cover** (book page): queues a `cover` job that renders the cover from the saved title, author, category and cover tone. Uploading it sets `coverPath`, and if the book is live the apps show it right away.
 6. **Episode editor:** watch the video, fix text and transcript timing, then **Publish**.
@@ -102,7 +102,7 @@ cp apps/admin/.env.example apps/admin/.env.local   # then edit
 | `MONGODB_DB` | `mintsy_studio` | Database holding `books`, `studio_jobs` and `studio_workers`. Must match the studio worker's |
 | `MEDIA_BASE_URL` | `https://storage.googleapis.com/mintsy-media` | Public prefix for episode videos and thumbnails (`MEDIA_BASE_URL + "/" + path`) |
 | `UPLOAD_DIR` | `apps/admin/uploads` (the app's working directory) | Where PDFs are saved. The worker reads them from here, so it must be on the same machine |
-| `STUDIO_WORK_DIR` | `../../../studio/work` from the app's working directory | The worker's output folder, for local previews on chapter pages |
+| `STUDIO_WORK_DIR` | `../studio/work` from the app's working directory | The worker's output folder, for local previews on chapter pages |
 
 For a throwaway local database:
 
@@ -113,7 +113,7 @@ docker run -d --name mintsy-admin-mongo -p 127.0.0.1:27018:27017 mongo:7
 
 ## Running
 
-One command runs the dashboard and the studio worker together, both on the admin's `MONGODB_URI` / `MONGODB_DB` / `UPLOAD_DIR` (from `apps/admin/.env.local`, with the defaults above), so they can't drift onto different databases. The worker still reads its keys from `studio/.env`. Set `STUDIO_DIR` if `studio/` isn't at `../../../studio` from the app.
+One command runs the dashboard and the studio worker together, both on the admin's `MONGODB_URI` / `MONGODB_DB` / `UPLOAD_DIR` (from `apps/admin/.env.local`, with the defaults above), so they can't drift onto different databases. The worker still reads its keys from `apps/studio/.env`. Set `STUDIO_DIR` to run the worker from a different studio checkout.
 
 ```sh
 pnpm dev:studio      # from the mintsy-web repo root; Ctrl-C stops both
@@ -126,7 +126,7 @@ Or two terminals, both pointing at the same `MONGODB_URI` / `MONGODB_DB`:
 pnpm dev:admin
 
 # 2. studio worker (processes the queue one job at a time)
-cd studio && pnpm worker
+pnpm dev:worker      # from the mintsy-web repo root
 ```
 
 Workers write a heartbeat to `studio_workers` every 5 seconds. If jobs are queued and no worker has beaten on the dashboard's database in the last 15 seconds, the dashboard says so straight away and names the database. Before the first poll, or with a worker that predates heartbeats, it falls back to a banner once jobs have sat queued for over 30 seconds. A worker that predates a job feature (preview render, upload, cover) gets that job refused, with a message to restart it.
@@ -134,7 +134,7 @@ Workers write a heartbeat to `studio_workers` every 5 seconds. If jobs are queue
 To try the whole flow without calling Claude, Kokoro, Remotion, ffmpeg or the bucket, run the worker in dry-run mode against a local database. It still writes `studio_jobs` and `books`:
 
 ```sh
-cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=mintsy_studio pnpm worker
+STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=mintsy_studio pnpm dev:worker
 ```
 
 ## Scripts
@@ -160,7 +160,7 @@ cd studio && STUDIO_WORKER_DRY_RUN=1 MONGODB_URI=mongodb://127.0.0.1:27018 MONGO
 | `src/lib/catalog.ts`, `src/lib/jobs.ts` | Reads, chapter-state derivation, job inserts |
 | `src/lib/generate-all.ts`, `src/lib/generate-all-plan.ts` | Generate whole book: what to queue, job order, progress |
 | `src/lib/book-sources.ts`, `src/lib/ingest.ts` | Find books; saving a PDF and queueing `ingest` |
-| `src/lib/studio-work.ts`, `src/lib/job-steps.ts` | Read-only access to `studio/work`; turning a job's log into steps |
+| `src/lib/studio-work.ts`, `src/lib/job-steps.ts` | Read-only access to `apps/studio/work`; turning a job's log into steps |
 | `src/app/api/**` | Route handlers for all writes (JSON; PDF upload is multipart) |
 | `src/app/**/page.tsx` | The pages above |
 

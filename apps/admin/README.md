@@ -23,7 +23,7 @@ cp apps/admin/.env.example apps/admin/.env.local   # then edit
 
 ```sh
 pnpm dev:studio      # from the repo root: dashboard + studio worker on the same database; Ctrl-C stops both
-pnpm dev:admin       # or the dashboard alone, with `cd studio && pnpm worker` in a second terminal
+pnpm dev:admin       # or the dashboard alone, with `pnpm dev:worker` in a second terminal
 ```
 
 Checks, from `apps/admin`: `pnpm lint`, `pnpm typecheck`, `pnpm build`.

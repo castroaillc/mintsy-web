@@ -10,8 +10,8 @@
   "private": true,
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
-    "@mintsy/brand": "link:../mintsy-web/packages/brand",
-    "@mintsy/shared": "link:../mintsy-web/packages/shared",
+    "@mintsy/brand": "link:../../packages/brand",
+    "@mintsy/shared": "link:../../packages/shared",
     "@phosphor-icons/react": "^2.1.10",
     "@remotion/bundler": "4.0.539",
     "@remotion/cli": "4.0.539",

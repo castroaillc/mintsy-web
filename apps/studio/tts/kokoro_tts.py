@@ -1,5 +1,5 @@
 """
-Kokoro TTS server for studio/pipeline/tts.ts.
+Kokoro TTS server for apps/studio/pipeline/tts.ts.
 
 Reads one JSON request per line on stdin:
   {"id": 1, "text": "...", "voice": "af_heart", "speed": 1.0, "out": "/abs/path.wav"}

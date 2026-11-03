@@ -1,5 +1,5 @@
 /**
- * Studio job kinds run by the worker (see the "Studio jobs" contract in .claude/skills/mintsy-contracts).
+ * Studio job kinds run by the worker (see the "Studio jobs" contract in apps/docs/contracts.md).
  * Each runner does the pipeline work, writes the draft book/episode into MongoDB `books`, and returns the job result.
  */
 import { createHash } from "node:crypto";
