@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
+import favicon from "@mintsy/brand/assets/icons/ink-coral/favicon.png";
 import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
 import { env } from "@/lib/env";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const spaceGrotesk = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"], weight: ["500", "700"] });
 const mono = JetBrains_Mono({ variable: "--font-mono-family", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "mintsy admin", template: "%s · mintsy admin" },
   description: "Local content dashboard for mintsy",
+  icons: { icon: favicon.src },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${spaceGrotesk.variable} ${mono.variable} h-full antialiased`}
+      className={`dark ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>

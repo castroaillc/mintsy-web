@@ -245,10 +245,11 @@ export default function SettingsScreen() {
             {notificationsBlocked ? (
               <SettingsLinkRow label="Open system Settings" onPress={() => Linking.openSettings()} />
             ) : null}
-            {permission === 'granted' ? (
+            {/* Developer tools: never in preview or production builds */}
+            {__DEV__ && permission === 'granted' ? (
               <SettingsLinkRow label="Send local test notification" onPress={sendTestNotification} />
             ) : null}
-            {permission === 'granted' ? (
+            {__DEV__ && permission === 'granted' ? (
               <SettingsLinkRow
                 label="Send test push from backend"
                 value={sendingPush ? 'Sending…' : undefined}
