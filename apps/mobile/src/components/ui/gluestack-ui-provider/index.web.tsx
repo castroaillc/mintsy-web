@@ -3,7 +3,7 @@ import React, { useEffect, useLayoutEffect } from 'react';
 import { OverlayProvider } from '@gluestack-ui/core/overlay/creator';
 import { ToastProvider } from '@gluestack-ui/core/toast/creator';
 import { script } from './script';
-import './theme.web.css';
+import '@mintsy/brand/css/native/ink-coral.web.css';
 
 export type ModeType = 'light' | 'dark' | 'system';
 

@@ -271,7 +271,7 @@ ${nativeBlock(t.light, '    ')}
 
   @media (prefers-color-scheme: dark) {
     :root {
-${nativeBlock(t.dark, '      ')}
+${nativeKeys.filter((k) => t.dark[k] !== t.light[k]).map((k) => `      --${kebab(k)}: ${triplet(t.dark[k])};`).join('\n')}
     }
   }
 }

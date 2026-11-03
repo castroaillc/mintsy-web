@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { SITE_URL } from "@/lib/config";
+import favicon from "@mintsy/brand/assets/icons/ink-coral/favicon.png";
+import appleIcon from "@mintsy/brand/assets/icons/ink-coral/icon.png";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -12,6 +14,7 @@ export const metadata: Metadata = {
   title: "mintsy",
   description: "Every great book, one 5-minute episode at a time. Watch books as short video series, with a transcript for every episode.",
   applicationName: "mintsy",
+  icons: { icon: favicon.src, apple: appleIcon.src },
   openGraph: { siteName: "mintsy", type: "website" },
   twitter: { card: "summary_large_image" },
 };
