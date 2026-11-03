@@ -1,28 +1,29 @@
 @import "tailwindcss" source(none);
+@import "@mintsy/brand/css/web.css";
 
 /* Only the public site's files. src/components also still holds the paused web app's components. */
 @source "./";
 @source "../components/{ctas,legal-page,mocks,site-chrome}.tsx";
 
-/* mintsy brand: Ink & Coral, dark mode values from mobile-app/src/global.css.
-   The "design" group comes from design/CoralLanding.dc.html (shades the app doesn't use). */
-@theme {
-  /* mobile-app/src/global.css, dark */
-  --color-bg: #0e0d18; /* --background 14 13 24 */
-  --color-fg: #f4f2f8; /* --foreground 244 242 248 */
-  --color-card: #181626; /* --card 24 22 38 */
-  --color-raised: #1b1929; /* --surface-raised 27 25 41 */
-  --color-secondary: #201d2e; /* --secondary 32 29 46 */
-  --color-soft: #dad6e6; /* --secondary-foreground 218 214 230 */
-  --color-border: #2a2740; /* --border 42 39 64 */
-  --color-border-strong: #3d3956; /* --border-strong 61 57 86 */
-  --color-ring: #67607f; /* --ring 103 96 127 */
-  --color-muted: #aca6c2; /* --muted-foreground 172 166 194 */
-  --color-faint: #9690ae; /* --faint 150 144 174 */
-  --color-brand: #ff6b57; /* --brand 255 107 87 */
-  --color-brand-fg: #1a1424; /* --brand-foreground 26 20 36 */
+/* Colors come from @mintsy/brand. The web names map onto its dark theme. */
+@theme inline {
+  --color-bg: var(--background);
+  --color-fg: var(--foreground);
+  --color-card: var(--card);
+  --color-raised: var(--surface-raised);
+  --color-secondary: var(--secondary);
+  --color-soft: var(--secondary-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-foreground);
+}
 
-  /* design */
+/* Shades only the landing page uses (design/CoralLanding.dc.html). */
+@theme {
+  --color-ring: #67607f; /* Neutral focus ring. The package's web --ring is coral. */
   --color-band: #12101c; /* stats and pricing bands */
   --color-line: #232036; /* band borders, step numbers */
   --color-body: #bfbad2; /* lede and intro paragraphs */

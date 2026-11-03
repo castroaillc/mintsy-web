@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { logoPaths } from "@mintsy/brand";
 import { APP_STORE_URL } from "@/lib/config";
 import { COMPANY_NAME, EULA_URL } from "@/site";
 
 function Wordmark({ size }: { size: number }) {
+  const { width, height, letters, dot } = logoPaths.wordmark;
+  // The outlines are in 1000-unit em squares, so `size` matches a font size.
   return (
-    <span className="font-display leading-none font-bold tracking-[-0.5px] text-fg" style={{ fontSize: size }}>
-      mintsy<span className="text-brand">.</span>
+    <span className="inline-flex items-center align-top" style={{ height: size + 2 }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={(size * width) / 1000} height={(size * height) / 1000} role="img" aria-label="mintsy">
+        <path d={letters} className="fill-fg" />
+        <path d={dot} className="fill-brand" />
+      </svg>
     </span>
   );
 }
