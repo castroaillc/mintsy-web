@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logoPaths } from "@mintsy/brand";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -16,8 +17,16 @@ export function Nav({ db }: { db: string }) {
     <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold tracking-tight">
-          <span className="inline-block size-2.5 rounded-full bg-brand" aria-hidden />
-          mintsy <span className="font-medium text-muted-foreground">admin</span>
+          <svg
+            viewBox={`0 0 ${logoPaths.wordmark.width} ${logoPaths.wordmark.height}`}
+            className="h-5 w-auto"
+            role="img"
+            aria-label="mintsy"
+          >
+            <path d={logoPaths.wordmark.letters} className="fill-foreground" />
+            <path d={logoPaths.wordmark.dot} className="fill-brand" />
+          </svg>
+          <span className="font-medium text-muted-foreground">admin</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {links.map((l) => (
