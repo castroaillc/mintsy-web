@@ -54,15 +54,11 @@
       --accent-foreground: 244 242 248;
       --brand: 255 107 87;
       --brand-foreground: 26 20 36;
-      --brand-on-light: 184 50 31;
       --surface-raised: 27 25 41;
       --tag: 32 29 46;
       --faint: 150 144 174;
       --border-strong: 61 57 86;
       --success: 143 211 255;
-      --scrim: 14 13 24;
-      --on-scrim: 255 255 255;
-      --on-tint: 244 239 230;
     }
   }
 }
