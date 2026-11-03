@@ -1,50 +1,7 @@
-/**
- * Shapes shared with backend (books) and studio (studio_jobs).
- * Source: .claude/skills/mintsy-contracts/SKILL.md ("Catalog drafts", "Studio jobs")
- * and backend/src/catalog.ts. Keep in sync with those; do not invent fields.
- */
+/** Studio job shapes, matching studio/pipeline/jobs.ts. Catalog shapes come from @mintsy/shared. */
 import type { ObjectId } from "mongodb";
 
-// ─── Catalog (`books`) ────────────────────────────────────────────
-
-/** Missing = "published" (docs that predate drafts). */
-export type ContentStatus = "draft" | "published";
-
-export interface TranscriptLine {
-  startSec: number;
-  text: string;
-}
-
-export interface EpisodeDoc {
-  number: number;
-  title: string;
-  summary: string;
-  durationSec: number;
-  transcript: TranscriptLine[];
-  takeaways: string[];
-  /** Object path in the media bucket, e.g. "books/psychology-of-money/4.mp4". */
-  videoPath?: string;
-  thumbnailPath?: string;
-  status?: ContentStatus;
-  updatedAt?: Date;
-}
-
-export interface BookDoc {
-  _id: string;
-  title: string;
-  author: string;
-  category: string;
-  coverTone: string;
-  tint: string;
-  description: string;
-  /** Rendered cover in the media bucket (studio cover job with upload); apps fall back to the coverTone tile. */
-  coverPath?: string;
-  /** Position in the catalog listing. */
-  order: number;
-  episodes: EpisodeDoc[];
-  status?: ContentStatus;
-  updatedAt?: Date;
-}
+export type { BookDoc, ContentStatus, EpisodeDoc, TranscriptLine } from "@mintsy/shared";
 
 // ─── Studio jobs (`studio_jobs`) ──────────────────────────────────
 

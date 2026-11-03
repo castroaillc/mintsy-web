@@ -1,8 +1,10 @@
 import { themes } from '@mintsy/brand';
+import { CATEGORIES as BOOK_CATEGORIES, type Category, type TranscriptLine } from '@mintsy/shared';
+
+export { FREE_EPISODES } from '@mintsy/shared';
+export type { Category, TranscriptLine };
 
 /** Catalog types and client-side constants. The catalog itself comes from the backend (`src/lib/catalog.tsx`). Tones are cover/thumbnail art colors, not theme colors. */
-
-export type TranscriptLine = { startSec: number; text: string };
 
 export type Episode = {
   id: string;
@@ -47,8 +49,6 @@ export type EpisodeMatch = {
   matchLength: number;
 };
 
-export type Category = 'Finance' | 'Business' | 'Psychology' | 'Productivity' | 'History' | 'Health';
-
 export type Book = {
   id: string;
   title: string;
@@ -69,9 +69,6 @@ export type Book = {
   keyIdeas?: string[];
 };
 
-/** Episodes 1…FREE_EPISODES of every book are free; the rest need Premium. Mirrors the backend's constant. */
-export const FREE_EPISODES = 3;
-
 /** The viewer's place in one episode (the API's `EpisodeProgress`, trimmed to what the UI needs). */
 export type EpisodeProgress = {
   positionSec: number;
@@ -82,7 +79,7 @@ export type EpisodeProgress = {
 /** Keyed by episode id (`<bookId>-<number>`). */
 export type ProgressMap = Record<string, EpisodeProgress>;
 
-export const CATEGORIES = ['All', 'Finance', 'Business', 'Psychology', 'Productivity', 'History', 'Health'] as const;
+export const CATEGORIES = ['All', ...BOOK_CATEGORIES] as const;
 export type CategoryFilter = (typeof CATEGORIES)[number];
 
 /** Rotating thumbnail tints for episode cards. */
