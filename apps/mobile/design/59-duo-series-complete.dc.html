@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo series complete</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="none" top="none" show-tabs="false" hint-size="84px,820px"></dc-import>
+
+<section style="flex: none; width: 456px; box-sizing: border-box; padding: 16px 40px 32px; background: #24382F; display: flex; flex-direction: column; align-items: center; text-align: center">
+<a href="DuoBrowseOpen.dc.html" aria-label="Close" style="align-self: flex-start; width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+<div style="position: relative; margin-top: 18px; width: 140px; height: 210px; border-radius: 6px; background: #E7DFCF; color: #1C1C1C; box-sizing: border-box; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; box-shadow: 0 18px 40px rgba(0,0,0,0.45)">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; line-height: 1.05">The Psychology of Money</div>
+<div style="font-size: 10px; font-weight: 500">Morgan Housel</div>
+<div aria-hidden="true" style="position: absolute; right: -14px; top: -14px; width: 42px; height: 42px; border-radius: 21px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></div>
+</div>
+<div style="margin-top: 22px; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #F5DFA0">Series complete</div>
+<h1 style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1">You finished The Psychology of Money</h1>
+<div style="margin-top: auto; width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 12px; border-radius: 14px; background: rgba(13,14,18,0.4)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">20</div><div style="font-size: 12px; color: #D6E2DA">episodes</div></div>
+<div style="padding: 12px; border-radius: 14px; background: rgba(13,14,18,0.4)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">1h 41m</div><div style="font-size: 12px; color: #D6E2DA">watched</div></div>
+<div style="padding: 12px; border-radius: 14px; background: rgba(13,14,18,0.4)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px">12</div><div style="font-size: 12px; color: #D6E2DA">days</div></div>
+</div>
+</section>
+
+<section class="scroll" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 28px 36px; overflow-y: auto; display: flex; flex-direction: column; gap: 22px">
+<div>
+<h2 style="margin: 0 0 12px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">The book in 5 ideas</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{ideas}}" as="k" hint-placeholder-count="5">
+<li style="display: flex; gap: 12px; font-size: 15px; line-height: 1.45; color: #E4E5EA"><span style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: {{accent}}; color: #15161B; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{k.n}}</span>{{k.x}}</li>
+</sc-for>
+</ol>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #15161C; border: 1px solid #23252E">
+<span style="font-size: 15px; font-weight: 600">Rate this series</span>
+<div role="radiogroup" aria-label="Rate this series" style="display: flex">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+<button role="radio" aria-checked="{{s.on}}" aria-label="{{s.label}}" onClick="{{s.pick}}" style="width: 44px; height: 44px; border: 0; background: transparent; color: {{s.color}}; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg></button>
+</sc-for>
+</div>
+</div>
+<div>
+<h2 style="margin: 0 0 12px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">What to watch next</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{next}}" as="b" hint-placeholder-count="3">
+<a href="DuoSeriesOpen.dc.html" style="display: flex; flex-direction: column; gap: 8px">
+<span style="height: 190px; border-radius: 8px; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 12px 11px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.08">{{b.title}}</span><span style="font-size: 11px; font-weight: 500">{{b.author}}</span></span>
+<span style="font-size: 12px; color: #A3A5B0">{{b.why}}</span>
+</a>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; gap: 10px">
+<button style="flex: 1; height: 50px; border-radius: 12px; border: 1px solid #343744; background: transparent; color: #F2F2F5; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer">Share</button>
+<a href="DuoBrowseOpen.dc.html" style="flex: 1; height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600">Back to Home</a>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { rating: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const ideas = [
+      'Everyone’s money decisions make sense through their own experiences.',
+      'Luck and risk shape outcomes more than effort alone.',
+      'Time in the market beats chasing the highest return.',
+      'Real wealth is the money you didn’t spend.',
+      'Leave room for error; a plan has to survive being wrong.'
+    ].map((x, i) => ({ n: i + 1, x }));
+    const r = this.state.rating;
+    const stars = [1, 2, 3, 4, 5].map((n) => ({ on: r === n, label: n + (n === 1 ? ' star' : ' stars'), color: n <= r ? accent : '#3A3D49', pick: () => this.setState({ rating: n }) }));
+    const next = [
+      { title: 'The Intelligent Investor', author: 'Benjamin Graham', bg: '#1E3557', fg: '#F4EFE6', why: 'More on investing' },
+      { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', bg: '#F0EEE9', fg: '#1C1C1C', why: 'More on behavior' },
+      { title: 'The Simple Path to Wealth', author: 'JL Collins', bg: '#C9D6CF', fg: '#1C1C1C', why: 'Readers also finished' }
+    ];
+    return { accent, ideas, stars, next };
+  }
+}
+</script>
+</body>
+</html>

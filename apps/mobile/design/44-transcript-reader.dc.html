@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transcript reader</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 8px 20px; border-bottom: 1px solid #1E2028">
+<a href="Book.dc.html" aria-label="Back" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+<div style="display: flex; gap: 4px">
+<button onClick="{{smaller}}" aria-label="Smaller text" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: #D4D5DC; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer">A−</button>
+<button onClick="{{bigger}}" aria-label="Larger text" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: #D4D5DC; font-family: Inter, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer">A+</button>
+<button aria-label="Search this transcript" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: #D4D5DC; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
+<button aria-label="Share" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: #D4D5DC; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"></path></svg></button>
+</div>
+</header>
+
+<article style="height: 680px; overflow-y: auto; padding: 20px 24px 120px; box-sizing: border-box">
+<div style="font-size: 13px; font-weight: 600; color: {{accent}}">The Psychology of Money · Episode 4 of 20</div>
+<h1 style="margin: 6px 0 4px; font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; line-height: 1.1">Confounding Compounding</h1>
+<div style="font-size: 13px; color: #A3A5B0">5 min watch · 2 min read</div>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 18px">
+<sc-for list="{{paras}}" as="p" hint-placeholder-count="6">
+<button onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; padding: 10px 12px; margin: 0 -12px; border: 0; border-radius: 12px; background: {{p.bg}}; color: #E4E5EA; text-align: left; font-family: Inter, sans-serif; cursor: pointer; box-sizing: content-box">
+<span style="font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #8B8D99">{{p.t}}</span>
+<span style="font-size: {{fontSize}}; line-height: 1.6">{{p.x}}</span>
+<sc-if value="{{p.on}}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 16px; background: {{accent}}; color: #15161B; font-size: 13px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg>Play from {{p.t}}</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+<h2 style="margin: 28px 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700">Key takeaways</h2>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; color: #D4D5DC">
+<li>Compounding rewards time far more than a high rate of return.</li>
+<li>Choose returns you can sustain for decades.</li>
+<li>Avoid moves that interrupt the process.</li>
+</ol>
+</article>
+
+<div style="position: absolute; left: 12px; right: 12px; bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; background: #17181F; border: 1px solid #2A2C36; box-shadow: 0 10px 30px rgba(0,0,0,0.5)">
+<div style="flex: none; position: relative; width: 72px; height: 41px; border-radius: 6px; background: #24382F"><div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,0.18)"><div style="height: 3px; width: 40%; background: {{accent}}"></div></div></div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 13px; font-weight: 600">Watch instead</div>
+<div style="font-size: 12px; color: #A3A5B0">Resume at 2:04</div>
+</div>
+<a href="Player.dc.html" aria-label="Resume video at 2:04" style="width: 44px; height: 44px; border-radius: 22px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"></path></svg></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 2, size: 1 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const raw = [
+      ['0:00', 'Compounding is easy to explain and hard to feel. Our instincts expect growth in straight lines.'],
+      ['0:38', 'But growth that builds on itself curves upward, and most of the curve shows up late.'],
+      ['1:15', 'In a long investing life, the biggest gains usually arrive in the final decades, not the first. That makes time the variable people underrate the most.'],
+      ['2:04', 'Many investors chase the highest possible return. This chapter argues for a different target: good returns you can stay with, through downturns, boredom and the urge to tinker.'],
+      ['3:20', 'Quitting early is the most expensive mistake, because it resets the clock compounding depends on.'],
+      ['4:02', 'The same idea reaches beyond money. Skills, relationships and reputation compound too. Protect the streak; staying in the game is the strategy.']
+    ];
+    const paras = raw.map(([t, x], i) => {
+      const on = this.state.sel === i;
+      return { t, x, on, bg: on ? '#17181F' : 'transparent', pick: () => this.setState({ sel: on ? -1 : i }) };
+    });
+    const sizes = ['15px', '17px', '19px', '22px'];
+    return {
+      accent, paras,
+      fontSize: sizes[this.state.size],
+      smaller: () => this.setState({ size: Math.max(0, this.state.size - 1) }),
+      bigger: () => this.setState({ size: Math.min(3, this.state.size + 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

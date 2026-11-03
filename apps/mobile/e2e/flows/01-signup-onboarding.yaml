@@ -1,0 +1,86 @@
+# Scenario 1: fresh install → Welcome → Sign up → onboarding → Home
+# Env: METRO_URL_ENC, EMAIL, PASSWORD
+appId: com.getmintsy.app.dev
+name: 01 Sign up and onboarding
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      notifications: deny
+- runFlow: common/connect.yaml
+- extendedWaitUntil:
+    visible: "Every great book, one 5-minute episode at a time."
+    timeout: 30000
+- takeScreenshot: 01a-welcome
+- scrollUntilVisible:
+    element: "Create account"
+    direction: DOWN
+- tapOn: "Create account"
+- extendedWaitUntil:
+    visible:
+      id: "input-name"
+    timeout: 10000
+- tapOn:
+    id: "input-name"
+- inputText: "E2E Tester"
+- tapOn:
+    id: "input-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "input-password"
+- inputText: ${PASSWORD}
+- scrollUntilVisible:
+    element:
+      id: "signup-submit"
+    direction: DOWN
+- tapOn:
+    id: "signup-submit"
+
+# Step 1: interests
+- extendedWaitUntil:
+    visible: "What do you want to learn about?"
+    timeout: 30000
+- tapOn: "Finance"
+- tapOn: "Psychology"
+- scrollUntilVisible:
+    element: "Productivity"
+    direction: DOWN
+- tapOn: "Productivity"
+- tapOn: "Continue · 3 selected"
+
+# Step 2: daily time
+- extendedWaitUntil:
+    visible: "How much time do you have each day?"
+    timeout: 10000
+- tapOn: "Continue"
+
+# Step 3: reminders, notifications declined (permission pre-denied, so the app explains how to turn them on later)
+- extendedWaitUntil:
+    visible: "Want a daily nudge?"
+    timeout: 10000
+- tapOn: "Turn on reminders"
+- runFlow:
+    when:
+      visible: "Don’t Allow|Don't Allow"
+    commands:
+      - tapOn: "Don’t Allow|Don't Allow"
+- extendedWaitUntil:
+    visible: "Notifications are off"
+    timeout: 10000
+- tapOn: "OK"
+
+# Step 4: first series
+- extendedWaitUntil:
+    visible: "Start your first series"
+    timeout: 10000
+- assertVisible: "Start Episode 1"
+- tapOn: "Browse all series instead"
+
+# Home
+- extendedWaitUntil:
+    visible: "Featured series"
+    timeout: 20000
+- assertVisible:
+    text: "Profile"
+- takeScreenshot: 01b-home

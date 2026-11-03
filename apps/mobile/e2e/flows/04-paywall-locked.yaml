@@ -1,0 +1,38 @@
+# Scenario 4: a free user tapping locked Episode 4 gets the paywall (plans fail to load without a RevenueCat key).
+# Then a deep link straight to the locked episode's player also lands on the paywall.
+appId: com.getmintsy.app.dev
+name: 04 Paywall for locked episodes
+---
+- runFlow: common/open-home.yaml
+- runFlow: common/open-series.yaml
+- scrollUntilVisible:
+    element: "Premium · Episode 4 of 20\\..*"
+    direction: DOWN
+- tapOn: "Premium · Episode 4 of 20\\..*"
+- scrollUntilVisible:
+    element: "Unlock with Premium"
+    direction: DOWN
+- tapOn: "Unlock with Premium"
+- extendedWaitUntil:
+    visible: "We couldn’t load the plans right now."
+    timeout: 20000
+- assertVisible: "Try again"
+- takeScreenshot: 04a-paywall-error
+- tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Premium · Episode 4 of 20\\..*"
+    timeout: 10000
+
+# Deep link to the locked player
+- openLink: mintsy-dev://player/psychology-of-money-4
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible: "We couldn’t load the plans right now."
+    timeout: 20000
+- assertNotVisible: "Close player and return to series"
+- takeScreenshot: 04b-deeplink-paywall
+- tapOn: "Close"

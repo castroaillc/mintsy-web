@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan details</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 12px 20px 32px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+<header style="display: flex; align-items: center; gap: 6px; height: 44px">
+<a href="ProfileSettings.dc.html" aria-label="Back to settings" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px">Subscription</h1>
+</header>
+
+<section style="margin-top: 20px; padding: 20px; border-radius: 20px; background: #24382F; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px">mintsy<span style="color: {{accent}}; margin-left: -8px">.</span> Premium</span>
+<span style="height: 26px; padding: 0 10px; border-radius: 13px; background: {{badgeBg}}; color: {{badgeFg}}; font-size: 12px; font-weight: 700; display: flex; align-items: center">{{badge}}</span>
+</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px">Yearly · [YEARLY PRICE]</div>
+<div style="font-size: 15px; line-height: 1.45; color: #D6E2DA">{{statusLine}}</div>
+</section>
+
+<ul style="list-style: none; margin: 18px 0 0; padding: 0; border-radius: 16px; background: #15161C; border: 1px solid #23252E; overflow: hidden">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<li style="display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 0 16px; border-top: {{r.border}}; font-size: 15px"><span style="color: #A3A5B0">{{r.label}}</span><span>{{r.value}}</span></li>
+</sc-for>
+</ul>
+
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px">
+<a href="#" style="height: 52px; border-radius: 14px; border: 1px solid #343744; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600">{{manageLabel}}
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg>
+</a>
+<button style="height: 48px; border: 0; background: transparent; color: #D4D5DC; font-family: Inter, sans-serif; font-size: 15px; font-weight: 500; cursor: pointer">Restore purchases</button>
+</div>
+<p style="margin: auto 0 0; font-size: 13px; line-height: 1.5; color: #8B8D99">Switching plans, changing payment or cancelling happens in your App Store subscriptions. If you cancel, Premium stays on until the end of the period you’ve paid for.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"status":{"editor":"enum","options":["trial","active","cancelled"],"default":"trial"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const s = this.props.status ?? 'trial';
+    const map = {
+      trial: { badge: 'FREE TRIAL', badgeBg: accent, badgeFg: '#15161B', statusLine: 'Your free trial ends [TRIAL END DATE]. Then [YEARLY PRICE]/year, renewing automatically.', next: '[TRIAL END DATE]', manage: 'Manage in App Store' },
+      active: { badge: 'ACTIVE', badgeBg: '#6FCF97', badgeFg: '#0D1A12', statusLine: 'Renews [RENEWAL DATE] for [YEARLY PRICE].', next: '[RENEWAL DATE]', manage: 'Manage in App Store' },
+      cancelled: { badge: 'ENDS SOON', badgeBg: '#FF9C94', badgeFg: '#2A0E0C', statusLine: 'You cancelled. Premium stays on until [END DATE], then your account goes back to the free tier.', next: 'None', manage: 'Resubscribe in App Store' }
+    };
+    const m = map[s] || map.trial;
+    const rows = [['Plan', 'Yearly'], ['Next charge', m.next], ['Billed through', 'App Store'], ['Member since', 'Oct 2026']].map(([label, value], i) => ({ label, value, border: i ? '1px solid #23252E' : '0' }));
+    return { accent, rows, badge: m.badge, badgeBg: m.badgeBg, badgeFg: m.badgeFg, statusLine: m.statusLine, manageLabel: m.manage };
+  }
+}
+</script>
+</body>
+</html>

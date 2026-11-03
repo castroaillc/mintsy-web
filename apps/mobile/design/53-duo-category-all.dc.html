@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo category</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+.scroll{scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1080px; height: 820px; display: flex; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+<dc-import name="DuoRail" active="home" top="back" back-href="DuoBrowseOpen.dc.html" hint-size="84px,820px"></dc-import>
+
+<main class="scroll" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 24px 32px; overflow-y: auto">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 30px">Top in Finance</h1>
+<div style="font-size: 14px; color: #A3A5B0">24 series</div>
+</div>
+<div role="tablist" aria-label="Sort" style="display: flex; gap: 8px">
+<sc-for list="{{sorts}}" as="s" hint-placeholder-count="3">
+<button role="tab" aria-selected="{{s.on}}" onClick="{{s.pick}}" style="height: 38px; padding: 0 14px; border-radius: 19px; border: 1px solid {{s.bd}}; background: {{s.bg}}; color: {{s.fg}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer">{{s.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px 16px; margin-top: 24px">
+<sc-for list="{{books}}" as="b" hint-placeholder-count="12">
+<a href="DuoSeriesOpen.dc.html" aria-label="{{b.title}} by {{b.author}}, {{b.eps}} episodes" style="display: flex; flex-direction: column; gap: 6px">
+<span style="position: relative; height: 230px; border-radius: 8px; overflow: hidden; background: {{b.bg}}; color: {{b.fg}}; box-sizing: border-box; padding: 34px 11px 12px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="position: absolute; top: 8px; left: 8px; height: 20px; padding: 0 7px; border-radius: 10px; background: rgba(13,14,18,0.78); color: #F2F2F5; font-size: 11px; font-weight: 600; display: flex; align-items: center">{{b.eps}} eps</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 1.08">{{b.title}}</span>
+<span style="font-size: 10px; font-weight: 500">{{b.author}}</span>
+</span>
+<span style="font-size: 12px; color: #A3A5B0">{{b.runtime}}</span>
+</a>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":1080,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sort: 0 };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const sorts = ['Popular', 'Newest', 'Shortest'].map((label, i) => {
+      const on = this.state.sort === i;
+      return { label, on, bg: on ? '#F2F2F5' : '#17181F', fg: on ? '#15161B' : '#D4D5DC', bd: on ? '#F2F2F5' : '#2A2C36', pick: () => this.setState({ sort: i }) };
+    });
+    const books = [
+      ['The Psychology of Money', 'Morgan Housel', 20, '1 hr 41 min', '#E7DFCF', '#1C1C1C'],
+      ['The Intelligent Investor', 'Benjamin Graham', 20, '1 hr 40 min', '#1E3557', '#F4EFE6'],
+      ['Rich Dad Poor Dad', 'Robert T. Kiyosaki', 10, '50 min', '#5B2333', '#F7E9EC'],
+      ['I Will Teach You to Be Rich', 'Ramit Sethi', 10, '50 min', '#E2B34C', '#1C1C1C'],
+      ['The Little Book of Common Sense Investing', 'John C. Bogle', 19, '1 hr 35 min', '#2F4A3D', '#F4EFE6'],
+      ['The Simple Path to Wealth', 'JL Collins', 30, '2 hr 30 min', '#C9D6CF', '#1C1C1C'],
+      ['Your Money or Your Life', 'Vicki Robin', 9, '45 min', '#3A2F5B', '#F2EEFA'],
+      ['The Millionaire Next Door', 'Thomas J. Stanley', 8, '40 min', '#B9542F', '#FFF4EE'],
+      ['A Random Walk Down Wall Street', 'Burton G. Malkiel', 14, '1 hr 10 min', '#F0EEE9', '#1C1C1C'],
+      ['Die with Zero', 'Bill Perkins', 9, '45 min', '#24382F', '#F4EFE6'],
+      ['The Richest Man in Babylon', 'George S. Clason', 7, '35 min', '#3B3426', '#F4EFE6'],
+      ['Thinking, Fast and Slow', 'Daniel Kahneman', 38, '3 hr 10 min', '#2C3245', '#F4EFE6']
+    ].map(([title, author, eps, runtime, bg, fg]) => ({ title, author, eps, runtime, bg, fg }));
+    return { accent, sorts, books };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mintsy emails</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#08090C}
+</style>
+</helmet>
+<div style="width: 2000px; height: 1040px; box-sizing: border-box; padding: 36px 40px; background: #08090C; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; gap: 40px">
+<sc-for list="{{emails}}" as="m" hint-placeholder-count="3">
+<div style="flex: none; width: 600px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 0 4px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8B8D99">{{m.kind}}</div>
+<div style="font-size: 15px"><span style="color: #8B8D99">Subject:</span> <b style="font-weight: 600">{{m.subject}}</b></div>
+<div style="font-size: 14px"><span style="color: #8B8D99">Preview text:</span> <span style="color: #C9CAD2">{{m.preheader}}</span></div>
+</div>
+<div style="flex: 1; border-radius: 16px; background: #F2F1EC; padding: 32px 28px; box-sizing: border-box; color: #15161B; display: flex; flex-direction: column">
+<div style="border-radius: 14px; background: #FFFFFF; padding: 36px 36px 32px; display: flex; flex-direction: column; gap: 18px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">mintsy<span style="color: #C98A0C">.</span></div>
+<h1 style="margin: 6px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; line-height: 1.15">{{m.title}}</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.6; color: #34363F">{{m.body1}}</p>
+<sc-if value="{{m.hasStat}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 12px">
+<div style="flex: 1; padding: 14px; border-radius: 12px; background: #F7F5EE"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">14</div><div style="font-size: 13px; color: #5A5C66">episodes watched</div></div>
+<div style="flex: 1; padding: 14px; border-radius: 12px; background: #F7F5EE"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px">2</div><div style="font-size: 13px; color: #5A5C66">books started</div></div>
+</div>
+</sc-if>
+<div style="align-self: flex-start; height: 50px; padding: 0 26px; border-radius: 12px; background: #F5B83D; color: #15161B; display: flex; align-items: center; font-size: 16px; font-weight: 700">{{m.cta}}</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #5A5C66">{{m.body2}}</p>
+<p style="margin: 0; font-size: 13px; line-height: 1.6; color: #5A5C66">Button not working? Paste this link into your browser:<br><span style="color: #8A5A00; word-break: break-all">{{m.link}}</span></p>
+</div>
+<div style="margin-top: 18px; font-size: 12px; line-height: 1.6; color: #6B6D77; text-align: center">{{m.footer}}<br>mintsy · [COMPANY NAME AND MAILING ADDRESS]</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2000,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const emails = [
+      {
+        kind: 'Transactional · Forgot password',
+        subject: 'Reset your mintsy password',
+        preheader: 'This link expires in 1 hour.',
+        title: 'Reset your password',
+        body1: 'Hi Steve, we got a request to reset the password for you@example.com. Tap the button to choose a new one.',
+        hasStat: false,
+        cta: 'Set a new password',
+        body2: 'The link works once and expires in 1 hour. If you didn’t ask for this, you can ignore this email and your password won’t change.',
+        link: 'https://[YOUR DOMAIN]/reset-password?token=…',
+        footer: 'You’re getting this because someone asked to reset the password for this account.'
+      },
+      {
+        kind: 'Transactional · Email change',
+        subject: 'Confirm your new email for mintsy',
+        preheader: 'One tap and you’re done.',
+        title: 'Confirm your new email',
+        body1: 'Hi Steve, you asked to change your mintsy email to this address. Confirm it so we can send account emails here.',
+        hasStat: false,
+        cta: 'Confirm email',
+        body2: 'Until you confirm, we’ll keep using your old address. We also sent a heads-up to your old address in case this wasn’t you. The link expires in 24 hours.',
+        link: 'https://[YOUR DOMAIN]/verify-email?token=…',
+        footer: 'You’re getting this because this address was added to a mintsy account.'
+      },
+      {
+        kind: 'Account · Trial ending (2 days before)',
+        subject: 'Your Premium trial ends in 2 days',
+        preheader: 'Nothing to do if you want to keep going.',
+        title: 'Your free trial ends [TRIAL END DATE]',
+        body1: 'After that, your yearly plan starts at [YEARLY PRICE]/year. Here’s what you’ve done with Premium so far:',
+        hasStat: true,
+        cta: 'Keep watching',
+        body2: 'Want to change plans or cancel? Do it any time before [TRIAL END DATE] in your App Store subscriptions (Settings › your name › Subscriptions). No action needed to keep Premium.',
+        link: 'mintsy://continue',
+        footer: 'You’re getting this because you started a mintsy Premium free trial. Email preferences: [LINK]'
+      }
+    ];
+    return { emails };
+  }
+}
+</script>
+</body>
+</html>

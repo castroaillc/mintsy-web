@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mintsy logo mark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+</style>
+</helmet>
+<div style="width: 960px; height: 560px; box-sizing: border-box; padding: 56px; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif; display: flex; gap: 64px; align-items: center">
+
+<div role="img" aria-label="mintsy app icon: lowercase m with a gold period" style="flex: none; width: 400px; height: 400px; border-radius: 90px; background: #15161C; border: 1px solid #23252E; display: flex; align-items: center; justify-content: center; box-sizing: border-box">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 280px; line-height: 1; letter-spacing: -8px; margin-top: -56px; color: #F2F2F5">m<span style="color: {{accent}}">.</span></div>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #A3A5B0">On light</div>
+<div style="display: flex; gap: 20px; align-items: center">
+<div role="img" aria-label="mintsy icon on light background" style="width: 140px; height: 140px; border-radius: 32px; background: #F2F2F5; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 98px; line-height: 1; letter-spacing: -3px; margin-top: -20px; color: #15161B">m<span style="color: #C98A0C">.</span></div>
+</div>
+<div role="img" aria-label="mintsy icon on gold background" style="width: 140px; height: 140px; border-radius: 32px; background: {{accent}}; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 98px; line-height: 1; letter-spacing: -3px; margin-top: -20px; color: #15161B">m<span style="color: #15161B">.</span></div>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #A3A5B0">Small sizes</div>
+<div style="display: flex; gap: 24px; align-items: flex-end">
+<div role="img" aria-label="mintsy icon at 80px" style="width: 80px; height: 80px; border-radius: 18px; background: #15161C; border: 1px solid #23252E; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 56px; line-height: 1; letter-spacing: -2px; margin-top: -11px; color: #F2F2F5">m<span style="color: {{accent}}">.</span></div>
+</div>
+<div role="img" aria-label="mintsy icon at 48px" style="width: 48px; height: 48px; border-radius: 11px; background: #15161C; border: 1px solid #23252E; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 1; letter-spacing: -1px; margin-top: -7px; color: #F2F2F5">m<span style="color: {{accent}}">.</span></div>
+</div>
+<div role="img" aria-label="mintsy icon at 28px" style="width: 28px; height: 28px; border-radius: 7px; background: #15161C; border: 1px solid #23252E; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 1; margin-top: -4px; color: #F2F2F5">m<span style="color: {{accent}}">.</span></div>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #A3A5B0">With wordmark</div>
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; letter-spacing: -1px; color: #F2F2F5">mintsy<span style="color: {{accent}}">.</span></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":960,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#F5B83D' };
+  }
+}
+</script>
+</body>
+</html>

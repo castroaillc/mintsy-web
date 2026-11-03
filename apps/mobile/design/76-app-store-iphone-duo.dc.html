@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App Store screenshot, iPhone Duo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+.dc-annot{display:none !important}
+.shot a{pointer-events:none}
+</style>
+</helmet>
+<div class="shot" style="position: relative; width: {{w}}px; height: {{h}}px; overflow: hidden; background: {{bg}}; font-family: Inter, system-ui, sans-serif">
+<div aria-hidden="true" style="position: absolute; left: {{glowX}}px; top: {{glowY}}px; width: {{glowSize}}px; height: {{glowSize}}px; border-radius: 50%; background: {{glow}}; filter: blur({{glowBlur}}px)"></div>
+
+<div style="position: absolute; left: {{capX}}px; top: {{capY}}px; width: {{capW}}px; display: flex; flex-direction: column; align-items: {{capAlign}}; text-align: {{capText}}; gap: {{gap}}px">
+<div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: {{logoSize}}px; letter-spacing: -0.5px; line-height: 1; color: {{fg}}">mintsy<span style="color: {{dot}}">.</span></div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: {{headSize}}px; line-height: 1.04; letter-spacing: -0.02em; color: {{fg}}; text-wrap: balance">{{s.head}}</h1>
+<p style="margin: 0; font-size: {{subSize}}px; line-height: 1.35; font-weight: 500; color: {{sub}}; text-wrap: balance">{{s.sub}}</p>
+</div>
+
+<div style="position: absolute; left: {{devX}}px; top: {{devY}}px; width: {{devW}}px; height: {{devH}}px; box-sizing: border-box; padding: {{bezel}}px; border-radius: {{outerR}}px; background: #050608; box-shadow: 0 0 0 {{ring}}px #3A3D49, 0 {{shadowY}}px {{shadowBlur}}px rgba(0,0,0,0.5)">
+<div style="position: relative; width: {{scrW}}px; height: {{scrH}}px; overflow: hidden; border-radius: {{innerR}}px; background: #0D0E12">
+<div style="width: {{boardW}}px; transform: scale({{k}}); transform-origin: top left">
+<sc-if value="{{is1}}" hint-placeholder-val="{{ true }}"><dc-import name="DuoSeriesOpen" hint-size="1080px,820px"></dc-import></sc-if>
+<sc-if value="{{is2}}" hint-placeholder-val="{{ false }}"><dc-import name="DuoPlayerOpen" hint-size="1080px,820px"></dc-import></sc-if>
+<sc-if value="{{is3}}" hint-placeholder-val="{{ false }}"><dc-import name="DuoPlayerTabletop" hint-size="820px,1080px"></dc-import></sc-if>
+<sc-if value="{{is4}}" hint-placeholder-val="{{ false }}"><dc-import name="DuoBrowseOpen" hint-size="1080px,820px"></dc-import></sc-if>
+<sc-if value="{{is5}}" hint-placeholder-val="{{ false }}"><dc-import name="DuoTranscript" hint-size="1080px,820px"></dc-import></sc-if>
+</div>
+<div aria-hidden="true" style="position: absolute; left: {{foldX}}px; top: {{foldY}}px; width: {{foldW}}px; height: {{foldH}}px; background: {{foldBg}}"></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"shot":{"editor":"enum","options":["1","2","3","4","5"],"default":"1"},"w":{"editor":"int","default":951,"min":600,"max":3000},"h":{"editor":"int","default":669,"min":400,"max":3000},"$preview":{"width":951,"height":669}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = String(this.props.shot ?? '1');
+    const w = Number(this.props.w ?? 951), h = Number(this.props.h ?? 669);
+    const shots = {
+      '1': { head: 'Made for iPhone Duo', sub: 'Open it up: episodes on one side, the book on the other.', theme: 'gold' },
+      '2': { head: 'Watch and read side by side', sub: 'The video on the left, the transcript following along on the right.', theme: 'dark' },
+      '3': { head: 'Half-fold it. Prop it up. Watch.', sub: 'Tabletop mode puts the video on top and the controls below the fold.', theme: 'dark', tall: true },
+      '4': { head: 'Every book, wide open', sub: 'Browse series by topic, with room to see more.', theme: 'gold' },
+      '5': { head: 'Read along with room to breathe', sub: 'Key takeaways beside the full transcript.', theme: 'dark' }
+    };
+    const s = shots[n] || shots['1'];
+    const gold = s.theme === 'gold';
+    const u = Math.min(w / 951, h / 669);
+    let v;
+    if (s.tall) {
+      // portrait board, caption on the left
+      const k = 0.84 * h / 1080;
+      const scrW = Math.round(820 * k), scrH = Math.round(1080 * k);
+      const bezel = Math.round(12 * u);
+      const devW = scrW + bezel * 2, devH = scrH + bezel * 2;
+      v = {
+        k, boardW: 820, scrW, scrH, bezel, devW, devH,
+        devX: Math.round(w * 0.93 - devW), devY: Math.round((h - devH) / 2),
+        capX: Math.round(w * 0.08), capY: Math.round(h * 0.28), capW: Math.round(w * 0.42), capAlign: 'flex-start', capText: 'left',
+        headSize: Math.round(44 * u),
+        foldX: 0, foldY: Math.round(scrH * 0.5), foldW: scrW, foldH: Math.max(1, Math.round(2 * u)),
+        glowX: Math.round(w * 0.45), glowY: Math.round(h * 0.05)
+      };
+    } else {
+      const k = Math.min(0.84 * w / 1080, 0.80 * h / 820);
+      const scrW = Math.round(1080 * k), scrH = Math.round(820 * k);
+      const bezel = Math.round(12 * u);
+      const devW = scrW + bezel * 2, devH = scrH + bezel * 2;
+      v = {
+        k, boardW: 1080, scrW, scrH, bezel, devW, devH,
+        devX: Math.round((w - devW) / 2), devY: Math.round(h * 0.255),
+        capX: Math.round(w * 0.1), capY: Math.round(h * 0.045), capW: Math.round(w * 0.8), capAlign: 'center', capText: 'center',
+        headSize: Math.round(38 * u),
+        foldX: Math.round(scrW * 0.5), foldY: 0, foldW: Math.max(1, Math.round(2 * u)), foldH: scrH,
+        glowX: Math.round(w * 0.2), glowY: Math.round(h * 0.25)
+      };
+    }
+    return Object.assign(v, {
+      s, w, h,
+      is1: n === '1', is2: n === '2', is3: n === '3', is4: n === '4', is5: n === '5',
+      bg: gold ? '#F5B83D' : '#0D0E12',
+      fg: gold ? '#15161B' : '#F2F2F5',
+      sub: gold ? '#3D3420' : '#A3A5B0',
+      dot: gold ? '#15161B' : '#F5B83D',
+      glow: gold ? 'rgba(255,226,150,0.9)' : 'rgba(245,184,61,0.2)',
+      glowSize: Math.round(w * 0.6), glowBlur: Math.round(110 * u),
+      gap: Math.round(10 * u), logoSize: Math.round(20 * u), subSize: Math.round(17 * u),
+      ring: Math.max(1, Math.round(1.6 * u)), outerR: Math.round(34 * u), innerR: Math.round(24 * u),
+      shadowY: Math.round(24 * u), shadowBlur: Math.round(60 * u),
+      foldBg: 'linear-gradient(90deg, rgba(255,255,255,0.0), rgba(255,255,255,0.06), rgba(0,0,0,0.25))'
+    });
+  }
+}
+</script>
+</body>
+</html>

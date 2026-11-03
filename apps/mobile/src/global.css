@@ -1,0 +1,114 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+/* ─── Theme: design tokens (light / dark) ─────────────────────────
+   1. :root              — light defaults (all platforms)
+   2. @media dark :root  — dark defaults; nativewind maps this to
+                           Appearance.getColorScheme() on native.
+   Web-only class overrides (:root.dark / :root.light) live in
+   components/ui/gluestack-ui-provider/theme.web.css, since native rejects them. */
+@layer theme {
+  :root {
+    --primary: 23 23 23;
+    --primary-foreground: 250 250 250;
+    --card: 255 255 255;
+    --secondary: 245 245 245;
+    --secondary-foreground: 23 23 23;
+    --background: 255 255 255;
+    --popover: 255 255 255;
+    --popover-foreground: 10 10 10;
+    --muted: 245 245 245;
+    --muted-foreground: 115 115 115;
+    --destructive: 231 0 11;
+    --foreground: 10 10 10;
+    --border: 229 229 229;
+    --input: 229 229 229;
+    --ring: 212 212 212;
+    --accent: 247 247 247;
+    --accent-foreground: 52 52 52;
+
+    /* mintsy */
+    /* Ink & Coral palette. Darker coral: 5.5:1 on white */
+    --brand: 196 50 31;
+    /* White on the darker coral; the dark ink falls short here */
+    --brand-foreground: 255 255 255;
+    --surface-raised: 244 242 248;
+    --tag: 239 236 245;
+    --faint: 112 106 132;
+    /* Outline buttons */
+    --border-strong: 212 208 224;
+    /* Fixed in both modes: overlays and text drawn on tinted (always dark) panels */
+    --scrim: 14 13 24;
+    --on-scrim: 255 255 255;
+    --on-tint: 244 239 230;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary: 244 242 248;
+      --primary-foreground: 26 20 36;
+      --card: 24 22 38;
+      --secondary: 32 29 46;
+      --secondary-foreground: 218 214 230;
+      --background: 14 13 24;
+      --popover: 24 22 38;
+      --popover-foreground: 244 242 248;
+      --muted: 32 29 46;
+      --muted-foreground: 172 166 194;
+      --destructive: 255 100 103;
+      --foreground: 244 242 248;
+      --border: 42 39 64;
+      --input: 51 47 74;
+      --accent: 32 29 46;
+      --accent-foreground: 244 242 248;
+      --ring: 103 96 127;
+
+      /* mintsy */
+      --brand: 255 107 87;
+      --brand-foreground: 26 20 36;
+      --surface-raised: 27 25 41;
+      --tag: 32 29 46;
+      --faint: 150 144 174;
+      --border-strong: 61 57 86;
+    }
+  }
+}
+
+@theme inline {
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-card: rgb(var(--card));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-background: rgb(var(--background));
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-destructive: rgb(var(--destructive));
+  --color-foreground: rgb(var(--foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+
+  --color-brand: rgb(var(--brand));
+  --color-brand-foreground: rgb(var(--brand-foreground));
+  --color-surface-raised: rgb(var(--surface-raised));
+  --color-tag: rgb(var(--tag));
+  --color-faint: rgb(var(--faint));
+  --color-border-strong: rgb(var(--border-strong));
+  --color-scrim: rgb(var(--scrim));
+  --color-on-scrim: rgb(var(--on-scrim));
+  --color-on-tint: rgb(var(--on-tint));
+
+  /* Each weight is its own family name (expo-font registers them separately) */
+  --font-inter: Inter_400Regular;
+  --font-inter-medium: Inter_500Medium;
+  --font-inter-semibold: Inter_600SemiBold;
+  --font-display: SpaceGrotesk_700Bold;
+  --font-display-medium: SpaceGrotesk_500Medium;
+}

@@ -1,0 +1,7 @@
+# From Home, opens The Psychology of Money.
+appId: com.getmintsy.app.dev
+---
+- tapOn: "Open The Psychology of Money"
+- extendedWaitUntil:
+    visible: "Morgan Housel"
+    timeout: 15000

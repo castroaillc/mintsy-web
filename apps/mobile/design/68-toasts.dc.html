@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toasts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#08090C}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 960px; height: 844px; display: flex; gap: 40px; background: #08090C; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div style="flex: none; position: relative; width: 390px; height: 844px; overflow: hidden; background: #0D0E12; border-right: 1px solid #1E2028">
+<div style="height: 300px; background: #24382F; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 24px; box-sizing: border-box">
+<div style="width: 140px; height: 210px; border-radius: 6px; background: #F0EEE9; color: #1C1C1C; box-sizing: border-box; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 18px 40px rgba(0,0,0,0.45)"><div style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; line-height: 1.05">Thinking, Fast and Slow</div><div style="font-size: 10px; font-weight: 500">Daniel Kahneman</div></div>
+</div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px">Thinking, Fast and Slow</h1>
+<div style="font-size: 14px; color: #A3A5B0">Daniel Kahneman · 38 episodes</div>
+<a href="Player.dc.html" style="height: 50px; border-radius: 12px; background: {{accent}}; color: #15161B; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px">Play Episode 1</a>
+<button onClick="{{toggleSave}}" aria-pressed="{{saved}}" style="height: 50px; border-radius: 12px; border: 1px solid #343744; background: #15161C; color: #F2F2F5; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer">
+<sc-if value="{{saved}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="{{accent}}" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></sc-if>
+<sc-if value="{{notSaved}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></sc-if>
+{{saveLabel}}
+</button>
+<p style="margin: 0; font-size: 13px; color: #8B8D99">Tap the button to try it.</p>
+</div>
+
+<sc-if value="{{showToast}}" hint-placeholder-val="{{ true }}">
+<div role="status" aria-live="polite" style="position: absolute; left: 12px; right: 12px; bottom: 96px; display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; border-radius: 14px; background: #F2F2F5; color: #15161B; box-shadow: 0 12px 30px rgba(0,0,0,0.45)">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="#15161B" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>
+<span style="flex: 1; font-size: 15px; font-weight: 600">{{toastText}}</span>
+<button onClick="{{undo}}" style="height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #8A5A00; font-family: Inter, sans-serif; font-size: 15px; font-weight: 700; cursor: pointer">Undo</button>
+</div>
+</sc-if>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0">
+<dc-import name="TabBar" active="home" accent="{{accent}}" hint-size="390px,84px"></dc-import>
+</div>
+</div>
+
+<section style="flex: 1; min-width: 0; padding: 40px 40px 40px 0; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700">Toasts</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #A3A5B0">Light card on the dark app so it reads instantly. Sits 12pt above the tab bar (or the bottom inset), one at a time, 4 seconds (6 with an action), swipe down to dismiss, announced to VoiceOver.</p>
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8B8D99">{{v.when}}</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 16px; border-radius: 14px; background: {{v.bg}}; color: {{v.fg}}">
+<span style="flex: 1; font-size: 15px; font-weight: 600">{{v.text}}</span>
+<span style="height: 36px; padding: 0 12px; display: flex; align-items: center; font-size: 15px; font-weight: 700; color: {{v.actionColor}}">{{v.action}}</span>
+</div>
+</div>
+</sc-for>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":960,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { saved: true, toast: 'saved' };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#F5B83D';
+    const s = this.state;
+    const variants = [
+      { when: 'Saved', text: 'Saved to My List', action: 'Undo', bg: '#F2F2F5', fg: '#15161B', actionColor: '#8A5A00' },
+      { when: 'Removed', text: 'Removed from My List', action: 'Undo', bg: '#F2F2F5', fg: '#15161B', actionColor: '#8A5A00' },
+      { when: 'Download finished', text: 'Episode 6 downloaded', action: 'Watch', bg: '#F2F2F5', fg: '#15161B', actionColor: '#8A5A00' },
+      { when: 'Daily goal met', text: '15 minutes today · 6-day streak', action: '', bg: accent, fg: '#15161B', actionColor: '#15161B' },
+      { when: 'Copied', text: 'Takeaway copied', action: '', bg: '#F2F2F5', fg: '#15161B', actionColor: '#8A5A00' },
+      { when: 'Error', text: 'Couldn’t save. Check your connection.', action: 'Retry', bg: '#3A1A1C', fg: '#FFD9D6', actionColor: '#FFB4AE' }
+    ];
+    return {
+      accent, variants,
+      saved: s.saved, notSaved: !s.saved,
+      saveLabel: s.saved ? 'In My List' : 'My List',
+      showToast: !!s.toast,
+      toastText: s.toast === 'saved' ? 'Saved to My List' : 'Removed from My List',
+      toggleSave: () => this.setState({ saved: !s.saved, toast: s.saved ? 'removed' : 'saved' }),
+      undo: () => this.setState({ saved: !s.saved, toast: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

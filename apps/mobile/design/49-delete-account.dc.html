@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Delete account</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0E12}
+a{color:#F2F2F5;text-decoration:none}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0D0E12; color: #F2F2F5; font-family: Inter, system-ui, sans-serif">
+
+<div aria-hidden="true" style="padding: 12px 20px; opacity: 0.35">
+<div style="height: 44px; display: flex; align-items: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px">Settings</div>
+<div style="margin-top: 20px; height: 220px; border-radius: 16px; background: #15161C; border: 1px solid #23252E"></div>
+<div style="margin-top: 20px; height: 120px; border-radius: 16px; background: #15161C; border: 1px solid #23252E"></div>
+</div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(0,0,0,0.55)"></div>
+
+<section role="dialog" aria-modal="true" aria-labelledby="del-title" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 12px 24px 32px; border-radius: 24px 24px 0 0; background: #17181F; border-top: 1px solid #2A2C36; display: flex; flex-direction: column; gap: 14px">
+<div aria-hidden="true" style="align-self: center; width: 40px; height: 5px; border-radius: 3px; background: #3A3D49"></div>
+<div aria-hidden="true" style="width: 52px; height: 52px; border-radius: 26px; background: #2A1719; color: #FF9C94; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></div>
+<h1 id="del-title" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px">Delete your account?</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #C9CAD2">This permanently deletes your profile, progress, streak, My List and downloads. It can’t be undone.</p>
+<div style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 12px; background: #2A2416; border: 1px solid #5A4A22; font-size: 14px; line-height: 1.45; color: #F5DFA0">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.01"></path></svg>
+<span>Deleting your account doesn’t cancel Premium. <a href="PlanDetails.dc.html" style="color: #FFE3A3; font-weight: 600; text-decoration: underline">Cancel your subscription</a> in the App Store first.</span>
+</div>
+<label style="display: flex; align-items: center; gap: 12px; min-height: 44px; font-size: 15px; cursor: pointer">
+<input type="checkbox" onChange="{{toggle}}" style="width: 22px; height: 22px; accent-color: #FF6B60">
+I understand this can’t be undone
+</label>
+<a href="AuthWelcome.dc.html" aria-disabled="{{disabled}}" style="height: 54px; border-radius: 14px; background: {{delBg}}; color: {{delFg}}; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; pointer-events: {{pe}}">Delete account</a>
+<a href="ProfileSettings.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Cancel</a>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F5B83D","options":["#F5B83D","#6EE7B7","#8FB0FF","#FF8A65"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ok: false };
+  }
+  renderVals() {
+    const ok = this.state.ok;
+    return {
+      toggle: () => this.setState({ ok: !this.state.ok }),
+      disabled: ok ? 'false' : 'true',
+      delBg: ok ? '#D9463B' : '#2A2C36',
+      delFg: ok ? '#FFFFFF' : '#8B8D99',
+      pe: ok ? 'auto' : 'none'
+    };
+  }
+}
+</script>
+</body>
+</html>
