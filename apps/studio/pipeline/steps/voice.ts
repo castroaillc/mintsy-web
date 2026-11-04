@@ -14,9 +14,9 @@ import { mediaDurationSec, normalize, readJson, writeJson } from "../util";
 type CachedClip = { hash: string; alignment: Alignment };
 
 export type TranscriptLine = { startSec: number; text: string };
-/** Either scene format, with its narration clip and the time each cue phrase is spoken. */
 /** One spoken word, in seconds from the start of its scene's clip. */
 export type SpokenWord = { text: string; startSec: number; endSec: number };
+/** Either scene format, with its narration clip and the time each cue phrase is spoken. */
 export type TimedAnyScene = (Scene | CollageScene) & {
   audio: string;
   audioSec: number;
@@ -26,13 +26,16 @@ export type TimedAnyScene = (Scene | CollageScene) & {
 };
 export type Voice = { scenes: TimedAnyScene[]; transcript: TranscriptLine[]; durationSec: number };
 /**
- * voices/index.json: every narration track stored for the episode (for a future in-app voice choice).
+ * voices/index.json: every narration track of the episode. Each is rendered to its own video.
  * Episodes voiced before Kokoro have none: only voice.json, pointing at flat audio/NN.mp3 clips.
  */
 export type VoiceIndex = {
   default: string;
   voices: { id: string; provider: "kokoro"; voice: string; durationSec: number; file: string }[];
 };
+
+/** One transcript line per sentence of a scene's narration. Normalized text in, trimmed lines out. */
+export const transcriptSentences = (text: string) => (text.match(/[^.!?]+[.!?]+["')\]]*/g) ?? [text]).map((sentence) => sentence.trim());
 
 /** Words of the spoken text with their start/end times, from the character alignment. */
 function wordsFromAlignment(alignment: Alignment): SpokenWord[] {
@@ -99,9 +102,9 @@ async function voiceTrack(
     timed.push({ ...scene, audio: `${name}.mp3`, audioSec, cueSec, words: wordsFromAlignment(alignment) });
 
     // One transcript line per sentence, timed to when the narrator starts it
-    for (const sentence of text.match(/[^.!?]+[.!?]+["')\]]*/g) ?? [text]) {
-      const startSec = phraseStart(alignment, sentence.trim().slice(0, 40)) ?? 0;
-      transcript.push({ startSec: Math.round(offsetSec + startSec), text: sentence.trim() });
+    for (const sentence of transcriptSentences(text)) {
+      const startSec = phraseStart(alignment, sentence.slice(0, 40)) ?? 0;
+      transcript.push({ startSec: Math.round(offsetSec + startSec), text: sentence });
     }
     offsetSec += sceneFrames(audioSec) / FPS;
   }
@@ -113,7 +116,7 @@ const formatLength = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.rou
 export async function writeVoice(epDir: string) {
   const scenes = await readJson<(Scene | CollageScene)[]>(path.join(epDir, files.scenes));
 
-  // Voice the episode in every KOKORO_VOICES voice; the first is rendered.
+  // Voice the episode in every KOKORO_VOICES voice; the first is the default.
   const voices = kokoroVoices();
   // Started by the first clip that isn't cached, so a fully cached episode doesn't load the model
   let tts: KokoroTts | undefined;

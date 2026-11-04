@@ -31,7 +31,7 @@ type StudioWorker = {
 };
 
 /** Bump when the worker learns a job feature the admin must not send to older workers. */
-const CAPABILITIES = ["render-preview", "upload", "cover"];
+const CAPABILITIES = ["render-preview", "upload", "cover", "remaster", "clip"];
 
 let stopping = false;
 let wake: (() => void) | undefined;

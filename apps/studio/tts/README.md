@@ -18,15 +18,16 @@ Without `tts/.venv` the voice step stops with an error giving these commands ins
 
 Kokoro has ~50 voices ([list](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md)); the first letter is the language (`a` US English, `b` UK English), the
 second the gender. `KOKORO_VOICES=af_heart,am_michael,bm_george` voices every episode in all
-three; the first is the one the video is rendered with. Others are stored for a future
-in-app voice choice:
+three; the first is the default. Each voice gets its own full video render:
 
 ```
 work/<book>/ep-NN/
   audio/kokoro-<voice>/NN.mp3     one clip per scene, per voice
   voices/kokoro-<voice>.json      timings for that voice (same shape as voice.json)
   voices/index.json               { default, voices: [{ id, provider: "kokoro", voice, durationSec, file }] }
-  voice.json                      the default voice's timings; this is what the render uses
+  voice.json                      the default voice's timings
+  episode.mp4, hls/               the default voice's render
+  renders/kokoro-<voice>/         episode.mp4, hls/ and props.json of each other voice
 ```
 
 Episodes voiced before Kokoro have flat `audio/NN.mp3` + `NN.json` clips and only `voice.json`, with no `voices/`.

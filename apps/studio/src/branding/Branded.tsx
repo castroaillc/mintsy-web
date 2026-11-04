@@ -18,9 +18,9 @@ const STING_VOLUME = 0.85;
 /** Bed under the narrator: quiet enough that George stays clearly on top. */
 const BED_VOLUME = 0.13;
 /** With ducking (polish): lower under speech, lifting in the pauses between lines and scenes. */
-const BED_SPEECH = 0.09;
-const BED_PAUSE = 0.22;
-const DUCK_RAMP_SEC = 0.35;
+export const BED_SPEECH = 0.09;
+export const BED_PAUSE = 0.22;
+export const DUCK_RAMP_SEC = 0.35;
 
 /** Wraps an episode body with the logo intro, the intro sting and a background music bed. */
 export const Branded: React.FC<
