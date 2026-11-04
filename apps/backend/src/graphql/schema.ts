@@ -1,5 +1,12 @@
 import { GraphQLError } from "graphql";
-import { getPublishedBook, listPublishedBooks, type BookDoc, type EpisodeDoc } from "../catalog.js";
+import {
+  getPublishedBook,
+  getPublishedEpisodeVoices,
+  listPublishedBooks,
+  type BookDoc,
+  type EpisodeDoc,
+  type EpisodeVoiceDoc,
+} from "../catalog.js";
 import { FREE_EPISODES } from "../constants.js";
 import { refreshPremium } from "../entitlements.js";
 import { hlsUrl, thumbnailUrl, videoUrl } from "../media.js";
@@ -13,6 +20,7 @@ import {
   continueWatching,
   CONTINUE_WATCHING_MAX,
   finishedBookIds,
+  parseEpisodeId,
   progressForBook,
   setProgress,
   type ProgressView,
@@ -114,6 +122,35 @@ export const typeDefs = `#graphql
     locked: Boolean!
   }
 
+  "One timed caption phrase, on its voice's own timeline."
+  type CaptionPhrase {
+    "Start of the phrase, in seconds (may be fractional)."
+    startSec: Float!
+    "End of the phrase, in seconds (may be fractional)."
+    endSec: Float!
+    text: String!
+  }
+
+  "One narrator's full render of an episode, from episodeVoices."
+  type EpisodeVoice {
+    "Voice id, e.g. af_heart."
+    id: String!
+    "Display name."
+    name: String!
+    "True for the voice that Episode.videoUrl, hlsUrl, durationSec and transcript describe."
+    isDefault: Boolean!
+    "Progressive MP4 of this voice. May be a short-lived signed URL: refetch rather than storing it. Null if signing it failed."
+    videoUrl: String
+    "HLS master playlist of this voice; prefer it for streaming when present and fall back to videoUrl. Null when this voice has no HLS encode, and always while media is private (SIGNED_MEDIA)."
+    hlsUrl: String
+    "This voice's duration in seconds. It can differ from Episode.durationSec."
+    durationSec: Int!
+    "Transcript on this voice's timeline."
+    transcript: [TranscriptLine!]!
+    "Timed caption phrases on this voice's timeline."
+    captions: [CaptionPhrase!]!
+  }
+
   type Book {
     id: ID!
     title: String!
@@ -167,6 +204,8 @@ export const typeDefs = `#graphql
     book(id: ID!): Book
     "Public catalog search (works signed out) over book titles, authors, categories and episode transcripts. Case-insensitive; the query is trimmed and cut to 100 characters."
     search(query: String!): SearchResult!
+    "The narrator choices for an episode (works signed out), with their videos and timed text. Empty when the episode is locked for the viewer, isn't in the public catalog or doesn't exist, or has no voices: play Episode.videoUrl / hlsUrl instead."
+    episodeVoices(episodeId: ID!): [EpisodeVoice!]!
   }
 
   type Mutation {
@@ -208,7 +247,7 @@ function viewerOnly(user: { id: string }, ctx: Context) {
 
 const SAVED_KIND = { BOOK: "book", EPISODE: "episode" } as const satisfies Record<string, SavedKind>;
 
-async function isLocked(episode: EpisodeDoc, ctx: Context) {
+async function isLocked(episode: Pick<EpisodeDoc, "number">, ctx: Context) {
   if (episode.number <= FREE_EPISODES) return false;
   return !(await ctx.viewerPremium()).active;
 }
@@ -231,6 +270,11 @@ export const resolvers = {
       if (!normalizeQuery(args.query)) return EMPTY_RESULT;
       const [catalog, locked] = await Promise.all([listPublishedBooks(), lockCheck(ctx)]);
       return searchCatalog(catalog, args.query, locked);
+    },
+    episodeVoices: async (_parent: unknown, args: { episodeId: string }, ctx: Context) => {
+      const parsed = parseEpisodeId(args.episodeId);
+      if (!parsed || (await isLocked(parsed, ctx))) return [];
+      return getPublishedEpisodeVoices(parsed.bookId, parsed.number);
     },
   },
   Book: {
@@ -299,6 +343,11 @@ export const resolvers = {
     takeaways: async (episode: EpisodeDoc, _args: unknown, ctx: Context) =>
       (await isLocked(episode, ctx)) ? [] : episode.takeaways,
     thumbnailUrl: (episode: EpisodeDoc) => thumbnailUrl(episode.thumbnailPath),
+  },
+  // Only reached through episodeVoices, which has already checked the lock
+  EpisodeVoice: {
+    videoUrl: (voice: EpisodeVoiceDoc) => videoUrl(voice.videoPath),
+    hlsUrl: (voice: EpisodeVoiceDoc) => hlsUrl(voice.hlsPath),
   },
   Mutation: {
     registerPushToken: async (

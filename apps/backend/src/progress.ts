@@ -1,5 +1,5 @@
 import { MongoServerError } from "mongodb";
-import { books, publicBook, type BookDoc, type EpisodeDoc } from "./catalog.js";
+import { books, catalogProjection, publicBook, type BookDoc, type EpisodeDoc } from "./catalog.js";
 import { db } from "./db.js";
 
 /**
@@ -59,7 +59,7 @@ export function parseEpisodeId(id: string): { bookId: string; number: number } |
 /** Published versions of the given books (drafts and books without published episodes are left out). */
 async function publishedBooks(ids: string[]): Promise<Map<string, BookDoc>> {
   if (!ids.length) return new Map();
-  const docs = await books.find({ _id: { $in: ids }, status: { $ne: "draft" } }).toArray();
+  const docs = await books.find({ _id: { $in: ids }, status: { $ne: "draft" } }, { projection: catalogProjection }).toArray();
   const map = new Map<string, BookDoc>();
   for (const doc of docs) {
     const book = publicBook(doc);

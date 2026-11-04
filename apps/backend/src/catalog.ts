@@ -9,6 +9,34 @@ export interface TranscriptLine {
   text: string;
 }
 
+/** One timed caption phrase, on its voice's own timeline. Seconds may be fractional. */
+export interface CaptionPhrase {
+  startSec: number;
+  endSec: number;
+  text: string;
+}
+
+/**
+ * One narrator's full render of an episode. Written by the studio worker. Read only through
+ * getPublishedEpisodeVoices, because the timed text is too heavy for catalog reads.
+ */
+export interface EpisodeVoiceDoc {
+  /** Voice id, e.g. "af_heart". */
+  id: string;
+  /** Display name. */
+  name: string;
+  isDefault: boolean;
+  /** Object path in the media bucket, like EpisodeDoc.videoPath. */
+  videoPath: string;
+  /** HLS master playlist in the media bucket, like EpisodeDoc.hlsPath. */
+  hlsPath?: string;
+  /** Whole seconds: GraphQL exposes it as Int. */
+  durationSec: number;
+  /** startSec must be whole seconds: GraphQL exposes it as Int. */
+  transcript: TranscriptLine[];
+  captions: CaptionPhrase[];
+}
+
 export interface EpisodeDoc {
   number: number;
   title: string;
@@ -24,6 +52,11 @@ export interface EpisodeDoc {
    */
   hlsPath?: string;
   thumbnailPath?: string;
+  /**
+   * One render per narrator. Optional: episodes without it only have the fields above, which stay
+   * the default voice. Left out of catalog reads (see catalogProjection).
+   */
+  voices?: EpisodeVoiceDoc[];
   status?: ContentStatus;
   updatedAt?: Date;
 }
@@ -58,31 +91,57 @@ export const books = catalogDb.collection<BookDoc>("books");
 
 const notDraft = { status: { $ne: "draft" as const } };
 
+/** For catalog reads: every voice's timed text across every episode would bloat them. */
+export const catalogProjection = { "episodes.voices": 0 } as const;
+
 /**
- * What the app may see of a book: its episodes cut to the contiguous run of published ones
- * starting at number 1 (the app indexes episodes[number - 1]). Null for a draft book or one
- * with no such episodes. This is the only place public catalog filtering happens.
+ * The episodes the app may see: the contiguous run of published ones starting at number 1 (the app
+ * indexes episodes[number - 1]), or none for a draft book. This is the only place public catalog
+ * filtering happens.
  */
-export function publicBook(book: BookDoc | null): BookDoc | null {
-  if (!book || book.status === "draft") return null;
+function publishedRun<E extends Pick<EpisodeDoc, "number" | "status">>(book: { status?: ContentStatus; episodes: E[] }) {
+  if (book.status === "draft") return [];
   const sorted = [...book.episodes].sort((a, b) => a.number - b.number);
-  const episodes: EpisodeDoc[] = [];
+  const episodes: E[] = [];
   for (const episode of sorted) {
     if (episode.number !== episodes.length + 1 || episode.status === "draft") break;
     episodes.push(episode);
   }
+  return episodes;
+}
+
+/**
+ * What the app may see of a book, without its voices. Null for a draft book or one with no
+ * published run.
+ */
+export function publicBook(book: BookDoc | null): BookDoc | null {
+  if (!book) return null;
+  const episodes = publishedRun(book).map(({ voices: _voices, ...episode }) => episode);
   return episodes.length ? { ...book, episodes } : null;
 }
 
 /** Published catalog for the public GraphQL API, in listing order. */
 export async function listPublishedBooks() {
-  const docs = await books.find(notDraft).sort({ order: 1 }).toArray();
+  const docs = await books.find(notDraft, { projection: catalogProjection }).sort({ order: 1 }).toArray();
   return docs.map(publicBook).filter((b): b is BookDoc => b !== null);
 }
 
 /** One published book for the public GraphQL API, or null if it's missing or not live. */
 export async function getPublishedBook(id: string) {
-  return publicBook(await books.findOne({ _id: id, ...notDraft }));
+  return publicBook(await books.findOne({ _id: id, ...notDraft }, { projection: catalogProjection }));
+}
+
+/**
+ * The voices of one episode, under the same visibility as the public catalog: empty for an unknown
+ * or unpublished episode, or one with no voices. Doesn't check locking: the caller must.
+ */
+export async function getPublishedEpisodeVoices(bookId: string, number: number): Promise<EpisodeVoiceDoc[]> {
+  const book = await books.findOne<Pick<BookDoc, "status" | "episodes">>(
+    { _id: bookId, ...notDraft },
+    { projection: { status: 1, "episodes.number": 1, "episodes.status": 1, "episodes.voices": 1 } },
+  );
+  if (!book) return [];
+  return publishedRun(book).find((e) => e.number === number)?.voices ?? [];
 }
 
 /** Public URL for an object in the media bucket, or null when the episode has no file yet. */
