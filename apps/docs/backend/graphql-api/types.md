@@ -15,6 +15,7 @@ A published book. Only books with at least one published episode are returned.
 | `author`      | `String!`     |                                                                                                                                                                                                                                      |
 | `category`    | `String!`     | e.g. `Finance`, `Psychology`, `Productivity`, `Business`.                                                                                                                                                                            |
 | `coverTone`   | `String!`     | Cover background colour, e.g. `#E7DFCF`.                                                                                                                                                                                             |
+| `coverUrl`    | `String`      | Rendered cover image (2:3 JPEG, at least 1000×1500), or null when the book has none yet: draw the `coverTone` tile instead. Signed and short-lived when media is private, like `Episode.thumbnailUrl`.                              |
 | `tint`        | `String!`     | Accent colour, e.g. `#24382F`.                                                                                                                                                                                                       |
 | `description` | `String!`     |                                                                                                                                                                                                                                      |
 | `episodes`    | `[Episode!]!` | The contiguous run of published episodes starting at number 1, in order.                                                                                                                                                             |
@@ -42,6 +43,31 @@ A published book. Only books with at least one published episode are returned.
 | ---------- | --------- | ----------------------------------------------------- |
 | `startSec` | `Int!`    | Start of the line, in seconds from the episode start. |
 | `text`     | `String!` |                                                       |
+
+### EpisodeVoice
+
+One narrator's full render of an episode, from `episodeVoices`. Rules: [Episode voices](../../contracts.md#episode-voices).
+
+| Field         | Type                 | Description |
+| ------------- | -------------------- | ----------- |
+| `id`          | `String!`            | Voice id, e.g. `af_heart`. |
+| `name`        | `String!`            | Display name. |
+| `isDefault`   | `Boolean!`           | True for the voice that `Episode.videoUrl`, `hlsUrl`, `durationSec` and `transcript` describe. |
+| `videoUrl`    | `String`             | Progressive MP4 of this voice. May be a short-lived signed URL: refetch rather than store it. Null if signing it failed. |
+| `hlsUrl`      | `String`             | HLS master playlist of this voice. Prefer it for streaming when present and fall back to `videoUrl`. Null when this voice has no HLS encode, and always while `SIGNED_MEDIA` is on. |
+| `durationSec` | `Int!`               | This voice's duration in seconds. It can differ from `Episode.durationSec`. |
+| `transcript`  | `[TranscriptLine!]!` | Transcript on this voice's timeline. |
+| `captions`    | `[CaptionPhrase!]!`  | Timed caption phrases on this voice's timeline. |
+
+### CaptionPhrase
+
+One timed caption phrase, on its voice's own timeline.
+
+| Field      | Type      | Description |
+| ---------- | --------- | ----------- |
+| `startSec` | `Float!`  | Start of the phrase, in seconds (may be fractional). |
+| `endSec`   | `Float!`  | End of the phrase, in seconds (may be fractional). |
+| `text`     | `String!` | |
 
 ## Search
 
@@ -115,7 +141,7 @@ The viewer's place in one episode.
 | `episodeId`     | `ID!`      | Episode id: `<bookId>-<number>` (the same ids as `Episode.id` and `savedEpisodeIds`).                 |
 | `bookId`        | `ID!`      |                                                                                                       |
 | `episodeNumber` | `Int!`     |                                                                                                       |
-| `positionSec`   | `Int!`     | Seconds watched, between 0 and `durationSec`.                                                         |
+| `positionSec`   | `Int!`     | Seconds watched, between 0 and `durationSec`, always on the default voice's timeline.                 |
 | `durationSec`   | `Int!`     | The episode's duration in seconds (the current published duration, else the one stored at last save). |
 | `completed`     | `Boolean!` | Watched to the end: position reached 95% of the duration, or `setProgress(completed: true)`.          |
 | `updatedAt`     | `String!`  | When this was last saved (ISO 8601, server time).                                                     |

@@ -14,9 +14,10 @@ flowchart TD
   Ch -->|Claude| Script["script: script.json<br/>~700-word narration, summary, 3 takeaways"]
   Script -->|Claude| Scenes["scenes: scenes.json<br/>10–16 collage scenes with cue phrases"]
   Scenes -->|Kokoro, local, word timestamps| Voice["voice: one clip set per voice, voices/index.json, voice.json<br/>cue times, word times, sentence transcript"]
-  Voice -->|Remotion| Render["render: episode.mp4 + thumbnail.jpg"]
+  Voice -->|Remotion| Render["render: one episode.mp4 per voice + thumbnail.jpg"]
   Render -->|"upload, encodes HLS (worker render and upload jobs)"| Out["gs://mintsy-media + draft episode in MongoDB books"]
   Render -.->|"publish (legacy CLI)"| Legacy["apps/backend/scripts/catalog.json"]
+  Voice -.->|"clip job: a few scenes of one voice"| Clip["clips/*.mp4, local only"]
 ```
 
 Every step writes a file in `work/<book>/ep-<nn>/` (`book.json` and `pages.json` in `work/<book>/`) that can be read and edited. A step is skipped when its output exists, so hand edits survive. `--from <step>` regenerates from that step on (for example `--from scenes` after editing `script.json`, `--from render` after changing a template), and `--to <step>` stops early (for example `--to scenes` to review before voicing).
@@ -40,12 +41,12 @@ The `--book` id becomes the book's id in the app; use the existing id (for examp
 | chapter | `ingest.ts › writeChapter` | Cuts the chapter's pages out into `chapter.txt`. Neighbouring chapters can share a boundary page. |
 | script | `pipeline/steps/script.ts` | Structured output (`generate()` below). A one-line summary, 3 takeaways and narration. Rules: 650–750 words, written for the ear, only facts from the chapter, original wording, at most one short attributed quote. Output: `script.json`. |
 | scenes | `pipeline/steps/scenes.ts` | Claude splits the narration into 10–16 scenes and picks what's on screen, with cue phrases that time on-screen items to the voice. Collage format by default (`VIDEO_STYLE=cards` for the older text cards; `render` picks the composition from the scenes' format). Validated: narration copied verbatim, every cue phrase in its scene, icon names known, last scene ends with takeaways; one retry with the specific problems. If the script is unchanged, the existing scene split is kept so cached narration stays valid and only the visuals change. Output: `scenes.json`. |
-| voice | `pipeline/steps/voice.ts`, `pipeline/tts.ts`, `tts/kokoro_tts.py` | Kokoro narrates each scene locally in every voice in `KOKORO_VOICES` (default `af_heart,am_michael,bm_george`); the Python process starts only when a clip isn't cached. Writes `audio/kokoro-<voice>/NN.mp3` + `NN.json`, `voices/kokoro-<voice>.json`, `voices/index.json`, and `voice.json`, a copy of the first voice's track (default `kokoro-af_heart`) that the render uses. The other voices are stored for a future in-app choice. Cached per scene by hash of voice + speed + text, so only changed narration is voiced again. Kokoro returns word timestamps, which `wordsToAlignment` spreads over the characters of the text; these give each cue's time, each word's time and one transcript line per sentence, offset by the 4.5 s intro. |
-| render | `pipeline/steps/render.ts` | Bundles Remotion with the episode folder as the public dir, picks `CollageEpisode` or `Episode` from the scenes' format, renders 1280×720 H.264 at CRF 20, moves the MP4 index to the front with ffmpeg (faststart), and renders the thumbnail: the designed `CollageThumbnail` at 528 px for collage with polish on, otherwise a 264-px frame. Writes `props.json` for Studio previews. |
-| upload (worker `render` and `upload` jobs) | `pipeline/steps/publish.ts › uploadMedia`, `pipeline/steps/hls.ts`, `pipeline/transcode.sh` | Encodes `episode.mp4` to HLS with local ffmpeg (1080p/720p/360p H.264 + AAC fMP4, no upscaling, aligned 6 s keyframes) into `hls/`, uploads with `gcloud storage cp` under a content-hashed name (`books/<book>/<chapter>-<hash8>.mp4/.jpg` and `books/<book>/<chapter>-<hash8>/master.m3u8` + `stream_N/`, `master.m3u8` last; `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs). The worker then upserts the episode (title, summary, takeaways, transcript, duration, paths) into `books` as a draft, always, even if it was published. Any encode or upload failure fails the job and saves nothing. The MP4 stays: offline downloads and existing app builds use it. |
-| publish (legacy CLI) | `pipeline/steps/publish.ts` | Same encode and upload, but upserts the book and episode into `apps/backend/scripts/catalog.json` instead of MongoDB. `pnpm seed:catalog` now only inserts missing books, so this no longer updates an existing catalog. Use a worker `render` job to get episodes into MongoDB. |
+| voice | `pipeline/steps/voice.ts`, `pipeline/tts.ts`, `tts/kokoro_tts.py` | Kokoro narrates each scene locally in every voice in `KOKORO_VOICES` (default `af_heart,am_michael,bm_george`); the Python process starts only when a clip isn't cached. Writes `audio/kokoro-<voice>/NN.mp3` + `NN.json`, `voices/kokoro-<voice>.json`, `voices/index.json`, and `voice.json`, a copy of the first voice's track (default `kokoro-af_heart`). The first voice is the episode's default, and each voice gets its own video. Cached per scene by hash of voice + speed + text, so only changed narration is voiced again. Kokoro returns word timestamps, which `wordsToAlignment` spreads over the characters of the text; these give each cue's time, each word's time and one transcript line per sentence, offset by the 4.5 s intro. |
+| render | `pipeline/steps/render.ts`, `pipeline/voices.ts` | Bundles Remotion once, with a temporary public dir holding only `audio/` and `brand/`, and picks `CollageEpisode` or `Episode` from the scenes' format. For each voice, renders 1280×720 H.264 at CRF 20 and moves the MP4 index to the front with ffmpeg (faststart). The default voice goes in the episode folder and the others in `renders/kokoro-<voice>/`, so this takes about three times as long with three voices. Each folder gets `props.json` for Studio previews and `render-stamp.json`, which records the voice track it was rendered from. Collage episodes render with `captions: false`: the app draws captions from timed text. One thumbnail per episode, from the default voice: the designed `CollageThumbnail` at 528 px for collage with polish on, otherwise a 264-px frame. Stops with an error if `voices/index.json` doesn't match `KOKORO_VOICES`. |
+| upload (worker `render`, `upload` and `remaster` jobs) | `pipeline/steps/publish.ts › uploadMedia`, `pipeline/steps/hls.ts`, `pipeline/transcode.sh` | First checks each voice's `render-stamp.json` against its current track. A missing or different stamp stops the upload with "rerun with `--from render`", so a video can't be paired with timings from another voice run, and a render from before captions came off can't be uploaded. An episode voiced before Kokoro has one track and skips this check. Then encodes every voice's `episode.mp4` to HLS with local ffmpeg (1080p/720p/360p H.264 + AAC fMP4, no upscaling, aligned 6 s keyframes) into its `hls/`, and uploads with `gcloud storage cp` under a content-hashed name per voice (`books/<book>/<chapter>-<hash8>.mp4` and `books/<book>/<chapter>-<hash8>/master.m3u8` + `stream_N/`, `master.m3u8` last; the one JPG uses the default voice's prefix; `Cache-Control: private, max-age=31536000`; the bucket may be private, with the backend issuing signed URLs). The worker then writes the episode to `books`: `render` and `upload` upsert it (title, summary, takeaways, transcript, duration, paths, `voices`) as a draft, always, even if it was published, and `remaster` swaps its media in place. Any encode or upload failure fails the job and saves nothing. The MP4s stay: offline downloads and existing app builds use them. |
+| publish (legacy CLI) | `pipeline/steps/publish.ts` | Same checks, encode and upload, but upserts the book and episode into `apps/backend/scripts/catalog.json` instead of MongoDB. `pnpm seed:catalog` now only inserts missing books, so this no longer updates an existing catalog. Use a worker `render` job to get episodes into MongoDB. |
 
-**Episodes voiced before Kokoro** have flat `audio/NN.mp3` + `NN.json` clips and only `voice.json`, with no `voices/`. `--from render` keeps using that audio. Rerunning the voice step (`--from voice` or earlier, or any worker `render` job, which always reruns it) narrates the whole episode again with Kokoro, changing its narrator and duration, replaces `voice.json` and leaves the flat clips unused. Video already in the bucket isn't affected until that happens.
+**Episodes voiced before Kokoro** have flat `audio/NN.mp3` + `NN.json` clips and only `voice.json`, with no `voices/`. `--from render` keeps using that audio and makes one video, with no burned captions, and the episode gets `voices: []`. Rerunning the voice step (`--from voice` or earlier, or any worker `render` or `remaster` job, which always rerun it) narrates the whole episode again with Kokoro, changing its narrator and duration, replaces `voice.json` and leaves the flat clips unused. Video already in the bucket isn't affected until that happens.
 
 ## Worker
 
@@ -53,7 +54,7 @@ The `--book` id becomes the book's id in the app; use the existing id (for examp
 
 `<MONGODB_DB>` defaults to `mintsy_studio`, which holds `books`, `studio_jobs` and `studio_workers`, the only collections the worker touches. It needs readWrite there and has no access to `mintsy_app`. At startup the worker creates the `books {order:1}` and `studio_jobs {status:1, createdAt:1}` indexes if they're missing, because the backend never writes to this database.
 
-The worker writes a heartbeat to `studio_workers` every 5 seconds, including the job features it supports, so the dashboard can tell whether anything is consuming the queue. On startup, `running` jobs with this worker's id are marked failed. Ctrl-C stops the worker after the current job; a second Ctrl-C aborts the job and marks it failed.
+The worker writes a heartbeat to `studio_workers` every 5 seconds, including the job features it supports (`render-preview`, `upload`, `cover`, `remaster`, `clip`), so the dashboard can tell whether anything is consuming the queue. On startup, `running` jobs with this worker's id are marked failed. Ctrl-C stops the worker after the current job; a second Ctrl-C aborts the job and marks it failed.
 
 ::: warning
 Production stays on the old cluster and the flat `mintsy` database until the [database split](../backend/deployment/index.md#splitting-the-database) is done. Until then, a worker aimed at production data needs `MONGODB_DB=mintsy` set explicitly; the default points at a database the API doesn't read.
@@ -63,9 +64,14 @@ Production stays on the old cluster and the flat `mintsy` database until the [da
 |---|---|---|---|---|
 | `ingest` | `bookId`, `pdfPath` | `ingest`, plus a local cover render | Inserts the book as `draft` with `episodes: []` and `order` after the last book, only if the id is new | `{ book: { title, author, category, description }, chapters: [{ number, title }] }` |
 | `script` | `bookId`, `chapter`, `regenerate?` | Episode steps up to `scenes` (from `script` with `regenerate`) | Nothing | `{ script, scenes }` (contents of `script.json` / `scenes.json`) |
-| `render` | `bookId`, `chapter`, `scriptJson?`, `scenesJson?`, `preview?` | Writes edited script/scenes if given, reruns from `voice` (from `scenes` if only the script's narration changed), renders, encodes HLS, uploads. With `preview`, stops after rendering locally | Upserts the episode by `number` as `draft`. Nothing with `preview` | `{ durationSec, videoPath, thumbnailPath, hlsPath }`, or `{ durationSec, preview: true }` |
-| `upload` | `bookId`, `chapter` | Encodes HLS and uploads the last local render, without rendering again | Upserts the episode by `number` as `draft` | `{ durationSec, videoPath, thumbnailPath, hlsPath }` |
+| `render` | `bookId`, `chapter`, `scriptJson?`, `scenesJson?`, `preview?` | Writes edited script/scenes if given, reruns from `voice` (from `scenes` if only the script's narration changed), renders every voice, encodes HLS, uploads. With `preview`, stops after rendering locally | Upserts the episode by `number` as `draft`, with `voices`. Nothing with `preview` | `{ durationSec, videoPath, thumbnailPath, hlsPath }`, or `{ durationSec, preview: true }` |
+| `upload` | `bookId`, `chapter` | Encodes HLS and uploads the last local render of every voice, without rendering again | Upserts the episode by `number` as `draft`, with `voices` | `{ durationSec, videoPath, thumbnailPath, hlsPath }` |
 | `cover` | `bookId`, `upload?` | Renders `work/<book>/cover.jpg` (1000×1500) from the book's metadata in `books`. With `upload`, uploads it as `books/<book>/cover-<hash8>.jpg` | With `upload`, sets `coverPath`, live at once if the book is published | `{ coverPath? }` |
+
+| `remaster` | `bookId`, `chapter`, `overwriteTranscript?` | Re-renders an existing episode from its local `script.json`, `scenes.json` and `book.json`: voice, render, upload. Never calls Claude. Takes no script, scenes or preview | Swaps `videoPath`, `thumbnailPath`, `hlsPath`, `durationSec`, `transcript` and `voices` in one write, live at once on a published episode. Keeps the status, title, summary and takeaways | `{ durationSec, videoPath, thumbnailPath, hlsPath, voices, transcriptLinesChanged }` |
+| `clip` | `bookId`, `chapter`, `voice?`, `startScene?`, `endScene?` | Renders a vertical clip into `clips/`. Only episodes 1 to `FREE_EPISODES`, because viewers of any later one land on the paywall | Nothing (only reads) | `{ videoPath, thumbnailPath, voice, startScene, endScene, durationSec, width, height, episodePublished }`, with paths relative to the episode folder |
+
+**`overwriteTranscript`:** admin transcript edits exist only in `books`, so `remaster` refuses when transcript text there differs from what it would write, and names the lines. It checks before rendering, before uploading and again before the write, because an admin can save an edit during a render. Only text counts, not timing. With `overwriteTranscript: true` it replaces those lines and reports how many in `transcriptLinesChanged`. Nothing reaches `books` until every voice has rendered and uploaded, so a failure leaves the episode as it was, at worst with unreferenced objects in the bucket.
 
 `STUDIO_WORKER_DRY_RUN=1` fakes every job's work and result (no Claude, Kokoro, Remotion, ffmpeg or bucket, and no files in `work/`) but still writes `studio_jobs` and `books`.
 
@@ -98,7 +104,12 @@ flowchart LR
 | `src/collage/schema.ts` | The scene contract Claude fills in: one or two beats per scene, each a background plus a layout made of props that appear on spoken cue phrases |
 | `src/collage/Layouts.tsx` | Layout renderers; the first element of each beat appears as it slides in |
 | `src/collage/kit.tsx` | Stripes, puppets, stamps, kinetic lines, pop-ins, paper finish |
-| `src/collage/polish.tsx` | Word-synced captions, scene wipes, slow camera push, the speech map for ducking the music. On unless `STUDIO_POLISH=0` |
+| `src/collage/polish.tsx` | Scene wipes, slow camera push, the speech map for ducking the music (on unless `STUDIO_POLISH=0`). Also the burned-in word captions, drawn only with the `captions` prop, which is separate from polish: `false` for episodes, `true` for clips |
+| `src/collage/phrases.ts` | Groups words into caption phrases. `polish.tsx` draws them in clips, and `pipeline/voices.ts` stores them as each voice's timed text, so both break lines the same way |
+| `src/collage/CollageClip.tsx` | The 1080×1920 `CollageClip` composition: whole scenes, burned-in captions, music bed from the first frame (there's no intro), then the end card |
+| `src/collage/PortraitLayouts.tsx` | Portrait versions of the six layouts, from the same beats. Laid out in flow, so longer text moves its neighbours, and text always sits on a slab, card or tape |
+| `src/collage/ClipEndCard.tsx` | The last 3.5 s of a clip: logo, book title and "Keep watching free on Mintsy", inside the safe area |
+| `src/collage/clipLayout.ts` | Clip size, safe area, text zone and limits |
 | `src/collage/covers.tsx` | Stills: the designed episode thumbnail and the book cover |
 | `src/collage/icons.ts`, `iconNames.ts` | 119 [Phosphor](https://phosphoricons.com) icons (MIT) by friendly name. To add one, add the name to `iconNames.ts` and map it in `icons.ts` |
 | `src/branding/` | Logo intro (wordmark animation, book and chapter on tape), sting and music bed with volumes (`Branded.tsx`) |
@@ -110,6 +121,30 @@ Timing is shared between the pipeline and the compositions (`src/episode/timing.
 
 `VIDEO_STYLE=cards pnpm run pipeline episode … --from scenes` regenerates the original text-card style instead.
 
+### Vertical clips
+
+A `clip` job (`pipeline/steps/clip.ts`) renders a few whole scenes of one voice to `clips/<voice>-sNN-sNN.mp4` and a `.jpg` poster, for manual posting. Nothing is uploaded.
+
+Rules, from `src/collage/clipLayout.ts` and `selectClipScenes`:
+
+- **Length:** 1 to 3 consecutive scenes. The scenes alone must run at least 15 s, and the finished clip, with its 3.5 s end card, at most 60 s.
+- **Default range:** starts at scene 1, the scripted hook, and takes the fewest scenes that reach 15 s.
+- **Format:** collage only. The job fails if `scenes.json` has changed since the voice track was made.
+- **Unpublished episodes:** the job still renders, logs a warning and returns `episodePublished: false`.
+
+The safe area is the strictest of the ad templates TikTok, Meta and Google publish for 1080×1920, checked 2026-11-03 through upload-post.com's table and adkit.so. Platforms publish no figures for organic posts, whose interface is usually smaller.
+
+| | Top | Bottom | Left | Right |
+|---|---|---|---|---|
+| TikTok | 240 | 660 | 120 | 120, plus 300 on the right from y 840 down |
+| Reels | 269 | 672 | 65 | 65 |
+| Shorts | 288 | 672 | 48 | 192 |
+| `CLIP_SAFE` (px from the frame's edge) | 288 | 672 (y 1248) | 120 | 192 (x 888), and 300 from y 840 down (x 780) |
+
+Beat text stays in `CLIP_CONTENT` (x 140 to 868, y 322 to 980), which is enough inside the safe area to survive the camera's 4% push, and left of x 765 from y 840 down. Captions sit between that zone and the safe area's bottom edge, and `captionSize` picks the largest size that fits, from 56 down to 38.
+
+To review a clip's layout, open `CollageClip` in Remotion Studio with `safeAreaGuide` on. Never set it on a clip that gets posted.
+
 ### Previewing and changing the look
 
 `pnpm dev` opens Remotion Studio with sample props (`CollageEpisode` shows every layout). To preview a generated episode with its audio:
@@ -118,9 +153,9 @@ Timing is shared between the pipeline and the compositions (`src/episode/timing.
 npx remotion studio --public-dir work/<book>/ep-<nn> --props work/<book>/ep-<nn>/props.json
 ```
 
-Then open the `CollageEpisode` composition. (`props.json` is written by `render`: book title, chapter, episode title and the timed scenes from `voice.json`.)
+Then open the `CollageEpisode` composition. (`render` writes `props.json`: book title, chapter, episode title, the voice's timed scenes and `captions: false`. To see another voice, use `--props work/<book>/ep-<nn>/renders/kokoro-<voice>/props.json`, with the same public dir.)
 
-Adding a collage layout means adding it to `src/collage/schema.ts` (what Claude can ask for) and `src/collage/Layouts.tsx` (how it's drawn).
+Adding a collage layout means adding it to `src/collage/schema.ts` (what Claude can ask for), `src/collage/Layouts.tsx` (how it's drawn) and `src/collage/PortraitLayouts.tsx` (how it's drawn in clips).
 
 ## Content rules
 
@@ -132,7 +167,7 @@ The script prompt (`pipeline/steps/script.ts`) requires narration in our own wor
 |---|---|---|
 | Claude Opus 5.5 | Script + scenes. Ingest once per book, with the whole book in context, is ≈ $0.10–1.00 | ≈ $0.35–0.50 (from logged usage, `src/lib/generate-all.ts` in admin) |
 | Kokoro (local, Kokoro-82M, Apache 2.0) | Narration on the studio machine | No per-use cost |
-| Remotion | Local render, a few minutes on an M-series Mac | Free for companies of up to 3 people; larger teams need a [company license](https://www.remotion.pro/license) |
+| Remotion | Local render, a few minutes per voice on an M-series Mac | Free for companies of up to 3 people; larger teams need a [company license](https://www.remotion.pro/license) |
 | Google Cloud Storage | Episode hosting | Pennies |
 
 ## Setup and configuration
@@ -151,16 +186,19 @@ Tools: Node 24, pnpm, `ffmpeg` and `ffprobe` on `PATH` (narration encodes MP3 wi
 
 Narration needs no API key, but without `tts/.venv` a voice step with clips to make stops with an error giving the commands above. The first narration downloads the Kokoro model weights from Hugging Face. See `apps/studio/tts/README.md` for voices and the output layout.
 
+Tests: `pnpm test` runs `pipeline/test/*.test.ts` with `DOTENV_CONFIG_PATH=/dev/null`, so `.env` isn't loaded. The job and dry-run suites run only with `STUDIO_TEST_MONGODB_URI` set to a local MongoDB, and refuse any other host.
+
 `apps/studio/.env`:
 
 | Variable | Default | |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | the `ant auth login` profile | Claude credentials |
-| `KOKORO_VOICES` | `af_heart,am_michael,bm_george` | Voices to make for every episode; the first is rendered |
+| `KOKORO_VOICES` | `af_heart,am_michael,bm_george` | Voices to make for every episode, each rendered to its own video; the first is the default |
 | `KOKORO_SPEED` | `1` | |
 | `MEDIA_BUCKET` | `gs://mintsy-media` | |
 | `VIDEO_STYLE` | collage | `cards` for the older text cards |
-| `STUDIO_POLISH` | on | `0` turns off the collage polish layer |
+| `STUDIO_POLISH` | on | `0` turns off the collage polish layer. Doesn't affect captions |
+| `STUDIO_WORK_DIR` | `work/` | Use another folder, for example a scratch copy for test renders, so they can't overwrite real output. Admin reads the same variable for previews, so the two must match |
 | `MONGODB_URI` | (required for the worker) | For example `mongodb://localhost:27017` |
 | `MONGODB_DB` | `mintsy_studio` | Must match the admin dashboard's |
 | `STUDIO_WORKER_DRY_RUN` | off | `1` fakes every job's work |

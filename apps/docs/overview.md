@@ -25,6 +25,7 @@ flowchart LR
   Stores[(App Store)]
   Resend[(Resend)]
   Expo[(Expo Push)]
+  Observe[(Expo Observe)]
   Claude[(Claude API)]
 
   Admin -->|queue jobs, edit, publish| Studio
@@ -32,11 +33,12 @@ flowchart LR
   Worker -->|draft books and episodes| Studio
   Worker -->|scripts and scenes| Claude
   Worker -->|video, thumbnails, HLS| Bucket
-  API -->|published content, read-only| Studio
+  API -->|published content and episode voices, read-only| Studio
   API <-->|users, premium, My List, progress| AppDb
   App -->|GraphQL and auth| API
   App -->|streams and downloads| Bucket
   App -->|purchases| RC
+  App -->|performance data, native crash reports| Observe
   RC <--> Stores
   RC -->|webhook| API
   API -->|REST| RC
@@ -53,9 +55,11 @@ Web doesn't call the API.
 2. The studio worker extracts the book and saves it as a draft with its chapter list.
 3. A `script` job has Claude write the narration, summary, takeaways and scenes.
 4. Staff review and edit the script in admin.
-5. A `render` job voices and renders the episode, uploads it, and saves it as a draft. A preview render stays on the machine and doesn't upload.
+5. A `render` job voices the episode in every narrator, renders one video per voice, uploads them, and saves the episode as a draft. A preview render stays on the machine and doesn't upload.
 6. Staff check the video and fix any text.
 7. Staff publish the episodes, then the book. It goes live on the app's next fetch, with no release or deploy.
+
+The app lets viewers choose the narrator and draws captions itself, so a new render has no captions in the picture. A `remaster` job re-renders an existing episode and swaps its media straight away, with no draft step. A `clip` job renders a vertical social clip on the staff machine, and nothing is uploaded. Rules and what isn't live yet: [Episode voices](contracts.md#episode-voices).
 
 ## Environments
 
@@ -85,7 +89,7 @@ Web doesn't call the API.
 | Google Cloud `mintsy-prod` | Cloud Run, Artifact Registry, Secret Manager, Cloud Storage, Vertex AI | GitHub Actions through Workload Identity, which trusts only `castroaillc/mintsy-web` on `main` |
 | MongoDB Atlas | Both databases | Backend: `MONGODB_URI` secret. Studio: `apps/studio/.env`. Admin: `apps/admin/.env.local`. |
 | Vercel `castro-ais-projects` | Website | Project `mintsy-web` |
-| Expo / EAS `castroai/mintsy` | Builds, TestFlight, push | `eas.json`, `app.config.ts` |
+| Expo / EAS `castroai/mintsy` | Builds, TestFlight, push, [Observe](services/mobile.md#observe) | `eas.json`, `app.config.ts`, `apps/mobile/src/app/_layout.tsx` |
 | App Store Connect, app `6827671481` | App and subscriptions | `eas.json` |
 | RevenueCat | Subscriptions | App: `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `_ANDROID_KEY`. Backend: `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTH`. |
 | Resend | Transactional email | Backend: `RESEND_API_KEY`, `EMAIL_FROM` |

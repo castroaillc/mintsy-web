@@ -31,6 +31,7 @@ Checks: `npx expo lint`, `npx tsc --noEmit`, `pnpm test` (`scripts/*.test.mjs`).
 | Support | `expo-mail-composer` (feedback email) and `expo-clipboard` (copy the support address) |
 | Notifications | `expo-notifications`: Expo push token registration + local daily reminders |
 | Purchases | `react-native-purchases` (RevenueCat) |
+| Performance and crash data | `expo-observe`, see [Observe](#observe) |
 
 ## Build variants
 
@@ -86,10 +87,11 @@ On a wide, landscape display (iPhone Duo open) the tabs move into a sidebar.
 | `CatalogProvider` (`lib/catalog.tsx`) | Books → episodes (transcript, takeaways, `videoUrl`, `thumbnailUrl`) from the `books` query; `getBook`, `findEpisode` | Fetched at launch, on sign-in, sign-out or account switch, and quietly when back in the foreground with a stale catalog |
 | `PremiumProvider` (`lib/premium.tsx`) | Premium state (`isPremium`, expiry, renewal, plan), `purchase`, `restore`, `refresh`; lock helpers `useIsLocked`, `useOpenEpisode`, `openPaywall` | RevenueCat customer info + backend `me.premium`; nothing stored locally |
 | `SavedProvider` (`lib/saved.tsx`) | My List: saved book and episode ids, `isSaved`, `toggle`, `setSaved`, `reload` | API (`me.savedBookIds` / `savedEpisodeIds`, `setSaved`); optimistic, rolled back with an alert on failure; empty while signed out |
-| `DownloadsProvider` (`lib/downloads.tsx`) | Offline episodes, active downloads, `download`, `remove`, `removeAll`, `getLocal` | Files on the device (`<documents>/downloads/`) plus `index.json`; never sent to the API |
+| `DownloadsProvider` (`lib/downloads.tsx`) | Offline episodes and their narrator, active downloads, `download`, `remove`, `removeAll`, `getLocal` | Files on the device (`<documents>/downloads/`) plus `index.json`; never sent to the API |
 | `ProgressProvider` (`lib/progress.tsx`) | Per-episode position and completion, seconds watched per day | API (`setProgress`, `continueWatching`, `progress`, `finishedBookIds`), sent about every 10 s while playing and at once on pause, seek, end, exit and backgrounding. Device cache and unsent saves in `users/<id>/`; seconds watched per day stay on the device |
 | `OnboardingProvider` (`lib/onboarding.tsx`) | Interests, daily goal, reminder time, completion, resume step | SecureStore, per user |
-| `lib/preferences.ts` | Autoplay, captions, Wi-Fi-only downloads, alerts, default speed | SecureStore, per device |
+| `lib/preferences.ts` | Autoplay, captions, Wi-Fi-only downloads, alerts, default speed, preferred narrator and the narrators seen | SecureStore, per device |
+| `useEpisodeVoices` (`hooks/use-episode-voices.ts`), `lib/voices.ts` | One episode's narrators from `episodeVoices`, position conversion, caption timing | Fetched when the player opens; not stored |
 | `ThemeModeProvider` | Light / dark / system | SecureStore |
 | `data/types.ts` | Catalog types and client constants; `FREE_EPISODES` and the categories come from `@mintsy/shared` | Code |
 
@@ -99,7 +101,7 @@ Derived views (stats, recommendations, series status) live in `lib/series.ts`, `
 
 - `EXPO_PUBLIC_API_URL` (default `http://localhost:4000`) is the API base for both auth and GraphQL. The iOS simulator reaches the host through localhost; the Android emulator needs `http://10.0.2.2:4000`, and a physical device needs your LAN IP.
 - Auth: `authClient` (`lib/auth-client.ts`) for sign-up/in/out, session, profile updates, `requestPasswordReset`, `resetPassword`, `changeEmail`, `changePassword` and `deleteUser`. Email links return through `RESET_PASSWORD_URL` / `EMAIL_CHANGED_URL` (`lib/deep-links.ts`, built with `Linking.createURL`, so `mintsy://…`, `mintsy-preview://…` or `mintsy-dev://…` per build).
-- GraphQL operations: `books` and `book(id)`, `me { premium { ... } }` and `refreshPremium`, `me { savedBookIds savedEpisodeIds }` and `setSaved`, `setProgress` and the progress fields on `me`, `registerPushToken`, `unregisterPushToken`, `sendTestPush`. The catalog query retries without `locked` and `coverUrl` for older backends (`lib/catalog-query.ts`).
+- GraphQL operations: `books` and `book(id)`, `me { premium { ... } }` and `refreshPremium`, `me { savedBookIds savedEpisodeIds }` and `setSaved`, `setProgress` and the progress fields on `me`, `registerPushToken`, `unregisterPushToken`, `sendTestPush`, and `episodeVoices` on its own, so an API without it fails only that request. The catalog query retries without `locked` and `coverUrl` for older backends (`lib/catalog-query.ts`).
 - `EXPO_PUBLIC_HLS_ENABLED`: stream over HLS when the API offers `Episode.hlsUrl`. On only when exactly `true`, and never on web. Don't enable it for a build pointing at an API without `hlsUrl`: the catalog request fails and the app loses every book.
 - RevenueCat public SDK keys: `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`, and `EXPO_PUBLIC_REVENUECAT_IOS_KEY_PREVIEW`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY_PREVIEW` for the preview variant, which never uses the others. Without the key for a platform, purchases are off there and the paywall shows its retry state.
 - Google sign-in: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID(_DEV|_PREVIEW)`, `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME(_DEV|_PREVIEW)`. Leave a variant's variables empty to hide the Google button in that build.
@@ -108,7 +110,7 @@ All of these are in `.env.example`.
 
 ## Player
 
-`app/(app)/player/[episodeId].tsx` renders a 16:9 panel with custom overlay controls (±10 s, play/pause, scrubber, captions, fullscreen), episode info, previous / speed / save / next, and Transcript and Key takeaways tabs. It unlocks rotation, and it has wide layouts for the iPhone Duo.
+`app/(app)/player/[episodeId].tsx` renders a 16:9 panel with custom overlay controls (±10 s, play/pause, scrubber, captions, fullscreen), episode info, previous / speed / narrator / save / next, and Transcript and Key takeaways tabs. It unlocks rotation, and it has wide layouts for the iPhone Duo.
 
 | Pose | Window | Layout |
 |---|---|---|
@@ -119,8 +121,24 @@ All of these are in `.env.example`.
 | Folded, regular iPhones | compact | Phone layout; on its side the video fills the screen |
 
 - Episodes with a video use `useVideoClock`, which wraps an `expo-video` player and exposes the same interface as the simulated `usePlaybackClock` (used for episodes without one), so the rest of the screen is identical for both. A stream with a fallback that stalls in `loading` for 15 s falls back to the MP4 (`lib/stream-source.ts`, `hooks/use-video-clock.ts`).
-- The transcript highlights the active line, auto-scrolls ("following along"), offers "Back to current" after manual scrolling, and seeks on tap. Captions are drawn from the same transcript lines.
+- The transcript highlights the active line, auto-scrolls ("following along"), offers "Back to current" after manual scrolling, and seeks on tap. It follows the selected voice's timeline.
 - Position is tracked every whole second; finishing marks the episode complete and auto-advances if the preference is on. At the end of the last free episode it upsells instead of advancing into a locked one.
+
+### Narrators and captions
+
+`lib/voices.ts`, `hooks/use-episode-voices.ts`. The shape and rules are in [Episode voices](../contracts.md#episode-voices).
+
+::: info Not live yet
+As of 2026-11-03 no production episode has `voices`, so the app plays every episode the older way described under **Episodes with no voices**.
+:::
+
+- **Voice picker:** the player shows a narrator button when an episode has more than one voice that can be played. Choosing one switches the source, landing at the start of the sentence being spoken, and saves the choice as the preferred narrator.
+- **Preference:** `defaultVoiceId` stays on the device and isn't synced. Settings › Default narrator appears once the device has seen more than one narrator, since the API has no list of them. Episodes that don't offer the preferred narrator play their default.
+- **Starting:** with no preference, playback starts at once on the catalog's source, which is the default voice. With one, it waits up to 1.5 s for `episodeVoices`, then starts on the catalog's source. A later answer adds the picker and captions without changing the voice being heard. Failed, slow or empty answers leave the player as it is for an episode with no voices.
+- **Timed captions:** the captions button shows the selected voice's `captions` one phrase at a time along the bottom, clear of the controls, from 0.12 s before the phrase until up to 0.8 s after it (`activeCaption`). They're off unless Settings › Captions on by default is set.
+- **Position conversion:** everything on screen uses the selected voice's timeline, and saved progress always uses [the default voice's](../contracts.md#my-list-and-watch-progress). `convertPosition` matches transcript lines by index and interpolates within a line, falling back to the proportion of the duration if the lines don't match.
+- **Expired URLs:** if a source fails with no fallback left, the player refetches URLs, at most once a minute. If a non-default narrator still can't play, it carries on with the default one.
+- **Episodes with no voices** play as they always did: captions in the picture where the video has them, and the captions button shows the transcript overlay along the top. `BURNED_CAPTION_SHARE` in the player lifts the controls above burned captions on the open iPhone Duo, and applies only to these episodes. Remove it after the backfill has re-rendered them all.
 
 ## Wide layouts
 
@@ -196,11 +214,39 @@ Steve does these steps. This repo doesn't record which are done, so check the co
 
 - **My List** is stored by the API, so it follows the account across devices. Save buttons on the series page and in the player toggle it optimistically.
 - **Downloads** are Premium only (free users get the paywall) and stay on the device: `<documents>/downloads/<episodeId>/video.mp4` + `thumb.jpg`, with the book, episode, transcript and takeaways in `downloads/index.json` (paths stored relative, because iOS moves the app's container between updates). The folder is durable (Documents, not Caches) but kept out of backups. On iOS, the local Expo module `modules/backup-exclusion` (Swift, `excludeFromBackup(uri)`) sets `NSURLIsExcludedFromBackupKey` on `downloads/` and on each episode folder, and re-applies it at launch to downloads made before the module existed. It's optional (`requireOptionalNativeModule`), so builds without it skip the exclusion. On Android, downloads are already outside Auto Backup, because the `expo-secure-store` plugin's backup rules include only shared preferences. Right before a download the app refetches the book with `book(id)`, so the video URL (signed for ~1 hour once signed media is on) is fresh. It respects the Wi-Fi-only preference. The index records the owning user: another account signing in starts empty, and sign-out and account deletion delete every download. After Premium lapses the files stay but won't play until it's renewed or they're deleted. The player plays the local copy when one exists. HLS is never downloaded.
+- **Downloaded narrators:** a download saves the viewer's preferred narrator as an MP4, or the default if the episode doesn't offer it or `episodeVoices` fails. Its record gains an optional `voice` with the narrator's transcript, captions and the default voice's timeline, which converts offline progress. No URLs are stored. There's no migration: older records have no `voice` and play as they always did, and `index.json` stays version 1, because any other version reads as empty.
 
 ## Notifications
 
 - **Push:** once permission is granted, the `(app)` layout registers the Expo push token via GraphQL; sign-out unregisters it.
 - **Local:** `lib/reminders.ts` schedules one daily "Your next episode is ready" reminder at the onboarding-chosen time.
+
+## Observe
+
+`expo-observe` sends performance data and native crash reports to Expo, for the Observe tab of the EAS dashboard. It's set up in `src/app/_layout.tsx`:
+
+```ts
+Observe.configure({ networkTraces: false, errorHandlingEnabled: false, dispatchInDebug: false });
+export default ObserveRoot.wrap(RootLayout);
+```
+
+::: info Not live yet
+As of 2026-11-03 no build has it: it needs a [store build](#build-and-release). The privacy policy hasn't been changed, and the text is pending the owner's approval.
+:::
+
+| | State | Detail |
+|---|---|---|
+| Launch, bundle load and render metrics | On | Automatic |
+| Time to interactive | On | `markInteractive` runs once a real screen is up, not on the "Couldn't load mintsy" screen |
+| Native crash reports | **On** | The SDK records them through MetricKit on iOS, and a JVM crash handler plus OS exit records on Android. The config has no setting for them. `dispatchingEnabled: false` would stop them, but it stops everything else too |
+| Unhandled JS errors | Off (`errorHandlingEnabled: false`) | The handler installs when the package is imported, so an error thrown before `configure` runs is still recorded |
+| Errors reported by hand | Not used | The app doesn't call `reportError` or use `ObserveErrorBoundary`, which `errorHandlingEnabled` wouldn't turn off |
+| Network traces | Off (`networkTraces: false`) | |
+| Debug builds | Not sent (`dispatchInDebug: false`) | |
+| Routes, URLs and params | Off | The Expo Router integration isn't enabled |
+| User ids, custom events and attributes | Not sent | The app attaches none |
+
+On iOS, events carry the device model, OS name and version, language, app id, version and build, update id, channel and runtime version, SDK versions, the session id and the EAS client id (`ios/OpenTelemetry.swift` in `expo-observe`). The package's privacy manifest declares crash data, performance data, other diagnostic data, a device ID and product interaction.
 
 ## Design source
 
@@ -213,7 +259,7 @@ npx eas-cli@latest build -p ios --profile production
 APP_VARIANT=production npx eas-cli@latest submit -p ios --profile production --id <build-id>
 ```
 
-Native modules (`expo-video`, `expo-notifications`, `expo-secure-store`, `react-native-purchases`, `expo-mail-composer`, `expo-clipboard`, and the local module `modules/backup-exclusion`) require a new build. JS-only changes can ship over the air with `eas update` to the matching channel; `runtimeVersion` uses the `fingerprint` policy, so an update only reaches builds it can run on.
+Native modules (`expo-video`, `expo-notifications`, `expo-secure-store`, `react-native-purchases`, `expo-mail-composer`, `expo-clipboard`, `expo-observe`, and the local module `modules/backup-exclusion`) require a new build. JS-only changes can ship over the air with `eas update` to the matching channel; `runtimeVersion` uses the `fingerprint` policy, so an update only reaches builds it can run on.
 
 `eas update` doesn't read `eas.json`'s `env`, and without `APP_VARIANT` it resolves the development config and lands on a runtime no preview or production build has. Publish through the wrapper, which sets the variant, channel and environment together:
 
@@ -223,6 +269,12 @@ pnpm run update:production "What changed"
 ```
 
 With `--environment`, `eas update` uses only that EAS environment's variables and ignores `.env`, so every `EXPO_PUBLIC_*` the variant needs has to exist there. After publishing, compare the printed runtime with the build's.
+
+`pnpm run build:dev`, `build:preview` and `build:prod` start a real iOS EAS build for that profile, with `APP_VARIANT` set. Because `package.json` scripts are a fingerprint input, these scripts ship only with a native build, never in an update.
+
+**Voices and Observe ship differently.** Narrators and captions are JS-only. Observe needs a store build, because it adds native code and changes the fingerprint. While both are in the same tree, an update published from it has the new runtime, so it won't reach existing store builds.
+
+**Adding a package:** `npx expo install` fails in this workspace. Use `pnpm add --workspace-root <pkg>@<version>` with the version expo resolves, as `expo-observe@~58.0.18` was added. A version too new for `minimumReleaseAge` also needs an entry in `pnpm-workspace.yaml`.
 
 ## Known gaps
 

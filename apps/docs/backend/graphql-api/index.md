@@ -12,7 +12,7 @@ The schema is a contract with the shipped iPhone app. Builds people already have
 ## Reference
 
 * [Types](types.md): every object type and enum, field by field
-* [Queries](queries.md): `health`, `me`, `books`, `book`, `search`
+* [Queries](queries.md): `health`, `me`, `books`, `book`, `search`, `episodeVoices`
 * [Mutations](mutations.md): push tokens, Premium, My List, watch progress
 * [Full SDL](full-sdl.md): the complete schema as printed from the source
 

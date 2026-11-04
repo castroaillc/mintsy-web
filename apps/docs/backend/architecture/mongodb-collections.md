@@ -77,10 +77,13 @@ interface EpisodeDoc {
   videoPath?: string;      // object path in the media bucket
   hlsPath?: string;        // HLS master playlist, relative to the media bucket
   thumbnailPath?: string;
+  voices?: EpisodeVoiceDoc[]; // one render per narrator, left out of catalog reads
   status?: ContentStatus;
   updatedAt?: Date;
 }
 ```
+
+`EpisodeVoiceDoc` and its rules: [Episode voices](../../contracts.md#episode-voices).
 
 Index: `{ order: 1 }`, created by studio, not by the backend. Without it the listing still works but sorts in memory. See [Catalog model](../catalog/) for publishing rules.
 

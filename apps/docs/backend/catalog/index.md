@@ -9,8 +9,9 @@ Document shapes: [MongoDB collections > books](../architecture/mongodb-collectio
 | Writer                      | Writes                                                                                                                                    |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Studio worker, `ingest` job | Inserts the book with `status: "draft"` and `episodes: []`, only if its `_id` doesn't exist yet.                                          |
-| Studio worker, `render` job | Upserts one episode by `number` with `status: "draft"`, after uploading the MP4 and JPG. A re-render always returns the episode to draft. |
-| Admin dashboard             | Edits book metadata and episode text, sets `status`.                                                                 |
+| Studio worker, `render` and `upload` jobs | Upserts one episode by `number` with `status: "draft"`, after uploading the media. A re-render returns the episode to draft. |
+| Studio worker, `remaster` job | Swaps an existing episode's media, `durationSec`, `transcript` and `voices` in one write. Keeps its status, so a live episode changes at once. |
+| Admin dashboard             | Edits book metadata and episode text, sets `status`. A transcript edit also goes to the default voice's copy. |
 | `pnpm seed:catalog`         | Inserts books from `catalog.json` that don't exist yet. Never overwrites.                                                                 |
 | This API                    | Reads only. Never writes `books` or creates indexes in the catalog database (`MONGODB_CATALOG_DB`).                                       |
 
@@ -28,7 +29,7 @@ The app indexes `episodes[number - 1]`, which is why the run must start at 1 wit
 
 Example: episodes 1, 2 published, 3 draft, 4 published → the API returns 1 and 2. Episode 4 appears once 3 is published.
 
-Because of this rule, the admin dashboard only publishes episode n when 1..n-1 are published, and only unpublishes the highest published episode. And a studio re-render of a live episode (back to draft) hides that episode **and every later one** until it's published again.
+Because of this rule, the admin dashboard only publishes episode n when 1..n-1 are published, and only unpublishes the highest published episode. And a studio `render` or `upload` of a live episode (back to draft) hides that episode **and every later one** until it's published again. A `remaster` doesn't.
 
 ## Ordering and fields
 
@@ -37,6 +38,7 @@ Because of this rule, the admin dashboard only publishes episode n when 1..n-1 a
 * `coverTone`, `tint`: colours for the book's cover and accents.
 * `keyIdeas`: optional curated "book in 5 ideas". Curated ideas are trimmed, deduplicated and cut to the first 5, and everyone sees them, like the description. When missing or empty, `Book.keyIdeas` is derived: the first takeaway of each episode the viewer can unlock, in order, deduplicated, first 5. So free viewers get at most 3, and locked takeaways never leak. Studio (generate) and admin (edit) are the intended writers, but neither writes it yet.
 * `videoPath`, `hlsPath` (optional), `thumbnailPath`: object paths in `gs://mintsy-media`. See [Media and signed URLs](../features/media.md).
+* `voices` (optional): one full render per narrator, left out of every catalog read and served only by `episodeVoices`. Shape and rules: [Episode voices](../../contracts.md#episode-voices).
 
 ## Ids
 
@@ -45,4 +47,4 @@ Because of this rule, the admin dashboard only publishes episode n when 1..n-1 a
 
 ## Other places that read `books`
 
-`publicBook()` is also used by `search` (published books only, locked episodes skipped), by watch progress (`setProgress` only accepts published episodes; `continueWatching` and `finishedBookIds` only count published ones), and `setSaved` checks ids against **all** books, drafts included.
+`publicBook()` strips `voices`, and `getPublishedEpisodeVoices()` applies the same run of published episodes. `publicBook()` is also used by `search` (published books only, locked episodes skipped), by watch progress (`setProgress` only accepts published episodes; `continueWatching` and `finishedBookIds` only count published ones), and `setSaved` checks ids against **all** books, drafts included.

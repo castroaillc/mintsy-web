@@ -7,6 +7,7 @@
 | `books`  | none             | `[Book!]!`      | public           |
 | `book`   | `id: ID!`        | `Book`          | public           |
 | `search` | `query: String!` | `SearchResult!` | public           |
+| `episodeVoices` | `episodeId: ID!` | `[EpisodeVoice!]!` | public |
 
 ## health
 
@@ -141,4 +142,29 @@ Highlight the match with `snippet.slice(matchStart, matchStart + matchLength)`.
 
 ::: info
 Search scans every published book on each request. That's fine for the current catalog; once it grows, the plan in `src/search.ts` is a MongoDB text index or Atlas Search on title, author, category and `episodes.transcript.text`.
+:::
+
+## episodeVoices
+
+The narrator choices for one episode, with their videos and timed text. It works signed out. It's separate from the catalog because timed text for every voice would bloat `books`, see [Episode voices](../../contracts.md#episode-voices).
+
+Returns `[]` when the episode is locked for the viewer, isn't in the public catalog, doesn't exist, or has no voices. These look the same: play `Episode.videoUrl` / `hlsUrl` instead.
+
+```graphql
+query EpisodeVoices($episodeId: ID!) {
+  episodeVoices(episodeId: $episodeId) {
+    id
+    name
+    isDefault
+    videoUrl
+    hlsUrl
+    durationSec
+    transcript { startSec text }
+    captions { startSec endSec text }
+  }
+}
+```
+
+::: info Not live yet
+As of 2026-11-03 this query isn't deployed. An API without it fails the request with a validation error, so send it on its own rather than alongside the catalog query.
 :::
