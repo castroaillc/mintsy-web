@@ -14,6 +14,29 @@ export interface TranscriptLine {
 /** Missing means "published" (docs that predate drafts). */
 export type ContentStatus = "draft" | "published";
 
+/** One timed caption phrase, on its voice's own timeline. Seconds may be fractional. */
+export interface CaptionPhrase {
+  startSec: number;
+  endSec: number;
+  text: string;
+}
+
+/** One full render of an episode by a single narrator. */
+export interface EpisodeVoiceDoc {
+  /** Voice id, e.g. "af_heart". */
+  id: string;
+  name: string;
+  isDefault: boolean;
+  /** Object path in the media bucket. */
+  videoPath: string;
+  /** HLS master playlist in the media bucket, like `EpisodeDoc.hlsPath`. */
+  hlsPath?: string;
+  /** Whole seconds. */
+  durationSec: number;
+  transcript: TranscriptLine[];
+  captions: CaptionPhrase[];
+}
+
 /** One episode embedded in a `books` document (database `mintsy_studio`). */
 export interface EpisodeDoc {
   number: number;
@@ -27,6 +50,8 @@ export interface EpisodeDoc {
   /** HLS master playlist, `books/<bookId>/<chapter>-<hash>/master.m3u8`. */
   hlsPath?: string;
   thumbnailPath?: string;
+  /** One full render per narrator. Missing on episodes without voices. */
+  voices?: EpisodeVoiceDoc[];
   status?: ContentStatus;
   updatedAt?: Date;
 }
