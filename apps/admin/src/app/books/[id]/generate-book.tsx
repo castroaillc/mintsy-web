@@ -236,8 +236,8 @@ function PlanDetails({ plan, unselected, onChange }: { plan: Plan; unselected: S
           )}
         </li>
         <li>
-          <span className="font-medium">{plural(summary.renders, "chapter")} will render a preview</span>: local narration and rendering with no per-use cost, a few
-          minutes each on this machine.
+          <span className="font-medium">{plural(summary.renders, "chapter")} will render a preview</span>: local narration and rendering with no per-use cost. Each one
+          renders a video per voice on this machine, about three times as long as a single video.
         </li>
         <li>
           <span className="font-medium">{plural(skippedChapters.length, "chapter")} skipped</span>

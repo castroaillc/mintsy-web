@@ -26,6 +26,8 @@ export default async function EpisodePage({ params }: PageProps<"/books/[id]/epi
 
   const status = effectiveStatus(ep.status);
   const rule = status === "published" ? canUnpublishEpisode(book.episodes, n) : canPublishEpisode(book.episodes, n);
+  const voices = ep.voices ?? [];
+  const defaultVoice = voices.find((v) => v.isDefault);
   const video = mediaUrl(ep.videoPath);
   const thumb = mediaUrl(ep.thumbnailPath);
   const numbers = book.episodes.map((e) => e.number).sort((a, b) => a - b);
@@ -67,11 +69,13 @@ export default async function EpisodePage({ params }: PageProps<"/books/[id]/epi
         bookId={id}
         number={n}
         durationSec={ep.durationSec}
+        baseUpdatedAt={ep.updatedAt?.toISOString() ?? null}
         status={status}
         rule={rule}
         videoUrl={video}
         thumbnailUrl={thumb}
         videoPath={ep.videoPath ?? null}
+        voices={voices.length ? { count: voices.length, defaultName: defaultVoice?.name ?? null, lineCount: defaultVoice?.transcript.length ?? (ep.transcript ?? []).length } : null}
         initial={{
           title: ep.title ?? "",
           summary: ep.summary ?? "",

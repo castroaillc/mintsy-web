@@ -18,7 +18,9 @@ import { jobSteps, type JobStep, type StepState } from "@/lib/job-steps";
 import type { JobView } from "@/lib/types";
 import type { LocalPreview as Preview } from "@/lib/studio-work";
 import { cn } from "@/lib/utils";
+import { ClipPanel } from "./clip-panel";
 import { LocalPreview } from "./local-preview";
+import { RemasterPanel } from "./remaster-panel";
 
 type ScriptPreview = { finishedAt: string; script: unknown; scenes: unknown } | null;
 
@@ -29,6 +31,7 @@ export function ChapterView({
   initialNow,
   script,
   preview,
+  episodeUpdatedAt,
 }: {
   bookId: string;
   chapter: ChapterRow;
@@ -36,9 +39,12 @@ export function ChapterView({
   initialNow: string;
   script: ScriptPreview;
   preview: Preview;
+  episodeUpdatedAt: string | null;
 }) {
   const router = useRouter();
   const [queueing, setQueueing] = useState(false);
+  // Kept on the page: a refusal can name several values, too much for a toast.
+  const [publishError, setPublishError] = useState<string | null>(null);
   // Polls the whole book's jobs; this page only shows this chapter's.
   const { jobs: allJobs, now, workers, db } = useJobs(initialJobs, {
     bookId,
@@ -50,8 +56,8 @@ export function ChapterView({
   const latest = jobs.findLast((j) => j.status === "queued" || j.status === "running") ?? jobs[0] ?? null;
   const active = latest?.status === "queued" || latest?.status === "running";
 
-  // The local render was uploaded if an upload (or full render) finished after it was written
-  const lastUpload = jobs.find((j) => j.status === "succeeded" && (j.kind === "upload" || (j.kind === "render" && !j.preview)));
+  // The local render was uploaded if an upload, remaster or full render finished after it was written. A clip uploads nothing.
+  const lastUpload = jobs.find((j) => j.status === "succeeded" && (j.kind === "upload" || j.kind === "remaster" || (j.kind === "render" && !j.preview)));
   const uploaded =
     !!preview.video && !!lastUpload?.finishedAt && Date.parse(lastUpload.finishedAt) >= Date.parse(preview.video.renderedAt) - 1000;
 
@@ -76,10 +82,11 @@ export function ChapterView({
 
   async function publish() {
     if (!confirm(`Publish episode ${chapter.number}? It shows in the mobile and web apps right away (if the book is published).`)) return;
+    setPublishError(null);
     setQueueing(true);
     const res = await callApi(`/api/books/${bookId}/episodes/${chapter.number}/status`, { method: "POST", body: { status: "published" } });
     setQueueing(false);
-    if (!res.ok) return void toast.error(res.error);
+    if (!res.ok) return void setPublishError(res.error);
     toast.success(`Episode ${chapter.number} published`);
     router.refresh();
   }
@@ -147,6 +154,12 @@ export function ChapterView({
 
       <WorkerBanner jobs={allJobs} now={now} workers={workers} db={db} />
 
+      {publishError && (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm break-words text-destructive" role="alert">
+          {publishError}
+        </p>
+      )}
+
       {chapter.error?.startsWith("Script failed") && (
         <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{chapter.error}</p>
       )}
@@ -162,6 +175,28 @@ export function ChapterView({
       )}
 
       <LocalPreview bookId={bookId} chapter={chapter.number} preview={preview} />
+
+      <ClipPanel
+        base={`/api/books/${bookId}/chapters/${chapter.number}/preview`}
+        bookId={bookId}
+        chapter={chapter.number}
+        voices={preview.voices}
+        clips={preview.verticalClips}
+        jobs={jobs}
+        busy={active || queueing}
+        queue={queue}
+      />
+
+      {chapter.episodeStatus && (
+        <RemasterPanel
+          chapter={chapter.number}
+          episodeStatus={chapter.episodeStatus}
+          episodeUpdatedAt={episodeUpdatedAt}
+          jobs={jobs}
+          busy={active || queueing}
+          queue={queue}
+        />
+      )}
 
       {script && <ScriptCard bookId={bookId} chapter={chapter.number} preview={script} />}
 
@@ -204,10 +239,21 @@ function JobProgress({ job, now }: { job: JobView; now: number }) {
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>
-            {job.kind === "script" ? "Script generation" : job.kind === "upload" ? "Upload" : job.preview ? "Preview render" : "Render"}
+            {job.kind === "script"
+              ? "Script generation"
+              : job.kind === "upload"
+                ? "Upload"
+                : job.kind === "remaster"
+                  ? "Remaster"
+                  : job.kind === "clip"
+                    ? "Vertical clip"
+                    : job.preview
+                      ? "Preview render"
+                      : "Render"}
           </CardTitle>
           <StatusBadge status={job.status} />
           {job.regenerate && <span className="text-xs text-muted-foreground">regenerate</span>}
+          {job.overwriteTranscript && <span className="text-xs text-destructive">overwrites transcript edits</span>}
         </div>
         <CardDescription>
           {job.status === "queued" && `Waiting for the studio worker · ${formatDuration(waiting ?? 0)}`}

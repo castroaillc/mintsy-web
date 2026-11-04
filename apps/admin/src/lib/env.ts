@@ -5,13 +5,14 @@ function trimSlash(s: string) {
   return s.replace(/\/+$/, "");
 }
 
+/** Uses ||: .env.example ships keys with no value, which Next loads as "", and empty means unset, as in scripts/dev-studio.mjs. */
 export const env = {
-  mongodbUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017",
+  mongodbUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
   mongodbDb: process.env.MONGODB_DB || "mintsy_studio",
-  mediaBaseUrl: trimSlash(process.env.MEDIA_BASE_URL ?? "https://storage.googleapis.com/mintsy-media"),
+  mediaBaseUrl: trimSlash(process.env.MEDIA_BASE_URL || "https://storage.googleapis.com/mintsy-media"),
   /** apps/studio/work on this machine, for previewing renders before they're uploaded. */
   studioWorkDir: path.resolve(
-    /* turbopackIgnore: true */ process.env.STUDIO_WORK_DIR ?? path.join(process.cwd(), "../studio/work"),
+    /* turbopackIgnore: true */ process.env.STUDIO_WORK_DIR || path.join(process.cwd(), "../studio/work"),
   ),
-  uploadDir: path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads")),
+  uploadDir: path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")),
 };

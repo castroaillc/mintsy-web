@@ -1,11 +1,11 @@
 /** Studio job shapes, matching apps/studio/pipeline/jobs.ts. Catalog shapes come from @mintsy/shared. */
 import type { ObjectId } from "mongodb";
 
-export type { BookDoc, ContentStatus, EpisodeDoc, TranscriptLine } from "@mintsy/shared";
+export type { BookDoc, CaptionPhrase, ContentStatus, EpisodeDoc, EpisodeVoiceDoc, TranscriptLine } from "@mintsy/shared";
 
 // ─── Studio jobs (`studio_jobs`) ──────────────────────────────────
 
-export type JobKind = "ingest" | "script" | "render" | "upload" | "cover";
+export type JobKind = "ingest" | "script" | "render" | "upload" | "cover" | "remaster" | "clip";
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";
 
 export interface IngestResult {
@@ -24,6 +24,33 @@ export interface RenderResult {
   durationSec: number;
   videoPath: string;
   thumbnailPath: string;
+  /** Bucket path of the HLS master playlist. */
+  hlsPath?: string;
+}
+
+/** remaster: the same paths, plus what changed. */
+export interface RemasterResult extends RenderResult {
+  hlsPath: string;
+  /** Voice ids now on the episode, default first. */
+  voices: string[];
+  /** Transcript lines whose text in `books` differed and were overwritten. Above 0 only with overwriteTranscript. */
+  transcriptLinesChanged: number;
+}
+
+/** clip: local only. Paths are relative to the episode folder. */
+export interface ClipJobResult {
+  videoPath: string;
+  thumbnailPath: string;
+  /** Voice id, or "voice" for an episode voiced before Kokoro. */
+  voice: string;
+  startScene: number;
+  endScene: number;
+  /** The finished clip, end card included. */
+  durationSec: number;
+  width: number;
+  height: number;
+  /** Whether the app showed this episode when the clip was rendered. */
+  episodePublished: boolean;
 }
 
 /** render with preview: true (rendered in apps/studio/work only). */
@@ -42,7 +69,7 @@ export interface StudioJob {
   kind: JobKind;
   /** Book id = catalog _id = studio work/<bookId>. */
   bookId: string;
-  /** script, render */
+  /** script, render, upload, remaster, clip */
   chapter?: number;
   /** ingest: absolute path to the PDF on this machine */
   pdfPath?: string;
@@ -52,6 +79,14 @@ export interface StudioJob {
   preview?: boolean;
   /** cover: also upload it and set the book's coverPath */
   upload?: boolean;
+  /** remaster: replace transcript text that differs in `books`. Off by default: the job refuses. */
+  overwriteTranscript?: boolean;
+  /** clip: voice id such as "af_heart". Defaults to the episode's default voice. */
+  voice?: string;
+  /** clip: first scene, 1-based. Defaults to 1. */
+  startScene?: number;
+  /** clip: last scene, inclusive. Defaults to the fewest scenes reaching the minimum length, up to the maximum. */
+  endScene?: number;
   /** render: edited script.json to write before voicing (optional) */
   scriptJson?: unknown;
   /** render: edited scenes.json to write before voicing (optional) */
@@ -59,7 +94,7 @@ export interface StudioJob {
   status: JobStatus;
   /** Worker appends progress lines (keeps the last 500). */
   log: string[];
-  result?: IngestResult | ScriptResult | RenderResult | PreviewResult | CoverResult;
+  result?: IngestResult | ScriptResult | RenderResult | RemasterResult | PreviewResult | CoverResult | ClipJobResult;
   error?: string;
   createdAt: Date;
   startedAt?: Date;

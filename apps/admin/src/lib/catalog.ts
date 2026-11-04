@@ -117,7 +117,9 @@ export async function getBookPageData(id: string) {
     .sort((a, b) => a[0] - b[0])
     .map(([number, title]) => {
       const chapterJobs = jobs.filter((j) => j.chapter === number && j.kind !== "ingest");
-      const latest = chapterJobs[0];
+      // A clip is local and leaves the episode alone, so it says nothing about the chapter's state.
+      const pipelineJobs = chapterJobs.filter((j) => j.kind !== "clip");
+      const latest = pipelineJobs[0];
       const ep = episodes.find((e) => e.number === number);
       const episodeStatus = ep ? effectiveStatus(ep.status) : null;
       // A whole-book run queues a script and then a render, so the job at work is the oldest active one.
@@ -136,7 +138,7 @@ export async function getBookPageData(id: string) {
         episodeStatus,
         hasScript: chapterJobs.some((j) => j.kind === "script" && j.status === "succeeded"),
         active,
-        error: describeChapterFailure(chapterJobs),
+        error: describeChapterFailure(pipelineJobs),
         latestJobKind: latest?.kind ?? null,
       };
     });

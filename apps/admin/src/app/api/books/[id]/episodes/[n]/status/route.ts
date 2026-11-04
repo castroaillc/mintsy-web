@@ -7,6 +7,7 @@ import { canPublishEpisode, canUnpublishEpisode } from "@/lib/status";
 /**
  * Publish / unpublish one episode. Enforces the contiguous-run rule:
  * publish n only when 1..n-1 are published; unpublish only the highest published.
+ * Publishing is also refused if the API couldn't serve the run it would expose. Unpublishing never is.
  */
 export async function POST(req: Request, ctx: RouteContext<"/api/books/[id]/episodes/[n]/status">) {
   const refused = rejectCrossOrigin(req);

@@ -1,8 +1,7 @@
 import "server-only";
-import { stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { env } from "./env";
-import { readFile } from "node:fs/promises";
 
 /**
  * Read-only access to the studio worker's output folder (apps/studio/work/<book>/ep-NN), so the
@@ -15,11 +14,17 @@ export function episodeDir(bookId: string, chapter: number) {
 }
 
 /** Files the preview route may serve, relative to the episode folder. */
-const SERVABLE = /^(episode\.mp4|thumbnail\.jpg|audio\/(kokoro-[a-z]{2}_[a-z0-9]+\/)?\d{2}\.mp3)$/;
+const SERVABLE =
+  /^(episode\.mp4|thumbnail\.jpg|renders\/kokoro-[a-z]{2}_[a-z0-9]+\/episode\.mp4|clips\/(?:[a-z]{2}_[a-z0-9]+|voice)-s\d{2}-s\d{2}\.(?:mp4|jpg)|audio\/(kokoro-[a-z]{2}_[a-z0-9]+\/)?\d{2}\.mp3)$/;
+
+/** clips/<voice>-sNN-sNN.mp4. Skips the worker's temporary <name>.render.mp4. */
+const CLIP_FILE = /^((?:[a-z]{2}_[a-z0-9]+|voice))-s(\d{2})-s(\d{2})\.mp4$/;
 
 export function previewFilePath(bookId: string, chapter: number, rel: string) {
   return SERVABLE.test(rel) ? path.join(episodeDir(bookId, chapter), rel) : null;
 }
+
+export type PreviewVideo = { version: number; sizeMb: number; renderedAt: string };
 
 export type PreviewVoice = {
   id: string;
@@ -27,14 +32,69 @@ export type PreviewVoice = {
   provider: string;
   durationSec: number;
   isDefault: boolean;
+  /** Path of this voice's render inside the episode folder, and its file. Null until it's rendered. */
+  videoPath: string | null;
+  video: PreviewVideo | null;
   clips: { audio: string; audioSec: number }[];
+  /** audioSec of every scene in order, for clip lengths. `clips` above leaves out files it can't serve. */
+  sceneAudioSec: number[];
+};
+
+export type VerticalClip = {
+  name: string;
+  videoPath: string;
+  thumbnailPath: string | null;
+  voice: string;
+  startScene: number;
+  endScene: number;
+  version: number;
+  sizeMb: number;
+  renderedAt: string;
 };
 
 export type LocalPreview = {
-  video: { version: number; sizeMb: number; renderedAt: string } | null;
+  video: PreviewVideo | null;
   thumbnail: boolean;
   voices: PreviewVoice[];
+  /** Rendered 9:16 clips, in name order. */
+  verticalClips: VerticalClip[];
 };
+
+function toPreviewVideo(s: { mtimeMs: number; size: number; mtime: Date }): PreviewVideo {
+  return { version: Math.round(s.mtimeMs), sizeMb: Math.round((s.size / 1024 / 1024) * 10) / 10, renderedAt: s.mtime.toISOString() };
+}
+
+/** The default voice stays at the top of the episode folder; the others are in renders/<track id>/. */
+async function voiceVideo(bookId: string, chapter: number, trackId: string, isDefault: boolean) {
+  const videoPath = isDefault ? "episode.mp4" : `renders/${trackId}/episode.mp4`;
+  const file = previewFilePath(bookId, chapter, videoPath);
+  const s = file ? await statOrNull(file) : null;
+  return s ? { videoPath, video: toPreviewVideo(s) } : { videoPath: null, video: null };
+}
+
+async function listVerticalClips(bookId: string, chapter: number): Promise<VerticalClip[]> {
+  const dir = path.join(episodeDir(bookId, chapter), "clips");
+  const names = await readdir(dir).catch(() => [] as string[]);
+  const clips = await Promise.all(
+    names.sort().map(async (file): Promise<VerticalClip | null> => {
+      const m = file.match(CLIP_FILE);
+      const s = m ? await statOrNull(path.join(dir, file)) : null;
+      if (!m || !s) return null;
+      const name = file.slice(0, -".mp4".length);
+      const thumb = await statOrNull(path.join(dir, `${name}.jpg`));
+      return {
+        name,
+        videoPath: `clips/${file}`,
+        thumbnailPath: thumb ? `clips/${name}.jpg` : null,
+        voice: m[1],
+        startScene: Number(m[2]),
+        endScene: Number(m[3]),
+        ...toPreviewVideo(s),
+      };
+    }),
+  );
+  return clips.filter((c) => c !== null);
+}
 
 async function statOrNull(p: string) {
   try {
@@ -84,13 +144,16 @@ export async function getLocalPreview(bookId: string, chapter: number): Promise<
       if (!/^voices\/[\w-]+\.json$/.test(v.file)) continue;
       const track = await readJson<VoiceFile>(path.join(dir, v.file));
       if (!track) continue;
+      const isDefault = v.id === index.default;
       voices.push({
         id: v.id,
         voice: v.voice,
         provider: v.provider,
         durationSec: v.durationSec,
-        isDefault: v.id === index.default,
+        isDefault,
+        ...(await voiceVideo(bookId, chapter, v.id, isDefault)),
         clips: track.scenes.map((s) => ({ audio: s.audio, audioSec: s.audioSec })),
+        sceneAudioSec: track.scenes.map((s) => s.audioSec),
       });
     }
   } else {
@@ -103,14 +166,17 @@ export async function getLocalPreview(bookId: string, chapter: number): Promise<
         provider: "legacy",
         durationSec: track.durationSec,
         isDefault: true,
+        ...(await voiceVideo(bookId, chapter, "voice", true)),
         clips: track.scenes.map((s) => ({ audio: s.audio, audioSec: s.audioSec })),
+        sceneAudioSec: track.scenes.map((s) => s.audioSec),
       });
   }
 
   return {
-    video: video ? { version: Math.round(video.mtimeMs), sizeMb: Math.round((video.size / 1024 / 1024) * 10) / 10, renderedAt: video.mtime.toISOString() } : null,
+    video: video ? toPreviewVideo(video) : null,
     thumbnail: !!thumb,
     voices: voices.map((v) => ({ ...v, clips: v.clips.filter((c) => previewFilePath(bookId, chapter, c.audio)) })),
+    verticalClips: await listVerticalClips(bookId, chapter),
   };
 }
 

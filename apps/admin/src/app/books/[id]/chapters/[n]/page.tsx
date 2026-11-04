@@ -64,6 +64,7 @@ export default async function ChapterPage({ params }: PageProps<"/books/[id]/cha
         initialJobs={jobs.filter((j) => j.chapter === n && j.kind !== "ingest").map(toJobView)}
         initialNow={new Date().toISOString()}
         preview={preview}
+        episodeUpdatedAt={book.episodes.find((e) => e.number === n)?.updatedAt?.toISOString() ?? null}
         script={script ? { finishedAt: script.finishedAt.toISOString(), script: script.result.script, scenes: script.result.scenes } : null}
       />
     </div>

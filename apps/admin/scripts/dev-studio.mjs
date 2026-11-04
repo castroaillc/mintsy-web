@@ -2,8 +2,10 @@
 // MongoDB settings from the admin's env files, so the worker can't consume a different
 // database's queue than the one the dashboard writes to.
 //
-// The worker's own apps/studio/.env still supplies everything else (API keys, bucket); only
-// MONGODB_URI / MONGODB_DB / UPLOAD_DIR are passed from here (dotenv never overrides them).
+// The worker inherits this process's whole environment, so every variable from the admin's env
+// files reaches it and wins over the same key in apps/studio/.env (dotenv never overrides).
+// That file still supplies whatever the admin's don't set (API keys, bucket). MONGODB_URI /
+// MONGODB_DB / UPLOAD_DIR are always passed, with the defaults filled in.
 // Set STUDIO_DIR to run the worker from a different studio checkout.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";

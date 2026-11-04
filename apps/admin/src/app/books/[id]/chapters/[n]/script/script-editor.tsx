@@ -86,7 +86,7 @@ export function ScriptEditor({
 
   async function render() {
     if (!scriptParsed.ok || !scenesParsed.ok) return;
-    if (!confirm(`Render a preview of chapter ${chapter} with this script? It's rendered on this machine only; nothing in the app changes until you upload and publish it.`)) return;
+    if (!confirm(`Render a preview of chapter ${chapter} with this script? It renders one video per voice on this machine only, about three times as long as a single video; nothing in the app changes until you upload and publish it.`)) return;
     setSubmitting(true);
     const res = await callApi(`/api/books/${bookId}/jobs`, {
       method: "POST",
