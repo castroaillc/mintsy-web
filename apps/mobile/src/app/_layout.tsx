@@ -7,6 +7,7 @@ import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk/500Medium';
 import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk/700Bold';
 import { useFonts } from 'expo-font';
+import { Observe, ObserveRoot, useObserve } from 'expo-observe';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -33,7 +34,13 @@ SplashScreen.preventAutoHideAsync();
 // Before the first render, so a small window doesn't flash landscape on launch
 applyOrientationRule();
 
-export default function RootLayout() {
+// Off: network traces, unhandled JS error reports (their messages are free text) and debug-build dispatch. The Expo
+// Router integration isn't enabled, and no user id or custom event is attached. Native crash reports stay on, because
+// the SDK has no setting for them short of `dispatchingEnabled: false`, which stops all data. Device and client
+// identifiers and performance data are still sent, and an error thrown before `configure` runs is still recorded.
+Observe.configure({ networkTraces: false, errorHandlingEnabled: false, dispatchInDebug: false });
+
+function RootLayout() {
   useOrientationRule();
 
   return (
@@ -54,6 +61,8 @@ export default function RootLayout() {
     </ThemeModeProvider>
   );
 }
+
+export default ObserveRoot.wrap(RootLayout);
 
 function RootNavigator() {
   const { data: session, isPending } = authClient.useSession();
@@ -82,6 +91,14 @@ function RootNavigator() {
   useEffect(() => {
     if (canHideSplash) SplashScreen.hideAsync();
   }, [canHideSplash]);
+
+  // Time to interactive: startup is done and a real screen is up, whichever one this launch opens on. Not the
+  // "Couldn't load mintsy" screen below. Only the first call counts.
+  const { markInteractive } = useObserve();
+  const canInteract = canHideSplash && (catalog.status !== 'error' || (!!session && downloads.items.length > 0));
+  useEffect(() => {
+    if (canInteract) markInteractive();
+  }, [canInteract, markInteractive]);
 
   // Keep the splash screen up until we know the session, saved theme and fonts, and have the catalog
   if (!isReady) return null;
