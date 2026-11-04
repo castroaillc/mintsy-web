@@ -11,6 +11,15 @@ import { authClient } from '@/lib/auth-client';
 import { graphql } from '@/lib/graphql';
 import { getPreferences } from '@/lib/preferences';
 import { openPaywall, usePremium } from '@/lib/premium';
+import {
+  chooseVoice,
+  downloadedVoiceOf,
+  fetchEpisodeVoices,
+  parseDownloadIndex,
+  timelineOf,
+  toDownloadedVoice,
+  type DownloadedVoice,
+} from '@/lib/voices';
 
 /**
  * Offline downloads (Premium). Each episode lives in `<documents>/downloads/<episodeId>/` as `video.mp4`
@@ -28,6 +37,12 @@ export type DownloadRecord = {
   book: Book;
   /** Full episode as it was downloaded; `videoUrl` and `thumbnailUrl` are the original remote ones. */
   episode: Episode;
+  /**
+   * The narrator in `video.mp4` and its timed text. Missing on downloads from before voices, and for episodes with no
+   * voices or when `episodeVoices` failed: those files are the default render and `episode` describes them. Read it
+   * through `downloadedVoiceOf`. `episode` always describes the default voice, whichever one was saved.
+   */
+  voice?: DownloadedVoice;
   hasThumbnail: boolean;
   bytes: number;
   /** ISO 8601 */
@@ -59,6 +74,8 @@ export type DownloadStatus = 'none' | 'queued' | 'downloading' | 'downloaded';
 const root = () => new Directory(Paths.document, 'downloads');
 const indexFile = () => new File(root(), 'index.json');
 const EMPTY_INDEX: DownloadIndex = { version: 1, userId: null, items: [] };
+/** Don't wait long for the narrator before downloading; without an answer it saves what the catalog points at. */
+const VOICES_TIMEOUT_MS = 10_000;
 
 /** Episode ids are used as folder names; keep them filesystem-safe. */
 const folderName = (episodeId: string) => episodeId.replace(/[^\w.-]/g, '_');
@@ -77,8 +94,7 @@ function readIndex(): DownloadIndex {
   try {
     const file = indexFile();
     if (!file.exists) return EMPTY_INDEX;
-    const parsed = JSON.parse(file.textSync()) as DownloadIndex;
-    if (parsed?.version !== 1 || !Array.isArray(parsed.items)) return EMPTY_INDEX;
+    const parsed = parseDownloadIndex(file.textSync(), EMPTY_INDEX);
     // Drop entries whose video went missing (e.g. the OS or a restore removed it)
     return { ...parsed, items: parsed.items.filter((r) => videoFile(r.episodeId).exists) };
   } catch (err) {
@@ -194,7 +210,7 @@ async function checkConnection(): Promise<boolean> {
 // ── Context ─────────────────────────────────────────────────────────
 
 /** Local copy of a downloaded episode, ready for the player. */
-export type LocalEpisode = { book: Book; episode: Episode; videoUri: string };
+export type LocalEpisode = { book: Book; episode: Episode; videoUri: string; voice: DownloadedVoice | null };
 
 type DownloadsContextValue = {
   /** Finished downloads, most recent first. */
@@ -311,7 +327,11 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       const episode = book?.episodes.find((e) => e.id === episodeId);
       if (!book || !episode) throw new DownloadError('This episode isn’t available anymore.');
       if (episode.locked) throw new DownloadError('Your Premium access is still syncing. Try again in a moment.');
-      if (!episode.videoUrl) throw new DownloadError('This episode’s video isn’t ready yet.');
+      // The viewer's narrator, as an MP4. If the query fails or the episode has no voices, this is the download it always was.
+      const voices = (await fetchEpisodeVoices(graphql, episodeId, VOICES_TIMEOUT_MS)) ?? [];
+      const voice = chooseVoice(voices, getPreferences().defaultVoiceId, false);
+      const videoUrl = voice?.videoUrl ?? episode.videoUrl;
+      if (!videoUrl) throw new DownloadError('This episode’s video isn’t ready yet.');
       if (job.cancelled) return;
 
       ensureRoot();
@@ -329,7 +349,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       }
       if (job.cancelled) return;
 
-      const task = File.createDownloadTask(episode.videoUrl, videoFile(episodeId), {
+      const task = File.createDownloadTask(videoUrl, videoFile(episodeId), {
         // Typed as numbers, but iOS reports these 64-bit counts as BigInt; mixing them into Math.min crashes the render
         onProgress: ({ bytesWritten, totalBytes }) => setProgress(episodeId, Number(bytesWritten), Number(totalBytes)),
       });
@@ -342,6 +362,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         bookId,
         book: snapshotBook(book, episode),
         episode,
+        ...(voice ? { voice: toDownloadedVoice(voice, timelineOf(voices.find((v) => v.isDefault) ?? episode)) } : null),
         hasThumbnail: thumbFile(episodeId).exists,
         bytes: Number(file.size) + (thumbFile(episodeId).exists ? Number(thumbFile(episodeId).size) : 0),
         downloadedAt: new Date().toISOString(),
@@ -435,6 +456,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           book: { ...record.book, episodes: record.book.episodes.map((e) => (e.id === episodeId ? episode : e)) },
           episode,
           videoUri,
+          voice: downloadedVoiceOf(record),
         };
       },
     };

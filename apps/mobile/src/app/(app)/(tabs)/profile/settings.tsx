@@ -36,6 +36,8 @@ import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
 import { openHelpCenter, sendFeedback } from '@/lib/support';
 import { useThemeMode } from '@/lib/theme-mode';
 
+const EPISODE_DEFAULT_VOICE = 'Episode default';
+
 const THEME_OPTIONS: { label: string; value: ModeType }[] = [
   { label: 'System', value: 'system' },
   { label: 'Light', value: 'light' },
@@ -105,6 +107,16 @@ export default function SettingsScreen() {
   function cycleSpeed() {
     const i = SPEEDS.indexOf(prefs.defaultSpeed);
     setPreferences({ defaultSpeed: SPEEDS[(i + 1) % SPEEDS.length] });
+  }
+
+  function pickDefaultVoice() {
+    const buttons: AlertButton[] = [
+      { text: EPISODE_DEFAULT_VOICE, onPress: () => setPreferences({ defaultVoiceId: null }) },
+      ...prefs.knownVoices.map((v) => ({ text: v.name, onPress: () => setPreferences({ defaultVoiceId: v.id }) })),
+    ];
+    // Android dialogs show at most three buttons
+    if (Platform.OS === 'ios') buttons.push({ text: 'Cancel', style: 'cancel' });
+    Alert.alert('Default narrator', 'Episodes without this narrator use their own default.', buttons);
   }
 
   async function onSendTestPush() {
@@ -194,6 +206,14 @@ export default function SettingsScreen() {
               onChange={(v) => setPreferences({ autoplayNext: v })}
             />
             <SettingsLinkRow label="Default speed" value={`${prefs.defaultSpeed}×`} onPress={cycleSpeed} />
+            {/* The narrators come from episodes played on this device: until one has offered a choice, there's nothing to pick */}
+            {prefs.knownVoices.length > 1 ? (
+              <SettingsLinkRow
+                label="Default narrator"
+                value={prefs.knownVoices.find((v) => v.id === prefs.defaultVoiceId)?.name ?? EPISODE_DEFAULT_VOICE}
+                onPress={pickDefaultVoice}
+              />
+            ) : null}
             <SettingsToggleRow
               label="Captions on by default"
               hint="Show captions in the player"

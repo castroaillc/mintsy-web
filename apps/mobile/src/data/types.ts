@@ -29,6 +29,31 @@ export type Episode = {
   locked?: boolean;
 };
 
+/** One timed caption phrase, on its voice's own timeline. Seconds may be fractional. */
+export type CaptionPhrase = {
+  startSec: number;
+  endSec: number;
+  text: string;
+};
+
+/**
+ * One narrator's full render of an episode, from the separate `episodeVoices` query (`src/lib/voices.ts`), never the
+ * catalog. Its transcript, captions and duration are on this voice's own timeline. URLs may be short-lived: don't store them.
+ */
+export type EpisodeVoice = {
+  id: string;
+  name: string;
+  /** The voice that `Episode.videoUrl`, `hlsUrl`, `durationSec` and `transcript` describe. */
+  isDefault: boolean;
+  /** Null if signing failed. */
+  videoUrl: string | null;
+  /** Null when this voice has no HLS encode, and always while media is private. */
+  hlsUrl: string | null;
+  durationSec: number;
+  transcript: TranscriptLine[];
+  captions: CaptionPhrase[];
+};
+
 /** A transcript match from `search` (EpisodeMatch in the API). */
 export type EpisodeMatch = {
   /** `<bookId>-<number>-<startSec>` */

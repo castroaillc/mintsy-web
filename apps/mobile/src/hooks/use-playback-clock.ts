@@ -49,6 +49,8 @@ export function usePlaybackClock({
 
   return {
     positionSec,
+    durationSec,
+    ended,
     playing,
     speed,
     seek,

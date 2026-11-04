@@ -16,6 +16,7 @@ const ICONS = {
   back: { ios: 'chevron.left', android: 'arrow_back_ios_new' },
   collapse: { ios: 'chevron.down', android: 'keyboard_arrow_down' },
   captions: { ios: 'captions.bubble', android: 'closed_caption' },
+  narrator: { ios: 'person.wave.2', android: 'record_voice_over' },
   fullscreen: { ios: 'arrow.up.left.and.arrow.down.right', android: 'fullscreen' },
   back10: { ios: 'gobackward.10', android: 'replay_10' },
   forward10: { ios: 'goforward.10', android: 'forward_10' },

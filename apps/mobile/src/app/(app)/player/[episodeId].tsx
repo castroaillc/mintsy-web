@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { VideoView, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   type LayoutRectangle,
@@ -28,7 +29,8 @@ import { Center } from '@/components/ui/center';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { FREE_EPISODES, type Book, type Episode } from '@/data/types';
+import { FREE_EPISODES, type Book, type CaptionPhrase, type Episode, type EpisodeVoice, type TranscriptLine } from '@/data/types';
+import { useEpisodeVoices } from '@/hooks/use-episode-voices';
 import { usePlaybackClock, type PlaybackClock, type PlaybackClockOptions } from '@/hooks/use-playback-clock';
 import { useVideoClock } from '@/hooks/use-video-clock';
 import {
@@ -42,12 +44,21 @@ import {
 import { useCatalog } from '@/lib/catalog';
 import { useDownloads } from '@/lib/downloads';
 import { followPhoneOrientation } from '@/lib/orientation';
-import { usePreferences } from '@/lib/preferences';
+import { setPreferences, usePreferences } from '@/lib/preferences';
 import { isEpisodeLocked, openPaywall, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { useSaved } from '@/lib/saved';
 import { activeLineIndex, episodeLabel, episodeStatus, formatTime } from '@/lib/series';
-import { streamSources } from '@/lib/stream-source';
+import { HLS_ENABLED, streamSources } from '@/lib/stream-source';
+import {
+  activeCaption,
+  chooseVoice,
+  convertPosition,
+  switchPosition,
+  timelineOf,
+  withDownloadedVoice,
+  type DownloadedVoice,
+} from '@/lib/voices';
 
 const TABS = [
   { value: 'transcript', label: 'Transcript' },
@@ -61,11 +72,29 @@ const PANEL_HEIGHT = 260;
 /** Clear band (pt) kept on each side of a half-folded device's fold; nothing tappable sits in it. */
 const FOLD_CLEARANCE = 24;
 
+/** The phone layout's play button, which sets the transport's height. */
+const TRANSPORT_HEIGHT = 60;
+
+/** Gap kept between app-drawn captions and the controls below them. */
+const CAPTION_GAP = 8;
+
+/** A failed source is retried with fresh URLs at most this often, so a file that's really gone can't loop. */
+const RECOVERY_INTERVAL_MS = 60_000;
+
 /**
  * Share of the video frame's height, from the bottom, that its captions can take. They're part of the picture, not
  * app UI (studio `src/collage/polish.tsx`): a two-line pill is 102 px tall and 22 px off the bottom of a 720 px frame.
+ * Only episodes with no voices have burned captions. Remove this once the backfill has re-rendered them all.
  */
 const BURNED_CAPTION_SHARE = 124 / 720;
+
+/** Whether a retry is due. Records it if so. */
+function claimRecovery(last: { current: number }) {
+  const now = Date.now();
+  if (now - last.current < RECOVERY_INTERVAL_MS) return false;
+  last.current = now;
+  return true;
+}
 
 function close() {
   if (router.canGoBack()) router.back();
@@ -102,10 +131,18 @@ function PlayerRoute() {
   if (local && isPremium) {
     const fromCatalog = found && !found.episode.locked ? found : null;
     const book = fromCatalog?.book ?? local.book;
-    const episode = fromCatalog ? { ...fromCatalog.episode, thumbnailUrl: local.episode.thumbnailUrl } : local.episode;
+    // The timeline stays the downloaded one: an episode re-rendered since then has different timings in the catalog
+    const episode = fromCatalog
+      ? {
+          ...fromCatalog.episode,
+          thumbnailUrl: local.episode.thumbnailUrl,
+          durationSec: local.episode.durationSec,
+          transcript: local.episode.transcript,
+        }
+      : local.episode;
     return (
       <ReservedRegionsProvider style={{ flex: 1 }}>
-        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} source={local.videoUri} />
+        <VideoEpisodePlayer key={episode.id} book={book} episode={episode} source={local.videoUri} local={local} />
       </ReservedRegionsProvider>
     );
   }
@@ -212,12 +249,151 @@ function useClockOptions({ book, episode }: PlayerProps, onLockedNext: () => voi
   };
 }
 
-function VideoEpisodePlayer({ source, fallback, ...props }: PlayerProps & { source: string; fallback?: string | null }) {
+type VideoEpisodePlayerProps = PlayerProps & {
+  source: string;
+  fallback?: string | null;
+  /** The downloaded copy this plays, when there is one. Its `voice` is null for downloads from before voices. */
+  local?: { videoUri: string; voice: DownloadedVoice | null };
+};
+
+/**
+ * Real playback, with the episode's narrators when `episodeVoices` has any. Without them (a failed, slow or empty
+ * answer, or an API that doesn't have the query yet) this is the catalog's source and nothing else changes.
+ *
+ * Starting: a viewer with no preferred narrator starts on the catalog's source at once, because that's the default
+ * voice. With one, the source waits for the answer, for at most the start wait in `useEpisodeVoices`. An answer
+ * that comes after playback has started adds the picker and captions but doesn't change the voice being heard.
+ */
+function VideoEpisodePlayer({ source, fallback, local, ...props }: VideoEpisodePlayerProps) {
+  const { episode } = props;
+  const catalog = useCatalog();
+  const prefs = usePreferences();
   const [upsell, setUpsell] = useState(false);
-  const { player, ...clock } = useVideoClock(source, useClockOptions(props, () => setUpsell(true)), fallback);
+
+  const downloaded = local?.voice ?? null;
+  // A download from before voices has nothing to match them against: it plays as it did
+  const query = useEpisodeVoices(episode.id, !local || !!downloaded);
+  const voices = withDownloadedVoice(query.voices, downloaded);
+  const defaultVoice = query.voices.find((v) => v.isDefault);
+  const defaultTimeline = defaultVoice
+    ? timelineOf(defaultVoice)
+    : downloaded
+      ? downloaded.defaultTimeline
+      : timelineOf(episode);
+
+  /** Null follows the episode's default voice, whose media is what the catalog points at. */
+  const [selectedId, setSelectedId] = useState(downloaded?.id ?? null);
+  const selected = voices.find((v) => v.id === selectedId) ?? voices.find((v) => v.isDefault) ?? null;
+
+  const options = useClockOptions(props, () => setUpsell(true));
+  // A downloaded voice is known now; other voices convert the resume point when the source is chosen
+  const [startSec] = useState(() =>
+    downloaded && !downloaded.isDefault
+      ? convertPosition(options.startSec ?? 0, downloaded.defaultTimeline, timelineOf(downloaded))
+      : options.startSec,
+  );
+  const [deferred] = useState(() => !local && prefs.defaultVoiceId !== null);
+  const { player, ...clock } = useVideoClock(
+    source,
+    { ...options, startSec, durationSec: selected?.durationSec ?? episode.durationSec, deferred },
+    fallback,
+  );
+
+  const sourceFor = (voice: EpisodeVoice) => {
+    if (local && downloaded?.id === voice.id) return { source: local.videoUri, fallback: null };
+    return streamSources(voice) ?? (voice.isDefault && !local ? { source, fallback } : null);
+  };
+
+  // A viewer with a preferred narrator: start now that it's known whether this episode has them
+  const begun = useRef(!deferred);
+  useEffect(() => {
+    if (!query.settled || begun.current) return;
+    begun.current = true;
+    const chosen = chooseVoice(query.voices, prefs.defaultVoiceId, HLS_ENABLED);
+    const stream = chosen && !chosen.isDefault ? streamSources(chosen) : null;
+    if (chosen && stream) {
+      // In the same render as the clock's new position and timeline, which is an effect's only way to reach them
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedId(chosen.id);
+      clock.load({ ...stream, positionSec: convertPosition(options.startSec ?? 0, defaultTimeline, timelineOf(chosen)) });
+    } else {
+      clock.load({ source, fallback });
+    }
+    // Once, when settled
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query.settled]);
+
+  /** The selected voice's timeline, ending where the player says the video ends. */
+  const selectedTimeline = selected ? { ...timelineOf(selected), durationSec: clock.durationSec } : null;
+
+  const switchVoice = async (id: string) => {
+    setPreferences({ defaultVoiceId: id });
+    if (id === selected?.id) return;
+    // Don't start a new source from a signed URL that may have expired. If this can't refresh them, try with what's here.
+    const isLocalTarget = downloaded?.id === id;
+    const list = !isLocalTarget && query.isStale() ? ((await query.refetch()) ?? query.voices) : query.voices;
+    const next = withDownloadedVoice(list, downloaded).find((v) => v.id === id);
+    const stream = next && sourceFor(next);
+    if (!next || !stream) return;
+    const from = selectedTimeline ?? { ...defaultTimeline, durationSec: clock.durationSec };
+    setSelectedId(id);
+    clock.load({ ...stream, positionSec: switchPosition(clock.currentPosition(), from, timelineOf(next), next.captions) });
+  };
+
+  // ── A source failed with no fallback left, most likely an expired signed URL: try once more with fresh URLs ──
+  const onCatalogSource = !selected || selected.isDefault;
+  const lastRecovery = useRef(0);
+  const recover = async () => {
+    if (local && (!selected || selected.id === downloaded?.id)) return;
+    if (!claimRecovery(lastRecovery)) return;
+
+    const fresh = query.voices.length > 0 ? await query.refetch() : null;
+    const voice = fresh?.find((v) => v.id === selected?.id);
+    const stream = voice ? streamSources(voice) : null;
+    if (stream) {
+      clock.load({ ...stream, positionSec: clock.currentPosition() });
+    } else if (onCatalogSource) {
+      // Fresh URLs arrive as a new `source`, handled below. A lapsed Premium arrives as a lock, and goes to the paywall.
+      await catalog.refresh();
+    } else if (selectedTimeline && !local) {
+      // This narrator can't be played right now: carry on with the default one
+      setSelectedId(defaultVoice?.id ?? null);
+      clock.load({ source, fallback, positionSec: convertPosition(clock.currentPosition(), selectedTimeline, defaultTimeline) });
+    }
+  };
+  useEffect(() => {
+    // Sets state only after awaiting fresh URLs
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (clock.failed) void recover();
+    // Each time a source fails; recover limits itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clock.failed]);
+
+  // The clock ignores a new catalog URL while its source works, and takes it here if that's what recovery was waiting for
+  const lastSource = useRef(source);
+  useEffect(() => {
+    if (lastSource.current === source) return;
+    lastSource.current = source;
+    if (clock.failed && !local && onCatalogSource) clock.load({ source, fallback, positionSec: clock.currentPosition() });
+    // Only when the catalog's source changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]);
+
+  const voice: PlayerVoice = {
+    hasVoices: !!selected,
+    waiting: !query.settled,
+    transcript: selected?.transcript ?? episode.transcript,
+    phrases: selected?.captions ?? [],
+    options: voices.filter((v) => !!sourceFor(v)),
+    selected,
+    onPick: switchVoice,
+    toDefaultSec: (sec) =>
+      selected && !selected.isDefault && selectedTimeline ? convertPosition(sec, selectedTimeline, defaultTimeline) : sec,
+  };
+
   return (
     <>
-      <Player {...props} clock={clock} video={player} />
+      <Player {...props} clock={clock} video={player} voice={voice} />
       {upsell ? <EndOfFreeUpsell {...props} onDismiss={() => setUpsell(false)} /> : null}
     </>
   );
@@ -234,6 +410,22 @@ function SimulatedEpisodePlayer(props: PlayerProps) {
     </>
   );
 }
+
+/** What the player screen needs to know about the episode's narrators. */
+type PlayerVoice = {
+  /** False for episodes with no voices: those have captions in the picture and play as they always did. */
+  hasVoices: boolean;
+  /** The first answer from `episodeVoices` isn't in yet, and the start wait hasn't run out. */
+  waiting: boolean;
+  transcript: TranscriptLine[];
+  phrases: CaptionPhrase[];
+  /** The voices that can be played. */
+  options: EpisodeVoice[];
+  selected: EpisodeVoice | null;
+  onPick: (id: string) => void;
+  /** From the selected voice's timeline to the default voice's, the only one saved progress uses. */
+  toDefaultSec: (sec: number) => number;
+};
 
 /** Opens the next episode, or the paywall (in place of the player) when it's Premium-only. */
 function useGoToEpisode() {
@@ -286,7 +478,13 @@ function EndOfFreeUpsell({ book, episode, onDismiss }: PlayerProps & { onDismiss
   );
 }
 
-function Player({ book, episode, clock, video }: PlayerProps & { clock: PlaybackClock; video: VideoPlayer | null }) {
+function Player({
+  book,
+  episode,
+  clock,
+  video,
+  voice,
+}: PlayerProps & { clock: PlaybackClock; video: VideoPlayer | null; voice?: PlayerVoice }) {
   const insets = useSafeAreaInsets();
   const { progress, setPosition, saveNow, sync } = useProgress();
   const prefs = usePreferences();
@@ -310,11 +508,16 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const prev = book.episodes[index - 1];
   const next = book.episodes[index + 1];
 
+  // Everything on screen is on the selected voice's timeline. What's saved is always on the default voice's.
+  const transcript = voice?.transcript ?? episode.transcript;
+  const toDefaultSec = voice?.toDefaultSec ?? ((sec: number) => sec);
+
   // Track whole seconds so Browse and Book stay current; the API gets them about every 10 s while playing
-  const wholeSec = Math.floor(clock.positionSec);
+  const wholeSec = Math.floor(toDefaultSec(clock.positionSec));
   useEffect(() => {
-    if (wholeSec > 0 && wholeSec < episode.durationSec) setPosition(episode.id, wholeSec);
-  }, [wholeSec, episode.id, episode.durationSec, setPosition]);
+    // At the end the episode is marked completed, and the player's real length can be a fraction below the rounded one
+    if (!clock.ended && wholeSec > 0 && wholeSec < episode.durationSec) setPosition(episode.id, wholeSec);
+  }, [wholeSec, clock.ended, episode.id, episode.durationSec, setPosition]);
   // Save right away on pause, and on leaving the player (then reload Continue watching for Home)
   useEffect(() => {
     if (!clock.playing) saveNow();
@@ -324,7 +527,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   /** Seeks and saves the new position at once. */
   const seekTo = (sec: number) => {
     clock.seek(sec);
-    const target = Math.floor(Math.min(episode.durationSec, Math.max(0, sec)));
+    const target = Math.floor(toDefaultSec(Math.min(clock.durationSec, Math.max(0, sec))));
     if (target < episode.durationSec) setPosition(episode.id, target, { saveNow: true });
   };
 
@@ -335,7 +538,11 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const fullScreen = expanded || sideways;
   const { isSaved, toggle } = useSaved();
   const saved = isSaved('EPISODE', episode.id);
-  const activeIndex = activeLineIndex(episode, clock.positionSec);
+  const activeIndex = activeLineIndex({ transcript }, clock.positionSec);
+  // Timed phrases along the bottom. Without them, the older transcript overlay along the top, once we know
+  const hasPhrases = (voice?.phrases.length ?? 0) > 0;
+  const phrase = captions && hasPhrases ? activeCaption(voice!.phrases, clock.positionSec) : null;
+  const showTranscriptOverlay = captions && !hasPhrases && !voice?.waiting;
 
   // ── Follow-along: keep the active line in view until the viewer scrolls ──
   // One transcript scroll view is mounted at a time (phone page or wide side pane); they share these refs
@@ -366,8 +573,8 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
 
   const watchedFlags = book.episodes.map((e) => !!progress[e.id]?.completed);
 
-  /** Video (or tint), plus captions or the chapter title, inset from the given edges. */
-  const videoLayer = (left: number, right: number, top: number) => (
+  /** Video (or tint), plus captions or the chapter title, inset from the given edges. Timed captions sit `captionBottom` up, clear of the controls. */
+  const videoLayer = (left: number, right: number, top: number, captionBottom: number) => (
     <>
       {video ? (
         <VideoView
@@ -380,12 +587,12 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
 
       {/* Captions take the place of the chapter title while they're on; the title only shows without video */}
       <VStack style={{ left, right, top }} className="absolute gap-2">
-        {captions ? (
+        {showTranscriptOverlay ? (
           <Text
             accessibilityLiveRegion="polite"
             className="self-start rounded-md bg-scrim/80 px-2.5 py-1.5 font-inter-medium text-[15px] leading-[21px] text-on-scrim"
           >
-            {episode.transcript[activeIndex]?.text}
+            {transcript[activeIndex]?.text}
           </Text>
         ) : video ? null : (
           <>
@@ -396,6 +603,21 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
           </>
         )}
       </VStack>
+
+      {phrase ? (
+        <Box
+          pointerEvents="none"
+          style={{ left: Math.max(0, left - 16), right: Math.max(0, right - 16), bottom: captionBottom }}
+          className="absolute items-center"
+        >
+          <Text
+            accessibilityLiveRegion="polite"
+            className="max-w-[620px] rounded-md bg-scrim/80 px-2.5 py-1.5 text-center font-inter-medium text-[15px] leading-[21px] text-on-scrim"
+          >
+            {phrase.text}
+          </Text>
+        </Box>
+      ) : null}
     </>
   );
 
@@ -483,6 +705,30 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
     </ControlButton>
   );
 
+  const pickVoice = () => {
+    if (!voice) return;
+    Alert.alert('Narrator', undefined, [
+      ...voice.options.map((v) => ({
+        text: v.id === voice.selected?.id ? `${v.name} ✓` : v.name,
+        onPress: () => voice.onPick(v.id),
+      })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  };
+
+  /** Only when there's a choice to make. Next to speed; `showName` is off in the phone row, which has no room for it. */
+  const voiceButton = (showName: boolean) =>
+    voice && voice.options.length > 1 ? (
+      <ControlButton accessibilityLabel={`Narrator: ${voice.selected?.name ?? 'default'}. Change narrator`} onPress={pickVoice}>
+        <Icon name="narrator" size={16} className="text-foreground" />
+        {showName ? (
+          <Text numberOfLines={1} className="font-inter-medium text-[14px] text-foreground">
+            {voice.selected?.name}
+          </Text>
+        ) : null}
+      </ControlButton>
+    ) : null;
+
   const saveButton = (
     <ControlButton
       accessibilityLabel={saved ? 'Remove episode from My List' : 'Save episode to My List'}
@@ -519,7 +765,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
     tab === 'transcript' ? (
       <Box onLayout={(e) => (transcriptY.current = e.nativeEvent.layout.y)}>
         <TranscriptList
-          lines={episode.transcript}
+          lines={transcript}
           activeIndex={activeIndex}
           following={following}
           onSeek={seekToLine}
@@ -559,7 +805,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   if (tabletop && fold) {
     const videoTop = insets.top + 16;
     const controlsTop = fold.frame.y + fold.frame.height + FOLD_CLEARANCE;
-    const nextLine = episode.transcript[activeIndex + 1]?.text;
+    const nextLine = transcript[activeIndex + 1]?.text;
     return (
       <Box className="flex-1 bg-background">
         <Box
@@ -572,7 +818,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
           }}
           className="absolute overflow-hidden rounded-[18px]"
         >
-          {videoLayer(40, 40, 72)}
+          {videoLayer(40, 40, 72, 12)}
           <Box className="absolute left-3.5 top-3.5">{closeButton}</Box>
           <Box className="absolute right-3.5 top-3.5">{viewButtons}</Box>
         </Box>
@@ -589,9 +835,12 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
                 {episode.title}
               </Text>
             </VStack>
-            {speedButton}
+            <HStack className="gap-2">
+              {voiceButton(true)}
+              {speedButton}
+            </HStack>
           </HStack>
-          <Scrubber tone="surface" positionSec={clock.positionSec} durationSec={episode.durationSec} onSeek={seekToLine} />
+          <Scrubber tone="surface" positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
           <HStack className="items-center justify-center gap-7">{transport(60, 88)}</HStack>
           <VStack
             accessibilityLiveRegion="polite"
@@ -601,7 +850,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
               Now · {formatTime(clock.positionSec)}
             </Text>
             <Text className="font-inter-semibold text-[22px] leading-[32px] text-foreground">
-              {episode.transcript[activeIndex]?.text}
+              {transcript[activeIndex]?.text}
             </Text>
             {nextLine ? <Text className="font-inter text-[17px] leading-[25px] text-faint">{nextLine}</Text> : null}
           </VStack>
@@ -615,13 +864,14 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
     const videoColumn = (
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5">
         <Box style={{ aspectRatio: 16 / 9, backgroundColor: book.tint }} className="w-full overflow-hidden rounded-2xl">
-          {videoLayer(32, 32, 72)}
+          {/* Above the scrubber */}
+          {videoLayer(32, 32, 72, 66)}
           <HStack className="absolute left-0 right-0 top-0 justify-between p-3">
             {closeButton}
             {viewButtons}
           </HStack>
           <Box className="absolute bottom-2 left-5 right-5">
-            <Scrubber positionSec={clock.positionSec} durationSec={episode.durationSec} onSeek={seekToLine} />
+            <Scrubber positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
           </Box>
         </Box>
 
@@ -641,6 +891,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
         <HStack className={`flex-wrap items-center justify-center py-2 ${tightPanes ? 'gap-1.5' : 'gap-[18px]'}`}>
           {tightPanes ? transport(44, 60) : transport(52, 72)}
           {speedButton}
+          {voiceButton(true)}
         </HStack>
 
         {upNextCard ? (
@@ -717,7 +968,8 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
   const controlsTop = fullScreen && !phoneSideways ? insets.top : 0;
   // The open display letterboxes the 16:9 video, so its captions sit where the transport would: lift it above them
   const videoHeight = Math.min(height, (width * 9) / 16);
-  const transportBottom = openSideways
+  // Episodes with voices have no captions in the picture, and draw their own above the transport
+  const transportBottom = openSideways && !voice?.hasVoices
     ? (height - videoHeight) / 2 + videoHeight * BURNED_CAPTION_SHARE + 8
     : controlsBottom + 44;
   const panel = (
@@ -725,7 +977,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
       style={[{ backgroundColor: book.tint }, fullScreen ? { flex: 1 } : { height: PANEL_HEIGHT }]}
       className="w-full overflow-hidden"
     >
-      {videoLayer(safeLeft + 24, safeRight + 24, controlsTop + 70)}
+      {videoLayer(safeLeft + 24, safeRight + 24, controlsTop + 70, transportBottom + TRANSPORT_HEIGHT + CAPTION_GAP)}
 
       <HStack
         style={{ paddingLeft: safeLeft + 12, paddingRight: safeRight + 12, paddingTop: controlsTop + 12 }}
@@ -742,7 +994,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
       </HStack>
 
       <Box style={{ left: safeLeft + 16, right: safeRight + 16, bottom: controlsBottom }} className="absolute">
-        <Scrubber positionSec={clock.positionSec} durationSec={episode.durationSec} onSeek={seekToLine} />
+        <Scrubber positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
       </Box>
     </Box>
   );
@@ -773,7 +1025,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
               <SegmentedProgress watched={watchedFlags} currentIndex={index} className="mt-1" />
             </VStack>
 
-            <HStack className="gap-2 px-5 pt-4">
+            <HStack className={`px-5 pt-4 ${voice && voice.options.length > 1 ? 'gap-1.5' : 'gap-2'}`}>
               <ControlButton
                 accessibilityLabel="Previous episode"
                 disabled={!prev}
@@ -782,6 +1034,7 @@ function Player({ book, episode, clock, video }: PlayerProps & { clock: Playback
                 <Icon name="previous" size={18} className="text-foreground" />
               </ControlButton>
               {speedButton}
+              {voiceButton(false)}
               {saveButton}
               <Pressable
                 accessibilityRole="button"

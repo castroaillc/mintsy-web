@@ -111,7 +111,7 @@ export function catalogAverages(books: Book[]) {
 }
 
 /** Index of the transcript line playing at `positionSec`. */
-export function activeLineIndex(episode: Episode, positionSec: number) {
+export function activeLineIndex(episode: Pick<Episode, 'transcript'>, positionSec: number) {
   let index = 0;
   episode.transcript.forEach((line, i) => {
     if (line.startSec <= positionSec) index = i;

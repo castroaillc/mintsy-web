@@ -23,21 +23,40 @@ function setPlayerRate(player: VideoPlayer, rate: number) {
   player.playbackRate = rate;
 }
 
+/** What a clock's next source is: `fallback` works as for the first one, and `positionSec` is on that source's timeline. */
+export type ClockSource = { source: string; fallback?: string | null; positionSec?: number };
+
 /**
  * Real playback of an MP4, HLS playlist or local file with the same interface as `usePlaybackClock`, plus the player
- * for `VideoView`. If `source` fails and there's a `fallback`, switches to it once, at the same position and speed.
+ * for `VideoView`. If a source fails and has a `fallback`, switches to it once, at the same position and speed.
+ *
+ * The source is only read on first render, so a catalog refresh with new signed URLs can't replace a video in the middle
+ * of playback, or put the default narrator back. `load` changes it, and `failed` says a source has nothing left to try.
+ * With `deferred` nothing loads or plays until the first `load`.
  */
 export function useVideoClock(
   source: string,
-  { durationSec, startSec = 0, autoPlay = true, initialSpeed = 1, onEnd }: PlaybackClockOptions,
+  {
+    durationSec,
+    startSec = 0,
+    autoPlay = true,
+    initialSpeed = 1,
+    onEnd,
+    deferred = false,
+  }: PlaybackClockOptions & { deferred?: boolean },
   fallback?: string | null,
 ) {
   const [speedIndex, setSpeedIndex] = useState(() => Math.max(0, SPEEDS.indexOf(initialSpeed)));
   const speed = SPEEDS[speedIndex];
+  const speedRef = useRef(speed);
   const [positionSec, setPositionSec] = useState(startSec);
   const [ended, setEnded] = useState(false);
+  /** The video's real length: `durationSec` from the API is rounded, and can be up to 0.5 s off. */
+  const [mediaDurationSec, setMediaDurationSec] = useState<number | null>(null);
+  const timelineEnd = mediaDurationSec ?? durationSec;
 
-  const player = useVideoPlayer(source, (p) => {
+  const [firstSource] = useState(deferred ? null : source);
+  const player = useVideoPlayer(firstSource, (p) => {
     p.timeUpdateEventInterval = TIME_UPDATE_INTERVAL;
     p.playbackRate = SPEEDS[speedIndex];
   });
@@ -48,6 +67,11 @@ export function useVideoClock(
     onEndRef.current = onEnd;
   });
 
+  const readMediaDuration = () => {
+    const duration = player.duration;
+    if (Number.isFinite(duration) && duration > 0) setMediaDurationSec(duration);
+  };
+
   // Seeking before the source has loaded isn't reliable, so resume once it's ready
   const started = useRef(false);
   /** Where the next source to become ready starts: the resume point, then the viewer's latest position. */
@@ -57,19 +81,53 @@ export function useVideoClock(
   const start = () => {
     if (started.current) return;
     started.current = true;
+    readMediaDuration();
+    setPlayerRate(player, speedRef.current);
     if (resumeSec.current > 0) seekPlayer(player, resumeSec.current);
     if (wantsPlay.current) player.play();
   };
 
-  // Once only: if the fallback fails too, the player is left as it is for any source that fails
-  const fellBack = useRef(false);
-  const fallBack = () => {
-    if (fellBack.current || !fallback) return;
-    fellBack.current = true;
+  /** This source's fallback, until it's used. */
+  const [fallbackSource, setFallbackSource] = useState(fallback ?? null);
+  /** Between asking for a source and the player having it. The ref is for events, the state for `failed`. */
+  const swapping = useRef(deferred);
+  const [isSwapping, setIsSwapping] = useState(deferred);
+  /** A source has replaced the first one, so time updates before it starts are the old item or a 0 to ignore. */
+  const replaced = useRef(deferred);
+  const loadCount = useRef(0);
+
+  const load = ({ source: next, fallback: nextFallback = null, positionSec: at }: ClockSource) => {
+    const count = ++loadCount.current;
     started.current = false;
-    player.replaceAsync(fallback).catch((err) => console.warn('Failed to load the fallback video', err));
+    replaced.current = true;
+    swapping.current = true;
+    setIsSwapping(true);
+    setFallbackSource(nextFallback);
+    setMediaDurationSec(null);
+    setEnded(false);
+    if (at !== undefined) {
+      resumeSec.current = at;
+      setPositionSec(at);
+    }
+    player.pause();
+    player
+      .replaceAsync(next)
+      .catch((err) => console.warn('Failed to load the video', err))
+      .finally(() => {
+        // A newer load took over
+        if (count !== loadCount.current) return;
+        swapping.current = false;
+        setIsSwapping(false);
+        onStatus(player.status);
+      });
+  };
+
+  const fallBack = () => {
+    if (!fallbackSource) return;
+    load({ source: fallbackSource });
   };
   const onStatus = (status: VideoPlayerStatus) => {
+    if (swapping.current) return;
     if (status === 'readyToPlay') start();
     else if (status === 'error') fallBack();
   };
@@ -83,22 +141,23 @@ export function useVideoClock(
 
   const { status } = useEvent(player, 'statusChange', { status: player.status });
   useEffect(() => {
-    if (status !== 'loading' || !fallback) return;
+    if (status !== 'loading' || !fallbackSource) return;
     const timer = setTimeout(fallBack, STALL_FALLBACK_MS);
     return () => clearTimeout(timer);
     // fallBack only reads refs besides these
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, player, fallback]);
+  }, [status, player, fallbackSource]);
 
   useEventListener(player, 'timeUpdate', ({ currentTime }) => {
-    // While the fallback loads the player reports 0; keep showing (and saving) where the viewer was
-    if (fellBack.current && !started.current) return;
+    // While a replacement loads the player reports 0 or the old item; keep showing (and saving) where the viewer was
+    if (replaced.current && !started.current) return;
     if (started.current) resumeSec.current = currentTime;
+    if (mediaDurationSec === null) readMediaDuration();
     setPositionSec(currentTime);
   });
   useEventListener(player, 'playToEnd', () => {
     wantsPlay.current = false;
-    setPositionSec(durationSec);
+    setPositionSec(timelineEnd);
     setEnded(true);
     onEndRef.current?.();
   });
@@ -106,8 +165,9 @@ export function useVideoClock(
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
   const seek = (sec: number) => {
-    const target = Math.min(durationSec, Math.max(0, sec));
-    seekPlayer(player, target);
+    const target = Math.min(timelineEnd, Math.max(0, sec));
+    // A source still loading starts from resumeSec
+    if (!swapping.current) seekPlayer(player, target);
     resumeSec.current = target;
     // Move the UI right away instead of waiting for the next time update
     setPositionSec(target);
@@ -117,13 +177,23 @@ export function useVideoClock(
   return {
     player,
     positionSec,
+    durationSec: timelineEnd,
+    ended,
+    /** The current source failed and has no fallback left. */
+    failed: status === 'error' && player.status === 'error' && !fallbackSource && !isSwapping,
+    load,
+    /** The latest position, for use after an `await`. */
+    currentPosition: () => resumeSec.current,
     playing: isPlaying,
     speed,
     seek,
     skip: (deltaSec: number) => seek(positionSec + deltaSec),
     toggle: () => {
-      // Replaying from the end starts over
-      if (ended) {
+      // No source to act on yet: it follows this when it's ready
+      if (swapping.current) {
+        wantsPlay.current = !wantsPlay.current;
+      } else if (ended) {
+        // Replaying from the end starts over
         wantsPlay.current = true;
         seek(0);
         player.play();
@@ -138,6 +208,7 @@ export function useVideoClock(
     cycleSpeed: () => {
       const next = (speedIndex + 1) % SPEEDS.length;
       setSpeedIndex(next);
+      speedRef.current = SPEEDS[next];
       setPlayerRate(player, SPEEDS[next]);
     },
   };
