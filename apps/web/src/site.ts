@@ -3,7 +3,7 @@
 export { FREE_EPISODES } from "@/lib/types";
 
 /** Change this whenever the text of the privacy policy changes. */
-export const LEGAL_UPDATED = "2 November 2026";
+export const LEGAL_UPDATED = "8 November 2026";
 
 /** The mintsy web app is paused (see paused-app/README.md); null hides every "Watch on the web" link. */
 export const WEB_APP_URL: string | null = null;
