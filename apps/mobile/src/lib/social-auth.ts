@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { useEffect, useState } from 'react';
 import { Platform, TurboModuleRegistry } from 'react-native';
 
+import { linkedAppleAccountIds } from '@/lib/apple-identity';
 import { authClient } from '@/lib/auth-client';
 import { APP_VARIANT } from '@/lib/variant';
 
@@ -90,8 +91,20 @@ function isCode(err: unknown, ...codes: string[]) {
   return typeof code === 'string' && codes.includes(code);
 }
 
-export async function signInWithApple(): Promise<SocialSignInResult> {
-  // Apple puts sha256(nonce) in the ID token; Better Auth gets the raw nonce and compares its hash
+/** A credential from the Apple sheet, not yet sent to the backend. Single use: the authorization code expires in ~5 minutes. */
+export type AppleCredential = {
+  credential: AppleAuthentication.AppleAuthenticationCredential & { identityToken: string };
+  /** Apple puts sha256(nonce) in the ID token; Better Auth gets this raw nonce and compares its hash */
+  rawNonce: string;
+};
+
+export type AppleCredentialResult =
+  | ({ status: 'success' } & AppleCredential)
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string };
+
+/** Step 1 of Sign in with Apple: show Apple's sheet and get the credential. Nothing is sent to the backend. */
+export async function getAppleCredential(): Promise<AppleCredentialResult> {
   const rawNonce = Crypto.randomUUID() + Crypto.randomUUID();
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
@@ -108,8 +121,13 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
     console.warn('Apple sign-in failed:', err);
     return { status: 'error', message: GENERIC_ERROR };
   }
-  if (!credential.identityToken) return { status: 'error', message: GENERIC_ERROR };
+  const { identityToken } = credential;
+  if (!identityToken) return { status: 'error', message: GENERIC_ERROR };
+  return { status: 'success', credential: { ...credential, identityToken }, rawNonce };
+}
 
+/** Step 2 of Sign in with Apple: exchange the credential for a mintsy session (signs in, or creates the account). */
+export async function signInWithAppleCredential({ credential, rawNonce }: AppleCredential): Promise<SocialSignInResult> {
   // Apple shares the name only on the very first sign-in, and only here (it isn't in the ID token)
   const firstName = credential.fullName?.givenName?.trim() || undefined;
   const lastName = credential.fullName?.familyName?.trim() || undefined;
@@ -135,6 +153,13 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
   } catch {
     return { status: 'error', message: CONNECTION_ERROR };
   }
+}
+
+/** Sign in with Apple from the auth screens: the sheet, then the backend. */
+export async function signInWithApple(): Promise<SocialSignInResult> {
+  const result = await getAppleCredential();
+  if (result.status !== 'success') return result;
+  return signInWithAppleCredential(result);
 }
 
 let googleConfigured = false;
@@ -197,7 +222,11 @@ type LinkedAccounts = {
   socialProvider: string | null;
   /** True when an Apple account is linked (deleting it then re-runs Sign in with Apple so the backend can revoke). */
   hasApple: boolean;
+  /** The linked Apple accounts' `accountId` (the Apple user id, `sub`). Empty while loading or if loading failed. */
+  appleAccountIds: string[];
 };
+
+const NO_APPLE_IDS: string[] = [];
 
 /** The current user's sign-in methods (Better Auth `listAccounts()`). */
 export function useLinkedAccounts(): LinkedAccounts {
@@ -208,6 +237,7 @@ export function useLinkedAccounts(): LinkedAccounts {
     hasPassword: true,
     socialProvider: null,
     hasApple: false,
+    appleAccountIds: NO_APPLE_IDS,
   });
 
   useEffect(() => {
@@ -218,7 +248,7 @@ export function useLinkedAccounts(): LinkedAccounts {
       .then(({ data, error }) => {
         if (!alive) return;
         if (error || !Array.isArray(data)) {
-          setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false });
+          setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false, appleAccountIds: NO_APPLE_IDS });
           return;
         }
         const ids = data.map((a) => (a as { providerId?: string }).providerId);
@@ -228,10 +258,11 @@ export function useLinkedAccounts(): LinkedAccounts {
           hasPassword: ids.includes('credential'),
           socialProvider: ids.find((id): id is string => !!id && id !== 'credential') ?? null,
           hasApple: ids.includes('apple'),
+          appleAccountIds: linkedAppleAccountIds(data),
         });
       })
       .catch(() => {
-        if (alive) setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false });
+        if (alive) setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false, appleAccountIds: NO_APPLE_IDS });
       });
     return () => {
       alive = false;
@@ -239,11 +270,14 @@ export function useLinkedAccounts(): LinkedAccounts {
   }, [userId]);
 
   // A different user than the one loaded: still loading
-  if (state.userId !== userId) return { loading: true, hasPassword: true, socialProvider: null, hasApple: false };
+  if (state.userId !== userId) {
+    return { loading: true, hasPassword: true, socialProvider: null, hasApple: false, appleAccountIds: NO_APPLE_IDS };
+  }
   return {
     loading: state.loading,
     hasPassword: state.hasPassword,
     socialProvider: state.socialProvider,
     hasApple: state.hasApple,
+    appleAccountIds: state.appleAccountIds,
   };
 }

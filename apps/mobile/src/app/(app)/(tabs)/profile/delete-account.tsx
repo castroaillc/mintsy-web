@@ -13,6 +13,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { authErrorMessage } from '@/lib/account';
+import { checkAppleIdentity } from '@/lib/apple-identity';
 import { authClient } from '@/lib/auth-client';
 import { useDownloads } from '@/lib/downloads';
 import { setFlash } from '@/lib/flash';
@@ -21,7 +22,13 @@ import { isWebStore, logOutPurchases, useManageSubscription, usePremium } from '
 import { unregisterPushNotifications } from '@/lib/push';
 import { useProgress } from '@/lib/progress';
 import { cancelDailyReminder } from '@/lib/reminders';
-import { providerLabel, signInWith, signInWithApple, useLinkedAccounts } from '@/lib/social-auth';
+import {
+  getAppleCredential,
+  providerLabel,
+  signInWith,
+  signInWithAppleCredential,
+  useLinkedAccounts,
+} from '@/lib/social-auth';
 import { deleteUserFiles } from '@/lib/user-files';
 
 const DELETED = [
@@ -37,6 +44,8 @@ const DELETED = [
  * older than 10 minutes. Better Auth's own codes for the same check are accepted too.
  */
 const REAUTH_CODES = ['REAUTH_REQUIRED', 'SESSION_EXPIRED', 'SESSION_NOT_FRESH'];
+
+const DIFFERENT_ACCOUNT = 'That’s a different account. Sign in with the account you want to delete.';
 
 type DeleteError = { code?: string; message?: string; status?: number };
 
@@ -54,6 +63,8 @@ async function deleteAccount(password?: string): Promise<DeleteError | null> {
  * Accounts with Apple linked confirm with Sign in with Apple every time (on iOS): it sends Apple a fresh one-time
  * code, which the backend exchanges for a token it can revoke when the account is deleted (App Store 5.1.1(v)).
  * Accounts from before the app sent that code have no stored token, so this can't be limited to REAUTH_REQUIRED.
+ * The Apple ID picked in the sheet is compared with the linked Apple account before anything is sent to the backend,
+ * so another Apple ID stops here without signing in as, or creating, a different mintsy account.
  */
 export default function DeleteAccountScreen() {
   const { data: session } = authClient.useSession();
@@ -82,16 +93,29 @@ export default function DeleteAccountScreen() {
     try {
       if (confirmWithApple) {
         // Cancelling the Apple sheet cancels the deletion, with no message
-        const result = await signInWithApple();
+        const apple = await getAppleCredential();
+        if (apple.status !== 'success') {
+          if (apple.status === 'error') setError(apple.message);
+          setDeleting(false);
+          return;
+        }
+        // Check the Apple ID before it reaches the backend: signing in with another one would switch this device to
+        // that mintsy account, or create a new one. 'unknown' (linked ids not loaded) falls back to the check below.
+        if (checkAppleIdentity(apple.credential.user, accounts.appleAccountIds) === 'mismatch') {
+          setError(DIFFERENT_ACCOUNT);
+          setDeleting(false);
+          return;
+        }
+        const result = await signInWithAppleCredential(apple);
         if (result.status !== 'success') {
           if (result.status === 'error') setError(result.message);
           setDeleting(false);
           return;
         }
-        // A different Apple ID would have switched the session: never delete someone else
+        // Second guard: a different Apple ID would have switched the session: never delete someone else
         const fresh = await authClient.getSession().catch(() => null);
         if (!fresh?.data || fresh.data.user.id !== userId) {
-          setError('That’s a different account. Sign in with the account you want to delete.');
+          setError(DIFFERENT_ACCOUNT);
           setDeleting(false);
           return;
         }
@@ -115,7 +139,7 @@ export default function DeleteAccountScreen() {
         // A different Google account would have switched the session: never delete someone else
         const fresh = await authClient.getSession().catch(() => null);
         if (!fresh?.data || fresh.data.user.id !== userId) {
-          setError('That’s a different account. Sign in with the account you want to delete.');
+          setError(DIFFERENT_ACCOUNT);
           setDeleting(false);
           return;
         }
