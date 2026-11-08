@@ -1,0 +1,15 @@
+# Signed out, the app opens on Home as a guest: open Welcome (the sign-in options) from Home's "Sign in" button.
+# Does nothing when Welcome is already showing.
+appId: com.getmintsy.app.dev
+---
+- runFlow:
+    when:
+      notVisible: "Every great book, one 5-minute episode at a time."
+    commands:
+      - extendedWaitUntil:
+          visible: "Featured series"
+          timeout: 30000
+      - tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Every great book, one 5-minute episode at a time."
+    timeout: 10000

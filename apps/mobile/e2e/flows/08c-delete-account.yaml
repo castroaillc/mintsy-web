@@ -1,4 +1,4 @@
-# Scenario 8c: Settings › Delete account with the password → Welcome; signing in again fails.
+# Scenario 8c: Settings › Delete account with the password → Home as a guest; signing in again fails.
 # Env: EMAIL, CURRENT_PASSWORD
 appId: com.getmintsy.app.dev
 name: 08c Delete account
@@ -18,9 +18,9 @@ name: 08c Delete account
     direction: DOWN
 - tapOn: "Delete my account"
 - extendedWaitUntil:
-    visible: "Every great book, one 5-minute episode at a time."
+    visible: "Your account has been deleted.*"
     timeout: 20000
-- assertVisible: "Your account has been deleted.*"
+- assertVisible: "Featured series"
 - takeScreenshot: 08e-account-deleted
 - runFlow:
     file: common/sign-in.yaml

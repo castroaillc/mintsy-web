@@ -21,6 +21,8 @@ export function useTestEnv(overrides: Record<string, string> = {}) {
     GOOGLE_CLIENT_SECRET: "",
     APPLE_CLIENT_ID: "",
     APPLE_CLIENT_SECRET: "",
+    APPLE_KEY_ID: "",
+    APPLE_PRIVATE_KEY: "",
     SIGNED_MEDIA: "",
     ...overrides,
   });

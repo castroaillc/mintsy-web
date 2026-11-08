@@ -51,9 +51,9 @@ Errors follow the GraphQL spec: `data` may be partial and `errors[].extensions.c
 
 | Thing        | Id format                                       | Example                     |
 | ------------ | ----------------------------------------------- | --------------------------- |
-| Book         | catalog `_id` (chosen by studio: `--book <id>`) | `psychology-of-money`       |
-| Episode      | `<bookId>-<number>`                             | `psychology-of-money-4`     |
-| Search match | `<bookId>-<number>-<startSec>`                  | `psychology-of-money-4-131` |
+| Book         | catalog `_id` (chosen by studio: `--book <id>`) | `the-science-of-getting-rich`       |
+| Episode      | `<bookId>-<number>`                             | `the-science-of-getting-rich-4`     |
+| Search match | `<bookId>-<number>-<startSec>`                  | `the-science-of-getting-rich-4-131` |
 | User         | Better Auth user id                             |                             |
 
 Episode ids are stable and shared by `Episode.id`, `User.savedEpisodeIds`, `EpisodeProgress.episodeId` and `EpisodeMatch.episodeId`. The app indexes `book.episodes[number - 1]`, so published episodes always form a contiguous run starting at 1.

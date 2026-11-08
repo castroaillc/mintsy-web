@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 
 import { FormAlert } from '@/components/auth/form-alert';
 import { TextField } from '@/components/auth/text-field';
@@ -12,6 +13,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { authErrorMessage } from '@/lib/account';
+import { checkAppleIdentity } from '@/lib/apple-identity';
 import { authClient } from '@/lib/auth-client';
 import { useDownloads } from '@/lib/downloads';
 import { setFlash } from '@/lib/flash';
@@ -20,7 +22,13 @@ import { isWebStore, logOutPurchases, useManageSubscription, usePremium } from '
 import { unregisterPushNotifications } from '@/lib/push';
 import { useProgress } from '@/lib/progress';
 import { cancelDailyReminder } from '@/lib/reminders';
-import { providerLabel, signInWith, useLinkedAccounts } from '@/lib/social-auth';
+import {
+  getAppleCredential,
+  providerLabel,
+  signInWith,
+  signInWithAppleCredential,
+  useLinkedAccounts,
+} from '@/lib/social-auth';
 import { deleteUserFiles } from '@/lib/user-files';
 
 const DELETED = [
@@ -37,6 +45,8 @@ const DELETED = [
  */
 const REAUTH_CODES = ['REAUTH_REQUIRED', 'SESSION_EXPIRED', 'SESSION_NOT_FRESH'];
 
+const DIFFERENT_ACCOUNT = 'That’s a different account. Sign in with the account you want to delete.';
+
 type DeleteError = { code?: string; message?: string; status?: number };
 
 async function deleteAccount(password?: string): Promise<DeleteError | null> {
@@ -50,6 +60,11 @@ async function deleteAccount(password?: string): Promise<DeleteError | null> {
  * Better Auth's deleteUser checks the password and the backend removes all of the user's data.
  * Apple / Google-only accounts have no password: they confirm without one, and the server requires a recent
  * sign-in instead.
+ * Accounts with Apple linked confirm with Sign in with Apple every time (on iOS): it sends Apple a fresh one-time
+ * code, which the backend exchanges for a token it can revoke when the account is deleted (App Store 5.1.1(v)).
+ * Accounts from before the app sent that code have no stored token, so this can't be limited to REAUTH_REQUIRED.
+ * The Apple ID picked in the sheet is compared with the linked Apple account before anything is sent to the backend,
+ * so another Apple ID stops here without signing in as, or creating, a different mintsy account.
  */
 export default function DeleteAccountScreen() {
   const { data: session } = authClient.useSession();
@@ -65,6 +80,7 @@ export default function DeleteAccountScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const accounts = useLinkedAccounts();
   const needsPassword = accounts.hasPassword;
+  const confirmWithApple = Platform.OS === 'ios' && accounts.hasApple;
   const canDelete = !accounts.loading && (!needsPassword || !!password);
 
   async function onDelete() {
@@ -75,8 +91,38 @@ export default function DeleteAccountScreen() {
     setNeedsFreshSignIn(false);
     setDeleting(true);
     try {
+      if (confirmWithApple) {
+        // Cancelling the Apple sheet cancels the deletion, with no message
+        const apple = await getAppleCredential();
+        if (apple.status !== 'success') {
+          if (apple.status === 'error') setError(apple.message);
+          setDeleting(false);
+          return;
+        }
+        // Check the Apple ID before it reaches the backend: signing in with another one would switch this device to
+        // that mintsy account, or create a new one. 'unknown' (linked ids not loaded) falls back to the check below.
+        if (checkAppleIdentity(apple.credential.user, accounts.appleAccountIds) === 'mismatch') {
+          setError(DIFFERENT_ACCOUNT);
+          setDeleting(false);
+          return;
+        }
+        const result = await signInWithAppleCredential(apple);
+        if (result.status !== 'success') {
+          if (result.status === 'error') setError(result.message);
+          setDeleting(false);
+          return;
+        }
+        // Second guard: a different Apple ID would have switched the session: never delete someone else
+        const fresh = await authClient.getSession().catch(() => null);
+        if (!fresh?.data || fresh.data.user.id !== userId) {
+          setError(DIFFERENT_ACCOUNT);
+          setDeleting(false);
+          return;
+        }
+      }
       let error = await deleteAccount(needsPassword ? password : undefined);
-      if (error && !needsPassword && error.code && REAUTH_CODES.includes(error.code)) {
+      // Apple was just confirmed above, so the session is already fresh: don't ask a second time
+      if (error && !needsPassword && !confirmWithApple && error.code && REAUTH_CODES.includes(error.code)) {
         // Confirm it's them with Apple / Google again, then retry straight away
         const reauth = signInWith(accounts.socialProvider);
         if (!reauth) {
@@ -93,7 +139,7 @@ export default function DeleteAccountScreen() {
         // A different Google account would have switched the session: never delete someone else
         const fresh = await authClient.getSession().catch(() => null);
         if (!fresh?.data || fresh.data.user.id !== userId) {
-          setError('That’s a different account. Sign in with the account you want to delete.');
+          setError(DIFFERENT_ACCOUNT);
           setDeleting(false);
           return;
         }
@@ -112,8 +158,8 @@ export default function DeleteAccountScreen() {
       return;
     }
 
-    // The account is gone: clear everything it left on this device, then let the guard return to Welcome
-    setFlash('welcome', 'Your account has been deleted. Thanks for learning with mintsy.');
+    // The account is gone: clear everything it left on this device, then carry on browsing as a guest
+    setFlash('home', 'Your account has been deleted. Thanks for learning with mintsy.');
     downloads.removeAll();
     // The API already deleted the watch progress; drop the cache and unsent saves, then the user's whole folder
     progress.discardLocal();
@@ -125,12 +171,14 @@ export default function DeleteAccountScreen() {
     ]);
     // Clears the stored session cookie; the server session is already gone, so ignore its answer
     await authClient.signOut().catch(() => {});
+    // This screen needs an account, so the profile stack drops it; Home shows the confirmation
+    router.navigate('/');
   }
 
-  /** Same as Settings › Sign out; Welcome then asks them to sign in again and come back. */
+  /** Same as Settings › Sign out; Profile (signed out) then asks them to sign in again and come back. */
   async function signOutToReauthenticate() {
     setSigningOut(true);
-    setFlash('welcome', 'Sign in again, then go to Settings › Delete account to finish.');
+    setFlash('profile', 'Sign in again, then go to Settings › Delete account to finish.');
     await unregisterPushNotifications().catch(() => {});
     await cancelDailyReminder().catch(() => {});
     downloads.removeAll();
@@ -198,11 +246,21 @@ export default function DeleteAccountScreen() {
           returnKeyType="go"
           onSubmitEditing={onDelete}
         />
+      ) : confirmWithApple ? (
+        <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
+          You sign in with Apple, so there’s no password to enter. Tap Confirm with Apple to check it’s you, and your
+          account is deleted as soon as you confirm.
+        </Text>
       ) : (
         <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
           You sign in with {provider}, so there’s no password to enter. We may ask you to confirm with {provider}.
         </Text>
       )}
+      {needsPassword && confirmWithApple ? (
+        <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
+          Your account is also linked to Apple, so after your password we’ll ask you to confirm with Apple.
+        </Text>
+      ) : null}
       {error ? <FormAlert message={error} /> : null}
       {needsFreshSignIn ? (
         <VStack className="gap-3">
@@ -229,7 +287,9 @@ export default function DeleteAccountScreen() {
         }`}
       >
         {deleting ? <Spinner className="text-white" /> : null}
-        <Text className="font-inter-semibold text-[16px] text-white">Delete my account</Text>
+        <Text className="font-inter-semibold text-[16px] text-white">
+          {confirmWithApple ? 'Confirm with Apple and delete' : 'Delete my account'}
+        </Text>
       </Pressable>
     </AccountFormScreen>
   );

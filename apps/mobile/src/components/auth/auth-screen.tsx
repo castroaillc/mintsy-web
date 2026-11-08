@@ -18,7 +18,8 @@ type AuthScreenProps = {
 
 function goBack() {
   if (router.canGoBack()) router.back();
-  else router.replace('/welcome');
+  // Opened straight from a link with nothing under it: guests browse the app
+  else router.replace('/');
 }
 
 /** Shared shell for the sign-in / sign-up forms: back button, title, form, footer. */

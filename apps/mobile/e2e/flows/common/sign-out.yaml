@@ -1,4 +1,4 @@
-# From Settings: Sign out and confirm; ends on Welcome.
+# From Settings: Sign out and confirm; ends on Home, browsing as a guest.
 appId: com.getmintsy.app.dev
 ---
 - scrollUntilVisible:
@@ -13,5 +13,5 @@ appId: com.getmintsy.app.dev
     text: "Sign out"
     rightOf: "Cancel"
 - extendedWaitUntil:
-    visible: "Every great book, one 5-minute episode at a time."
+    visible: "You.re signed out.*"
     timeout: 20000

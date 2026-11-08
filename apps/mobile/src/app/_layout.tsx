@@ -24,6 +24,7 @@ import { DownloadsProvider, useDownloads } from '@/lib/downloads';
 import { OnboardingProvider, useOnboarding } from '@/lib/onboarding';
 import { applyOrientationRule, useOrientationRule } from '@/lib/orientation';
 import { PremiumProvider } from '@/lib/premium';
+import { routeAccess } from '@/lib/route-guards';
 import { SavedProvider } from '@/lib/saved';
 import { ThemeModeProvider, useThemeMode } from '@/lib/theme-mode';
 // Registers the foreground notification handler
@@ -103,10 +104,12 @@ function RootNavigator() {
     );
   }
 
-  const isSignedIn = !!session;
-  // Right after sign-in the user's onboarding answers take a moment to load; stay on the auth screens until they do
-  const isSignedInReady = isSignedIn && onboarding.isLoaded;
-  const isOnboarded = onboarding.data.onboardingComplete;
+  // Guests use the app too; the auth screens open over it when something needs an account (lib/route-guards.ts)
+  const access = routeAccess({
+    signedIn: !!session,
+    onboardingLoaded: onboarding.isLoaded,
+    onboarded: onboarding.data.onboardingComplete,
+  });
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -114,20 +117,15 @@ function RootNavigator() {
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <StatusBar style="auto" />
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Protected
-              guard={isSignedInReady && isOnboarded}
-              redirectTo={isSignedIn ? '/onboarding' : '/welcome'}
-            >
+            <Stack.Protected guard={access.app} redirectTo={access.appRedirect}>
               <Stack.Screen name="(app)" />
             </Stack.Protected>
-            <Stack.Protected
-              guard={isSignedInReady && !isOnboarded}
-              redirectTo={isSignedIn ? '/' : '/welcome'}
-            >
+            <Stack.Protected guard={access.onboarding} redirectTo={access.onboardingRedirect}>
               <Stack.Screen name="onboarding" />
             </Stack.Protected>
-            <Stack.Protected guard={!isSignedInReady} redirectTo={isOnboarded ? '/' : '/onboarding'}>
-              <Stack.Screen name="(auth)" />
+            <Stack.Protected guard={access.auth} redirectTo={access.authRedirect}>
+              {/* Over the app, so closing it (or signing in) returns the guest to where they were */}
+              <Stack.Screen name="(auth)" options={{ presentation: 'fullScreenModal' }} />
             </Stack.Protected>
           </Stack>
         </ThemeProvider>

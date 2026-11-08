@@ -1,6 +1,6 @@
 # Media and signed URLs
 
-Episode videos (MP4, optionally also HLS) and thumbnails (JPG) live in the Cloud Storage bucket `gs://mintsy-media` (project `mintsy-prod`). The database stores only object **paths** (`EpisodeDoc.videoPath`, `hlsPath`, `thumbnailPath`, e.g. `books/psychology-of-money/4.mp4`). The API turns them into URLs in `src/media.ts`, so clients must refetch URLs from the API rather than store them. With signing off, a URL is `MEDIA_BASE_URL` + path, so a CDN or custom domain later is only an env change.
+Episode videos (MP4, optionally also HLS) and thumbnails (JPG) live in the Cloud Storage bucket `gs://mintsy-media` (project `mintsy-prod`). The database stores only object **paths** (`EpisodeDoc.videoPath`, `hlsPath`, `thumbnailPath`, e.g. `books/the-science-of-getting-rich/4.mp4`). The API turns them into URLs in `src/media.ts`, so clients must refetch URLs from the API rather than store them. With signing off, a URL is `MEDIA_BASE_URL` + path, so a CDN or custom domain later is only an env change.
 
 ## One-time bucket setup
 
@@ -110,7 +110,7 @@ Normally the studio worker's `render` job encodes, uploads and upserts the draft
 2.  Upload. Files are cached for a year, so upload a changed video under a new name (for example `4-v2.mp4`):
 
     ```sh
-    gcloud storage cp 4.mp4 4.jpg gs://mintsy-media/books/psychology-of-money/ \
+    gcloud storage cp 4.mp4 4.jpg gs://mintsy-media/books/the-science-of-getting-rich/ \
       --cache-control "public, max-age=31536000"
     ```
-3. Set the episode's `videoPath` / `thumbnailPath` (for example `books/psychology-of-money/4.mp4`) and a matching `durationSec` in the admin dashboard, then publish.
+3. Set the episode's `videoPath` / `thumbnailPath` (for example `books/the-science-of-getting-rich/4.mp4`) and a matching `durationSec` in the admin dashboard, then publish.

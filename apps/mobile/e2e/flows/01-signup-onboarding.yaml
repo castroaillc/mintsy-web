@@ -1,4 +1,4 @@
-# Scenario 1: fresh install → Welcome → Sign up → onboarding → Home
+# Scenario 1: fresh install → Home as a guest → Welcome → Sign up → onboarding → Home
 # Env: METRO_URL_ENC, EMAIL, PASSWORD
 appId: com.getmintsy.app.dev
 name: 01 Sign up and onboarding
@@ -9,9 +9,12 @@ name: 01 Sign up and onboarding
     permissions:
       notifications: deny
 - runFlow: common/connect.yaml
+# No account needed to browse (App Store guideline 5.1.1(v)): a fresh install opens on Home
 - extendedWaitUntil:
-    visible: "Every great book, one 5-minute episode at a time."
+    visible: "Featured series"
     timeout: 30000
+- takeScreenshot: 01a-guest-home
+- runFlow: common/open-welcome.yaml
 - takeScreenshot: 01a-welcome
 - scrollUntilVisible:
     element: "Create account"

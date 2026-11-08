@@ -26,6 +26,7 @@ flowchart LR
   Resend[(Resend)]
   Expo[(Expo Push)]
   Claude[(Claude API)]
+  Apple[(Sign in with Apple)]
 
   Admin -->|queue jobs, edit, publish| Studio
   Studio -->|claim jobs| Worker
@@ -41,6 +42,7 @@ flowchart LR
   RC -->|webhook| API
   API -->|REST| RC
   API -->|email| Resend
+  API -->|"token exchange, revoke on deletion"| Apple
   API -->|push| Expo --> App
   App -->|privacy and support links| Web
 ```

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView } from 'react-native';
 
+import { BrandButton } from '@/components/mintsy/brand-button';
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { EpisodeThumb } from '@/components/mintsy/episode-thumb';
 import { Icon } from '@/components/mintsy/icon';
@@ -14,6 +15,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import type { Book, Episode } from '@/data/types';
 import { useCatalog } from '@/lib/catalog';
+import { useIsGuest } from '@/lib/guest';
 import { useIsLocked, useOpenEpisode } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { useSaved } from '@/lib/saved';
@@ -24,6 +26,12 @@ const LIST_MAX_WIDTH = 720;
 
 /** My List (not designed; follows Browse and Settings): saved series and episodes, most recently saved first. */
 export default function MyListScreen() {
+  // My List is stored with the account: guests get the pitch for one instead
+  return useIsGuest() ? <GuestMyList /> : <SavedLists />;
+}
+
+/** The signed-in user's lists. */
+function SavedLists() {
   const catalog = useCatalog();
   const saved = useSaved();
   const { progress } = useProgress();
@@ -119,6 +127,36 @@ export default function MyListScreen() {
             ) : null}
           </VStack>
         )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+/** Signed out: there's no list yet. Explains what an account adds and offers one. */
+function GuestMyList() {
+  return (
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="flex-grow px-5 pb-10 pt-5"
+        contentContainerStyle={{ maxWidth: LIST_MAX_WIDTH + 40, width: '100%', alignSelf: 'center' }}
+      >
+        <Text accessibilityRole="header" className="font-display text-[26px] text-foreground">
+          My List
+        </Text>
+        <Center className="flex-1 gap-3 px-6">
+          <Center className="h-16 w-16 rounded-full bg-tag">
+            <Icon name="bookmark" size={26} className="text-brand" />
+          </Center>
+          <Text className="font-display text-[18px] text-foreground">Save series for later</Text>
+          <Text className="max-w-[360px] text-center font-inter text-[14px] leading-[21px] text-muted-foreground">
+            Create a free account to keep a list of series and episodes. It follows you to every device.
+          </Text>
+          <VStack className="mt-2 w-full max-w-[360px] gap-2.5">
+            <BrandButton label="Create account" height={50} onPress={() => router.push('/sign-up')} />
+            <BrandButton label="Sign in" variant="outline" height={50} onPress={() => router.push('/sign-in')} />
+          </VStack>
+        </Center>
       </ScrollView>
     </SafeAreaView>
   );

@@ -43,7 +43,8 @@ each flow's Maestro log and debug output. The script exits non-zero if any flow 
 ## Layout
 
 - `flows/NN-*.yaml`: one flow per scenario; `flows/common/` holds subflows (connect the dev client to Metro and
-  dismiss its overlays, open Home, sign in, sign out).
+  dismiss its overlays, open Home, open Welcome from a guest's Home, sign in, sign out). Signed out, the app opens on
+  Home as a guest, and signing out or deleting the account returns there.
 - `run.sh` does the non-UI steps between flows: publishing a book through the admin API (scenario 6), the
   `INITIAL_PURCHASE` webhook (7), and reading the password reset link from the backend log (8).
 - Selectors are accessibility labels plus a few `testID`s: text fields are `input-<label>` (e.g.

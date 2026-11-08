@@ -2,12 +2,15 @@ import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useNotificationPermission } from '@/hooks/use-notification-permission';
+import { authClient } from '@/lib/auth-client';
 import { useOnboarding } from '@/lib/onboarding';
 import { ProgressProvider } from '@/lib/progress';
 import { registerForPushNotifications } from '@/lib/push';
 
 export default function AppLayout() {
   const { permission } = useNotificationPermission();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user.id;
   const { takePendingEpisode } = useOnboarding();
 
   // "Start Episode 1" at the end of onboarding: open it once the tabs are mounted
@@ -19,14 +22,15 @@ export default function AppLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep the backend's copy of this device's push token current while signed in
+  // Keep the backend's copy of this device's push token current while signed in. Guests browse here too, and
+  // registerPushToken needs an account, so wait for one (signing in later registers then)
   useEffect(() => {
-    if (permission === 'granted') {
+    if (userId && permission === 'granted') {
       registerForPushNotifications().catch((err) =>
         console.warn('Push registration failed:', err),
       );
     }
-  }, [permission]);
+  }, [permission, userId]);
 
   return (
     <ProgressProvider>

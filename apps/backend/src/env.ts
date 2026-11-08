@@ -73,6 +73,12 @@ export const env = {
   appleAppBundleIdentifiers: list(
     process.env.APPLE_APP_BUNDLE_IDENTIFIER || "com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview",
   ),
+  // Sign in with Apple key, used to sign the client_secret for Apple's token and revoke endpoints (exchanging
+  // the app's authorization code at sign-in, revoking the token on account deletion). Unset key = both are off.
+  appleTeamId: process.env.APPLE_TEAM_ID || "9496L7QUB2",
+  appleKeyId: process.env.APPLE_KEY_ID || undefined,
+  // The .p8 contents (PEM). Literal "\n" sequences are accepted for single-line values.
+  applePrivateKey: process.env.APPLE_PRIVATE_KEY ? process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n").trim() : undefined,
   corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())

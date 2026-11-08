@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView } from 'react-native';
 
 import { BrandButton } from '@/components/mintsy/brand-button';
@@ -23,6 +23,7 @@ import { FREE_EPISODES } from '@/data/types';
 import { useRailInsets } from '@/hooks/use-rail-insets';
 import { useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
+import { promptAccount, useIsGuest } from '@/lib/guest';
 import { loadOffer, type Offer, type Plan } from '@/lib/offering';
 import { usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
@@ -45,6 +46,8 @@ export default function PaywallScreen() {
   const { findEpisode } = useCatalog();
   const { progress } = useProgress();
   const blocked = episodeId ? findEpisode(episodeId) : undefined;
+  // RevenueCat buys for the backend user id and never anonymously, so a guest makes an account first
+  const isGuest = useIsGuest();
 
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [selected, setSelected] = useState<Plan['kind']>('yearly');
@@ -69,6 +72,17 @@ export default function PaywallScreen() {
     fetchOffer();
   };
 
+  // Signed in from here and the account already has Premium: nothing to buy, so back to what they were doing
+  const openedAsGuest = useRef(isGuest);
+  useEffect(() => {
+    if (!openedAsGuest.current || isGuest || premium.loading) return;
+    openedAsGuest.current = false;
+    if (premium.isPremium) {
+      Alert.alert('You already have Premium', 'Every episode is unlocked on this account.');
+      close();
+    }
+  }, [isGuest, premium.loading, premium.isPremium]);
+
   const offer = state.status === 'ready' ? state.offer : null;
   const plan = offer ? (offer[selected] ?? offer.yearly ?? offer.monthly) : null;
 
@@ -76,6 +90,7 @@ export default function PaywallScreen() {
     router.replace({ pathname: '/premium-welcome', params: episodeId ? { episodeId } : {} });
 
   async function buy() {
+    if (isGuest) return promptAccount('subscribe');
     if (!plan || busy) return;
     setBusy('purchase');
     try {
@@ -94,6 +109,7 @@ export default function PaywallScreen() {
   }
 
   async function restore() {
+    if (isGuest) return promptAccount('restore');
     if (busy) return;
     setBusy('restore');
     try {
@@ -109,7 +125,7 @@ export default function PaywallScreen() {
   }
 
   const trial = plan?.trial ?? null;
-  const ctaLabel = trial ? `Start ${trial.adjective} free trial` : 'Continue';
+  const ctaLabel = isGuest ? 'Create free account to continue' : trial ? `Start ${trial.adjective} free trial` : 'Continue';
   const fineprint = plan
     ? `${trial ? `Free for ${trial.noun}, then ` : ''}${plan.priceString}/${plan.periodNoun}. Renews automatically unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your ${STORE_NAME} settings.`
     : `Renews automatically unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your ${STORE_NAME} settings.`;
@@ -174,13 +190,19 @@ export default function PaywallScreen() {
   const purchaseBlock = (
     <>
       <BrandButton
-        label={state.status === 'ready' ? ctaLabel : 'Continue'}
+        label={state.status === 'ready' || isGuest ? ctaLabel : 'Continue'}
         height={56}
         loading={busy === 'purchase'}
-        disabled={!plan || busy === 'restore'}
+        // Just signed in: wait until RevenueCat knows the account, so the purchase goes to it
+        disabled={isGuest ? false : !plan || busy === 'restore' || premium.loading}
         onPress={buy}
         className={wide ? 'mt-[22px]' : 'mt-5'}
       />
+      {isGuest ? (
+        <Text className="mt-3 text-center font-inter text-[13px] leading-[19px] text-muted-foreground">
+          Premium belongs to your mintsy account, so it works on every device you sign in on. Creating one is free.
+        </Text>
+      ) : null}
       <Text className="mt-3 text-center font-inter text-[12px] leading-[18px] text-faint">{fineprint}</Text>
       <Box className="mt-2">
         <LegalLinks />

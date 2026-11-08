@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 
 import { authClient } from '@/lib/auth-client';
 import { graphql } from '@/lib/graphql';
+import { promptAccount } from '@/lib/guest';
 
 /** GraphQL `SavedKind`. */
 export type SavedKind = 'BOOK' | 'EPISODE';
@@ -40,7 +41,7 @@ type SavedContextValue = SavedLists & {
   /** True once the signed-in user's lists have loaded (or failed to). */
   loaded: boolean;
   isSaved: (kind: SavedKind, id: string) => boolean;
-  /** Optimistic: updates at once, rolls back with an alert if the API call fails. */
+  /** Optimistic: updates at once, rolls back with an alert if the API call fails. Guests are asked to sign in instead. */
   setSaved: (kind: SavedKind, id: string, saved: boolean) => void;
   toggle: (kind: SavedKind, id: string) => void;
   /** Re-reads the lists from the API (pull to refresh). */
@@ -51,7 +52,8 @@ const SavedContext = createContext<SavedContextValue | null>(null);
 
 /**
  * My List: series and episodes the signed-in user saved, stored by the API (`me.savedBookIds`,
- * `me.savedEpisodeIds`, `setSaved`). Empty while signed out; a new user starts from their own lists.
+ * `me.savedEpisodeIds`, `setSaved`). Empty while signed out, where saving asks for an account; a new user starts
+ * from their own lists.
  */
 export function SavedProvider({ children }: { children: ReactNode }) {
   const { data: session } = authClient.useSession();
@@ -91,7 +93,11 @@ export function SavedProvider({ children }: { children: ReactNode }) {
 
   const setSaved = useCallback((kind: SavedKind, id: string, saved: boolean) => {
     const forUser = userRef.current;
-    if (!forUser) return;
+    if (!forUser) {
+      // Guests have no list to save to: offer an account, then they can tap Save again
+      promptAccount('save');
+      return;
+    }
     setState((prev) => {
       const base = prev.userId === forUser ? prev : { userId: forUser, lists: EMPTY, loaded: false };
       return { ...base, lists: apply(base.lists, kind, id, saved) };
