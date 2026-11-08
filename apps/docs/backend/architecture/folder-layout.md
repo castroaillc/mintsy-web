@@ -10,7 +10,7 @@ apps/backend/
 ├── tsconfig.json            NodeNext ESM, strict, src → dist
 ├── README.md                Getting started; these docs are in apps/docs
 ├── scripts/
-│   ├── catalog.json         Legacy bootstrap catalog (9 books)
+│   ├── catalog.json         Legacy bootstrap catalog (empty)
 │   ├── seed-catalog.ts      pnpm seed:catalog (insert-only)
 │   └── smoke-test.sh        End-to-end checks against a running server
 ├── src/

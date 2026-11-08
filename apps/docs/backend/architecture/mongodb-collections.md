@@ -53,7 +53,7 @@ One document per book, with episodes embedded. **MongoDB is the source of truth 
 type ContentStatus = "draft" | "published"; // missing = "published"
 
 interface BookDoc {
-  _id: string;          // book id, e.g. "psychology-of-money"
+  _id: string;          // book id, e.g. "the-science-of-getting-rich"
   title: string;
   author: string;
   category: string;

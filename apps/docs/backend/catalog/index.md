@@ -40,7 +40,7 @@ Because of this rule, the admin dashboard only publishes episode n when 1..n-1 a
 
 ## Ids
 
-* Book id = `_id` = the studio's `--book <id>` = studio's `work/<id>/` folder. Lowercase, hyphenated, e.g. `atomic-habits`. Never change it after publishing: My List and watch progress store it.
+* Book id = `_id` = the studio's `--book <id>` = studio's `work/<id>/` folder. Lowercase, hyphenated, e.g. `the-science-of-getting-rich`. Never change it after publishing: My List and watch progress store it.
 * Episode id = `<bookId>-<number>`, derived by the API (`Episode.id`), not stored.
 
 ## Other places that read `books`
