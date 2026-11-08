@@ -62,20 +62,34 @@ Every variant is registered separately outside this code:
 ```mermaid
 flowchart TD
   Root["src/app/_layout.tsx<br/>providers, fonts, splash, guards"]
-  Root -->|signed out| Auth["(auth): welcome, sign-in, sign-up, forgot-password"]
+  Root -->|"guests (signed out), signed in and onboarded"| App["(app) stack"]
   Root -->|signed in, not onboarded| Onb["onboarding: interests → daily-time → reminders → first-series"]
-  Root -->|signed in, onboarded| App["(app) stack"]
+  App -.->|"guest needs an account (promptAccount)"| Auth["(auth), full-screen modal over the app: welcome?reason, sign-in, sign-up, forgot-password"]
   App --> Tabs["(tabs): native tabs"]
   Tabs --> Home["(home): browse index, book/[id]"]
   Tabs --> Search[search]
-  Tabs --> MyList["my-list"]
-  Tabs --> Profile["profile: index, edit, settings, finished, downloads, plan, change-email, change-password, delete-account"]
+  Tabs --> MyList["my-list (guests: account pitch)"]
+  Tabs --> Profile["profile: index (guests: account pitch and device settings); signed in only: edit, settings, finished, downloads, plan, change-email, change-password, delete-account"]
   App --> Player["player/[episodeId] (full-screen modal)"]
   App --> Paywall["paywall, premium-welcome (full-screen modals)"]
   Root -->|"email links, signed in or out"| Links["reset-password, email-changed"]
 ```
 
-The root layout uses `Stack.Protected` guards driven by the Better Auth session and the onboarding flag. It holds the splash screen until the session, saved theme, fonts and the catalog are known (plus the onboarding answers on a cold start with a session), so screens never flash. If the catalog can't load it shows a retry screen, unless a signed-in viewer has downloads on the device, who gets in to watch them.
+The root layout uses `Stack.Protected` guards driven by the Better Auth session and the onboarding flag; the rules are in `lib/route-guards.ts` (tested by `scripts/route-guards.test.mjs`). It holds the splash screen until the session, saved theme, fonts and the catalog are known (plus the onboarding answers on a cold start with a session), so screens never flash. If the catalog can't load it shows a retry screen, unless a signed-in viewer has downloads on the device, who gets in to watch them.
+
+### Guests
+
+Signed-out users open on Home, not Welcome (App Store guideline 5.1.1(v)). They browse, search, open series pages and play the free episodes, which the API serves without a session (see [Contracts](../contracts.md#premium)). Anything that needs an account calls `promptAccount(reason?)` (`lib/guest.ts`), which opens Welcome over the current screen with a callout for the reason (`ACCOUNT_REASONS` in `lib/route-guards.ts`). Closing it ("Not now, keep browsing") returns to the app, and signing in closes it by itself; a new account goes through onboarding first.
+
+| Action | Guest gets |
+|---|---|
+| Save, My List | Welcome with reason `save`; the My List tab shows an account pitch |
+| Premium purchase, restore | The paywall opens, but its button reads "Create free account to continue" and opens Welcome (`subscribe`, `restore`). RevenueCat never buys anonymously. If the account they sign into already has Premium, the paywall says so and closes |
+| Downloads and other Premium features | The paywall, as for any free user, then the account prompt above |
+| Account settings | Profile shows an account pitch plus the device settings (playback, appearance, support). Every other profile screen is behind a `Stack.Protected` guard and redirects to `/profile` |
+| Watch progress, push | Nothing: progress isn't tracked or sent without an account, and the push token is only registered once signed in |
+
+Home's header shows "Sign in" instead of the profile button. Signing out and deleting the account both return to guest Home, with a notice.
 
 On a wide, landscape display (iPhone Duo open) the tabs move into a sidebar.
 
@@ -85,9 +99,9 @@ On a wide, landscape display (iPhone Duo open) the tabs move into a sidebar.
 |---|---|---|
 | `CatalogProvider` (`lib/catalog.tsx`) | Books → episodes (transcript, takeaways, `videoUrl`, `thumbnailUrl`) from the `books` query; `getBook`, `findEpisode` | Fetched at launch, on sign-in, sign-out or account switch, and quietly when back in the foreground with a stale catalog |
 | `PremiumProvider` (`lib/premium.tsx`) | Premium state (`isPremium`, expiry, renewal, plan), `purchase`, `restore`, `refresh`; lock helpers `useIsLocked`, `useOpenEpisode`, `openPaywall` | RevenueCat customer info + backend `me.premium`; nothing stored locally |
-| `SavedProvider` (`lib/saved.tsx`) | My List: saved book and episode ids, `isSaved`, `toggle`, `setSaved`, `reload` | API (`me.savedBookIds` / `savedEpisodeIds`, `setSaved`); optimistic, rolled back with an alert on failure; empty while signed out |
+| `SavedProvider` (`lib/saved.tsx`) | My List: saved book and episode ids, `isSaved`, `toggle`, `setSaved`, `reload` | API (`me.savedBookIds` / `savedEpisodeIds`, `setSaved`); optimistic, rolled back with an alert on failure; empty while signed out, where saving asks for an account |
 | `DownloadsProvider` (`lib/downloads.tsx`) | Offline episodes, active downloads, `download`, `remove`, `removeAll`, `getLocal` | Files on the device (`<documents>/downloads/`) plus `index.json`; never sent to the API |
-| `ProgressProvider` (`lib/progress.tsx`) | Per-episode position and completion, seconds watched per day | API (`setProgress`, `continueWatching`, `progress`, `finishedBookIds`), sent about every 10 s while playing and at once on pause, seek, end, exit and backgrounding. Device cache and unsent saves in `users/<id>/`; seconds watched per day stay on the device |
+| `ProgressProvider` (`lib/progress.tsx`) | Per-episode position and completion, seconds watched per day | API (`setProgress`, `continueWatching`, `progress`, `finishedBookIds`), sent about every 10 s while playing and at once on pause, seek, end, exit and backgrounding. Device cache and unsent saves in `users/<id>/`; seconds watched per day stay on the device. Nothing is tracked while signed out |
 | `OnboardingProvider` (`lib/onboarding.tsx`) | Interests, daily goal, reminder time, completion, resume step | SecureStore, per user |
 | `lib/preferences.ts` | Autoplay, captions, Wi-Fi-only downloads, alerts, default speed | SecureStore, per device |
 | `ThemeModeProvider` | Light / dark / system | SecureStore |
@@ -130,9 +144,9 @@ All of these are in `.env.example`.
 
 ## Premium
 
-`lib/premium.tsx`, `lib/offering.ts`, `components/premium/`. Free accounts get episodes 1–3 of every book (`FREE_EPISODES` from `@mintsy/shared`, mirroring the backend); Premium (monthly or yearly subscription with a free trial, App Store or Google Play) unlocks every episode, full transcripts and takeaways, and downloads. Prices, trial length and the yearly saving are read from the stores through RevenueCat at runtime, so nothing is hard-coded in the app.
+`lib/premium.tsx`, `lib/offering.ts`, `components/premium/`. Guests and free accounts get episodes 1–3 of every book (`FREE_EPISODES` from `@mintsy/shared`, mirroring the backend); Premium (monthly or yearly subscription with a free trial, App Store or Google Play) unlocks every episode, full transcripts and takeaways, and downloads. Prices, trial length and the yearly saving are read from the stores through RevenueCat at runtime, so nothing is hard-coded in the app.
 
-- **Identity:** after sign-in the provider calls `Purchases.logIn(<Better Auth user id>)`, so RevenueCat's customer id is the backend user id; it logs out on sign-out and never purchases anonymously.
+- **Identity:** after sign-in the provider calls `Purchases.logIn(<Better Auth user id>)`, so RevenueCat's customer id is the backend user id; it logs out on sign-out and never purchases anonymously, so a guest is asked to make an account first ([Guests](#guests)).
 - **Offering:** `default`, packages `$rc_annual` and `$rc_monthly`, entitlement `premium`. The app tells Yearly from Monthly by the word in the product id. The paywall shows the yearly saving and trial length only when the customer is eligible.
 - **Sync:** on the device, RevenueCat customer info drives the UI. After a purchase, restore or entitlement change the app calls `refreshPremium` and refetches the catalog, because the backend decides access: locked episodes arrive with `locked: true`, no `videoUrl`, and empty transcript and takeaways. `isEpisodeLocked` uses the API's `locked` and falls back to `number > FREE_EPISODES` for older backends.
 - **Screens:** paywall modal (`/paywall`, optional `episodeId`), `/premium-welcome` after a purchase, `/profile/plan` (current plan, manage, restore), Settings › Subscription row, lock states on the series page (play, transcript, download) and in the player (blocked-episode card), and Downloads as a Premium upsell.
@@ -186,7 +200,7 @@ Steve does these steps. This repo doesn't record which are done, so check the co
 - **Reset password:** Forgot password (and Change password's "send a reset link") call `requestPasswordReset` with `redirectTo: RESET_PASSWORD_URL`. The email link opens `<scheme>://reset-password/?token=…`; `+native-intent.tsx` drops the trailing slash so the route matches. `reset-password` sits outside the auth guards, works signed in or out, and sends the user to sign in again afterwards (a reset signs out every session).
 - **Change email:** Settings / Edit profile › `profile/change-email` calls `changeEmail` with `callbackURL: EMAIL_CHANGED_URL`; the confirmation goes to the new address, and `email-changed` (outside the guards) refreshes the session or shows the `?error=` reason.
 - **Change password:** `profile/change-password` calls `changePassword` with `revokeOtherSessions: true`.
-- **Delete account:** Settings › `profile/delete-account` asks for the password if the account has one and calls `deleteUser`; on success it deletes downloads and the user's files, logs out of RevenueCat, cancels the daily reminder, clears onboarding data and signs out. The store subscription isn't cancelled by deletion.
+- **Delete account:** Settings › `profile/delete-account` asks for the password if the account has one and calls `deleteUser`. On iOS, when an Apple account is linked (including password accounts that also linked Apple), the button reads "Confirm with Apple and delete" and runs Sign in with Apple first, so the backend gets a fresh authorization code and can revoke the Apple token ([Apple token revocation](../backend/authentication/social-sign-in.md#apple-token-revocation)). Cancelling the Apple sheet cancels the deletion, and an Apple ID that signs into a different mintsy account stops it with an error. On success it deletes downloads and the user's files, logs out of RevenueCat, cancels the daily reminder, clears onboarding data, signs out and returns to guest Home. The store subscription isn't cancelled by deletion.
 - `lib/account.ts` holds the shared password rule (8 characters) and friendly messages for Better Auth error codes.
 - **Support** (`lib/support.ts`, Settings › Support): Help center opens `https://getmintsy.com/support` in the in-app browser; Send feedback opens a mail sheet to `support@getmintsy.com` with the app version and OS (`expo-mail-composer`), falling back to a `mailto:` link, then to copying the address (`expo-clipboard`).
 
@@ -194,12 +208,12 @@ Steve does these steps. This repo doesn't record which are done, so check the co
 
 `lib/saved.tsx`, `lib/downloads.tsx`, `app/(app)/(tabs)/my-list/index.tsx`, `app/(app)/(tabs)/profile/downloads.tsx`.
 
-- **My List** is stored by the API, so it follows the account across devices. Save buttons on the series page and in the player toggle it optimistically.
+- **My List** is stored by the API, so it follows the account across devices. Save buttons on the series page and in the player toggle it optimistically; for guests they open the account prompt.
 - **Downloads** are Premium only (free users get the paywall) and stay on the device: `<documents>/downloads/<episodeId>/video.mp4` + `thumb.jpg`, with the book, episode, transcript and takeaways in `downloads/index.json` (paths stored relative, because iOS moves the app's container between updates). The folder is durable (Documents, not Caches) but kept out of backups. On iOS, the local Expo module `modules/backup-exclusion` (Swift, `excludeFromBackup(uri)`) sets `NSURLIsExcludedFromBackupKey` on `downloads/` and on each episode folder, and re-applies it at launch to downloads made before the module existed. It's optional (`requireOptionalNativeModule`), so builds without it skip the exclusion. On Android, downloads are already outside Auto Backup, because the `expo-secure-store` plugin's backup rules include only shared preferences. Right before a download the app refetches the book with `book(id)`, so the video URL (signed for ~1 hour once signed media is on) is fresh. It respects the Wi-Fi-only preference. The index records the owning user: another account signing in starts empty, and sign-out and account deletion delete every download. After Premium lapses the files stay but won't play until it's renewed or they're deleted. The player plays the local copy when one exists. HLS is never downloaded.
 
 ## Notifications
 
-- **Push:** once permission is granted, the `(app)` layout registers the Expo push token via GraphQL; sign-out unregisters it.
+- **Push:** once permission is granted and someone is signed in, the `(app)` layout registers the Expo push token via GraphQL (guests skip it); sign-out unregisters it.
 - **Local:** `lib/reminders.ts` schedules one daily "Your next episode is ready" reminder at the onboarding-chosen time.
 
 ## Design source
