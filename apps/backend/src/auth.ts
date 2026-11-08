@@ -5,6 +5,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { openAPI } from "better-auth/plugins";
 import { ObjectId } from "mongodb";
 import { deleteRevenueCatSubscriber, deleteUserData } from "./account.js";
+import { appleTokenApiConfigured, revokeAppleTokens, storeAppleTokensFromCode } from "./apple.js";
 import { client, db } from "./db.js";
 import { brandedEmail, sendEmail } from "./email.js";
 import { env } from "./env.js";
@@ -80,6 +81,24 @@ function linkOpensWebApp(url: string) {
 
 if (!socialProviders.google) console.warn("  GOOGLE_CLIENT_ID / GOOGLE_IOS_CLIENT_ID not set: Sign in with Google is disabled");
 if (!socialProviders.apple) console.warn("  APPLE_CLIENT_ID not set: Sign in with Apple is disabled");
+else if (!appleTokenApiConfigured()) {
+  console.warn("  APPLE_KEY_ID / APPLE_PRIVATE_KEY not set: Apple tokens aren't stored or revoked on account deletion");
+}
+
+/**
+ * The native Apple sign-in may carry the one-time authorization code from expo-apple-authentication as
+ * `additionalData.appleAuthorizationCode` (Better Auth accepts and ignores additionalData in the ID-token
+ * branch). Older app builds don't send it and sign in exactly as before.
+ */
+function appleAuthorizationCode(body: unknown): { identityToken: string; code: string } | null {
+  const b = body as
+    | { provider?: unknown; idToken?: { token?: unknown }; additionalData?: { appleAuthorizationCode?: unknown } }
+    | undefined;
+  const identityToken = b?.idToken?.token;
+  const code = b?.additionalData?.appleAuthorizationCode;
+  if (b?.provider !== "apple" || typeof identityToken !== "string" || typeof code !== "string" || !code) return null;
+  return { identityToken, code };
+}
 
 export const auth = betterAuth({
   baseURL,
@@ -194,6 +213,9 @@ export const auth = betterAuth({
     deleteUser: {
       enabled: true,
       beforeDelete: async (user) => {
+        // Apple requires revoking Sign in with Apple tokens on deletion; needs the account documents, which
+        // Better Auth deletes next. Best effort: never blocks the deletion.
+        await revokeAppleTokens(user.id);
         await deleteUserData(user.id);
       },
       afterDelete: async (user) => {
@@ -230,6 +252,14 @@ export const auth = betterAuth({
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
+      // Native Apple sign-in with an authorization code: keep Apple's refresh token for revocation on deletion.
+      // Runs only after a successful sign-in (Better Auth has verified the identity token). Failures are logged.
+      if (ctx.path === "/sign-in/social") {
+        const apple = appleAuthorizationCode(ctx.body);
+        const userId = ctx.context.newSession?.user.id;
+        if (apple && userId) await storeAppleTokensFromCode(userId, apple.identityToken, apple.code);
+        return;
+      }
       // Email links (change-email confirmation) open in a browser with no session, so /verify-email
       // creates a new one and the expo plugin would put its token in the deep link (?cookie=...).
       // The app keeps its own session, so don't mint a session from an email link or pass one through a

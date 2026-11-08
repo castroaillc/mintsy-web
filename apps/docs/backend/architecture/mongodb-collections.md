@@ -40,7 +40,7 @@ Per-user collections are cleared by `deleteUserData()` in `src/account.ts` when 
 
 Managed entirely by Better Auth's MongoDB adapter. Don't write to them directly. Users are keyed by `ObjectId`; the user id string (`session.user.id`) is what every other collection stores as `userId`, and what RevenueCat uses as `app_user_id`.
 
-* `account` holds sign-in methods: `providerId` is `credential` (password), `google` or `apple`.
+* `account` holds sign-in methods: `providerId` is `credential` (password), `google` or `apple`. The one exception to "don't write": `src/apple.ts` sets `refreshToken`, `accessToken`, `accessTokenExpiresAt` and `appleClientId` on `apple` documents after an authorization code exchange, so the token can be revoked on account deletion.
 * `verification` holds one-time tokens (password reset, email change).
 
 TODO: confirm the exact collection names against a live database. They're Better Auth's default model names; the code only references `user` and `verification` by name.

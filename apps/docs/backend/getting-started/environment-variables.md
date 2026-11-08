@@ -67,6 +67,9 @@ A provider is only enabled when its client ID is set. Leave them empty locally.
 | `APPLE_CLIENT_ID`             | Apple Services ID. Enables Apple sign-in.                                                                                         |
 | `APPLE_CLIENT_SECRET`         | ES256 client-secret JWT (expires after at most 6 months). Only for the browser redirect flow.                                     |
 | `APPLE_APP_BUNDLE_IDENTIFIER` | Comma-separated bundle IDs accepted as the audience of native ID tokens. Default `com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview`.       |
+| `APPLE_TEAM_ID`               | Apple team ID, the `iss` of the client secret for Apple's token and revoke endpoints. Default `9496L7QUB2`.                         |
+| `APPLE_KEY_ID`                | Key ID of the Sign in with Apple key. With `APPLE_PRIVATE_KEY`, turns on storing and revoking Apple tokens.                        |
+| `APPLE_PRIVATE_KEY`           | Secret. The key's `.p8` contents (PEM); `\n` sequences are accepted in a single-line value. Unset = tokens aren't stored or revoked. |
 
 ## Set by the platform or the build
 
