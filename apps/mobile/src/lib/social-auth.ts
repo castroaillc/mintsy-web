@@ -124,6 +124,11 @@ export async function signInWithApple(): Promise<SocialSignInResult> {
         nonce: rawNonce,
         ...(hasName ? { user: { name: { firstName, lastName } } } : {}),
       },
+      // Apple's one-time code: the backend exchanges it for a refresh token so it can revoke it when the account is
+      // deleted (App Store 5.1.1(v)). Single use and valid ~5 minutes, so it goes straight out with the ID token.
+      ...(credential.authorizationCode
+        ? { additionalData: { appleAuthorizationCode: credential.authorizationCode } }
+        : {}),
     });
     if (error) return serverError(error, 'apple');
     return { status: 'success' };
@@ -190,6 +195,8 @@ type LinkedAccounts = {
   hasPassword: boolean;
   /** The first social provider linked, for "You sign in with Apple". */
   socialProvider: string | null;
+  /** True when an Apple account is linked (deleting it then re-runs Sign in with Apple so the backend can revoke). */
+  hasApple: boolean;
 };
 
 /** The current user's sign-in methods (Better Auth `listAccounts()`). */
@@ -200,6 +207,7 @@ export function useLinkedAccounts(): LinkedAccounts {
     loading: true,
     hasPassword: true,
     socialProvider: null,
+    hasApple: false,
   });
 
   useEffect(() => {
@@ -210,7 +218,7 @@ export function useLinkedAccounts(): LinkedAccounts {
       .then(({ data, error }) => {
         if (!alive) return;
         if (error || !Array.isArray(data)) {
-          setState({ userId, loading: false, hasPassword: true, socialProvider: null });
+          setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false });
           return;
         }
         const ids = data.map((a) => (a as { providerId?: string }).providerId);
@@ -219,10 +227,11 @@ export function useLinkedAccounts(): LinkedAccounts {
           loading: false,
           hasPassword: ids.includes('credential'),
           socialProvider: ids.find((id): id is string => !!id && id !== 'credential') ?? null,
+          hasApple: ids.includes('apple'),
         });
       })
       .catch(() => {
-        if (alive) setState({ userId, loading: false, hasPassword: true, socialProvider: null });
+        if (alive) setState({ userId, loading: false, hasPassword: true, socialProvider: null, hasApple: false });
       });
     return () => {
       alive = false;
@@ -230,6 +239,11 @@ export function useLinkedAccounts(): LinkedAccounts {
   }, [userId]);
 
   // A different user than the one loaded: still loading
-  if (state.userId !== userId) return { loading: true, hasPassword: true, socialProvider: null };
-  return { loading: state.loading, hasPassword: state.hasPassword, socialProvider: state.socialProvider };
+  if (state.userId !== userId) return { loading: true, hasPassword: true, socialProvider: null, hasApple: false };
+  return {
+    loading: state.loading,
+    hasPassword: state.hasPassword,
+    socialProvider: state.socialProvider,
+    hasApple: state.hasApple,
+  };
 }
