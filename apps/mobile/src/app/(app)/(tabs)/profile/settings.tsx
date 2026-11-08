@@ -7,24 +7,16 @@ import { FormAlert } from '@/components/auth/form-alert';
 import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { Spinner } from '@/components/mintsy/spinner';
 import { SafeAreaView } from '@/components/safe-area-view';
-import { SegmentedControl } from '@/components/settings/segmented-control';
-import {
-  SettingsContentRow,
-  SettingsInfoRow,
-  SettingsLinkRow,
-  SettingsToggleRow,
-} from '@/components/settings/settings-rows';
+import { AppearanceSettings, PlaybackSettings, SupportSettings } from '@/components/settings/device-settings';
+import { SettingsInfoRow, SettingsLinkRow, SettingsToggleRow } from '@/components/settings/settings-rows';
 import { SettingsSection } from '@/components/settings/settings-section';
-import type { ModeType } from '@/components/ui/gluestack-ui-provider';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { DAILY_GOALS, REMINDER_TIMES, reminderTime, type ReminderTimeId } from '@/data/interests';
-import { SPEEDS } from '@/hooks/use-playback-clock';
 import { useNotificationPermission } from '@/hooks/use-notification-permission';
 import { authClient } from '@/lib/auth-client';
 import { formatBytes, useDownloads } from '@/lib/downloads';
-import { clearFlash, useFlash } from '@/lib/flash';
-import { openLegalUrl, PRIVACY_URL, SHOW_TERMS, TERMS_LABEL, TERMS_URL } from '@/lib/legal';
+import { clearFlash, setFlash, useFlash } from '@/lib/flash';
 import { sendTestNotification } from '@/lib/notifications';
 import { planName } from '@/lib/offering';
 import { useOnboarding } from '@/lib/onboarding';
@@ -33,18 +25,9 @@ import { openPaywall, usePremium } from '@/lib/premium';
 import { registerForPushNotifications, sendTestPush, unregisterPushNotifications } from '@/lib/push';
 import { cancelDailyReminder, scheduleDailyReminder } from '@/lib/reminders';
 import { providerLabel, useLinkedAccounts } from '@/lib/social-auth';
-import { openHelpCenter, sendFeedback } from '@/lib/support';
-import { useThemeMode } from '@/lib/theme-mode';
-
-const THEME_OPTIONS: { label: string; value: ModeType }[] = [
-  { label: 'System', value: 'system' },
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-];
 
 export default function SettingsScreen() {
   const { data: session } = authClient.useSession();
-  const { mode, setMode } = useThemeMode();
   const { permission, request } = useNotificationPermission();
   const { data: onboarding, update } = useOnboarding();
   const prefs = usePreferences();
@@ -102,11 +85,6 @@ export default function SettingsScreen() {
     Alert.alert('Reminder time', undefined, buttons);
   }
 
-  function cycleSpeed() {
-    const i = SPEEDS.indexOf(prefs.defaultSpeed);
-    setPreferences({ defaultSpeed: SPEEDS[(i + 1) % SPEEDS.length] });
-  }
-
   async function onSendTestPush() {
     setSendingPush(true);
     try {
@@ -134,8 +112,10 @@ export default function SettingsScreen() {
           await cancelDailyReminder();
           // Downloads stay with the account, so they leave the device with it
           downloads.removeAll();
-          // The root layout's guard returns to the welcome screen once the session clears
           await authClient.signOut();
+          // Back to browsing as a guest; this screen needs an account, so the profile stack drops it
+          setFlash('home', 'You’re signed out. Keep watching the free episodes, or sign in any time.');
+          router.navigate('/');
         },
       },
     ]);
@@ -186,20 +166,7 @@ export default function SettingsScreen() {
             />
           </SettingsSection>
 
-          <SettingsSection title="Playback">
-            <SettingsToggleRow
-              label="Autoplay next episode"
-              hint="Keep the series going"
-              value={prefs.autoplayNext}
-              onChange={(v) => setPreferences({ autoplayNext: v })}
-            />
-            <SettingsLinkRow label="Default speed" value={`${prefs.defaultSpeed}×`} onPress={cycleSpeed} />
-            <SettingsToggleRow
-              label="Captions on by default"
-              hint="Show captions in the player"
-              value={prefs.captionsByDefault}
-              onChange={(v) => setPreferences({ captionsByDefault: v })}
-            />
+          <PlaybackSettings>
             <SettingsToggleRow
               label="Download on Wi-Fi only"
               hint="Save mobile data"
@@ -214,13 +181,9 @@ export default function SettingsScreen() {
                 onPress={() => router.navigate('/profile/downloads')}
               />
             ) : null}
-          </SettingsSection>
+          </PlaybackSettings>
 
-          <SettingsSection title="Appearance">
-            <SettingsContentRow>
-              <SegmentedControl accessibilityLabel="Theme" options={THEME_OPTIONS} value={mode} onChange={setMode} />
-            </SettingsContentRow>
-          </SettingsSection>
+          <AppearanceSettings />
 
           <SettingsSection title="Notifications">
             <SettingsToggleRow
@@ -258,14 +221,7 @@ export default function SettingsScreen() {
             ) : null}
           </SettingsSection>
 
-          <SettingsSection title="Support">
-            <SettingsLinkRow role="link" label="Help center" onPress={openHelpCenter} />
-            <SettingsLinkRow label="Send feedback" onPress={sendFeedback} />
-            {SHOW_TERMS ? (
-              <SettingsLinkRow role="link" label={TERMS_LABEL} onPress={() => openLegalUrl(TERMS_URL)} />
-            ) : null}
-            <SettingsLinkRow role="link" label="Privacy Policy" onPress={() => openLegalUrl(PRIVACY_URL)} />
-          </SettingsSection>
+          <SupportSettings />
         </VStack>
 
         <Pressable

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
@@ -7,6 +7,7 @@ import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { Icon } from '@/components/mintsy/icon';
+import { IconButton } from '@/components/mintsy/icon-button';
 import { Wordmark } from '@/components/mintsy/wordmark';
 import { SafeAreaView } from '@/components/safe-area-view';
 import { Box } from '@/components/ui/box';
@@ -19,6 +20,7 @@ import { useWideLayout } from '@/hooks/use-wide-layout';
 import { useCatalog } from '@/lib/catalog';
 import { clearFlash, useFlash } from '@/lib/flash';
 import { openLegalUrl, PRIVACY_URL, SHOW_TERMS, TERMS_URL } from '@/lib/legal';
+import { accountReasonMessage } from '@/lib/route-guards';
 import { formatTime } from '@/lib/series';
 
 /** Fan geometry: narrow from design 4, wide from design 22 (the fan's box is centered in the left pane). */
@@ -47,7 +49,19 @@ const SAMPLE_COVERS: Book[] = [
   { title: 'Atomic Habits', author: 'James Clear', coverTone: '#C9D6CF', tint: '#24382F' },
 ].map((b, i) => ({ ...b, id: `sample-${i}`, category: 'Finance', description: '', episodes: [] }));
 
+/** Back to browsing as a guest: Welcome opens over the app (see lib/guest.ts). */
+function close() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
+/**
+ * Sign-in options, opened over the app when a guest wants something that needs an account (`reason` says what),
+ * or from Home's "Sign in". Closing it keeps them browsing; signing in closes it by itself (the root layout's guards).
+ */
 export default function WelcomeScreen() {
+  const { reason } = useLocalSearchParams<{ reason?: string }>();
+  const reasonMessage = accountReasonMessage(reason);
   const { books } = useCatalog();
   const { wide, shortWide, paneWidth, tightPanes } = useWideLayout();
   const insets = useRailInsets();
@@ -105,6 +119,18 @@ export default function WelcomeScreen() {
     </Box>
   );
 
+  const closeButton = (
+    <IconButton icon="close" variant="ghost" iconSize={22} accessibilityLabel="Close, keep browsing" onPress={close} />
+  );
+
+  // What the guest tried to do, e.g. "Create a free account to save series…"
+  const reasonCallout = reasonMessage ? (
+    <HStack className="items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3">
+      <Icon name="profile" size={18} className="mt-px text-brand" />
+      <Text className="flex-1 font-inter text-[14px] leading-[20px] text-foreground">{reasonMessage}</Text>
+    </HStack>
+  ) : null;
+
   const noticeAlert = notice ? (
     <Pressable accessibilityHint="Dismisses the message" onPress={() => clearFlash('welcome')}>
       <FormAlert tone="success" message={notice} />
@@ -142,7 +168,10 @@ export default function WelcomeScreen() {
       {socialError ? <FormAlert message={socialError} /> : null}
       <BrandButton label="Create account" height={54} onPress={() => router.push('/sign-up')} />
       <BrandButton label="Sign in" variant="outline" height={54} onPress={() => router.push('/sign-in')} />
-      <Text className="mt-1.5 text-center font-inter text-[12px] leading-[18px] text-faint">
+      <Pressable accessibilityRole="button" onPress={close} className="h-11 items-center justify-center active:opacity-70">
+        <Text className="font-inter-medium text-[15px] text-muted-foreground">Not now, keep browsing</Text>
+      </Pressable>
+      <Text className="text-center font-inter text-[12px] leading-[18px] text-faint">
         By continuing you agree to our{' '}
         {/* Terms is Apple's standard EULA, so it's linked on iOS only (same as the paywall) */}
         {SHOW_TERMS ? (
@@ -179,12 +208,14 @@ export default function WelcomeScreen() {
           <Box className={`flex-1 justify-center pb-16 ${tightPanes ? 'px-6' : 'px-[62px]'}`}>{fan}</Box>
         </Box>
         <Box style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingRight: insets.right }} className="flex-1">
+          <HStack className="justify-end px-3 pt-2">{closeButton}</HStack>
           <ScrollView
             alwaysBounceVertical={false}
             contentContainerClassName={`min-h-full justify-center ${shortWide ? 'px-8 py-4' : `py-8 ${tightPanes ? 'px-6' : 'px-14'}`}`}
           >
             <VStack className="w-full max-w-[420px] gap-[18px]">
               {noticeAlert}
+              {reasonCallout}
               {pitch}
               {actions}
             </VStack>
@@ -198,20 +229,27 @@ export default function WelcomeScreen() {
   const fanScale = fanSpace === undefined ? 0 : Math.min(1, fanSpace / fanLayout.height);
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <VStack className="w-full max-w-[480px] flex-1 self-center px-6 pb-4 pt-5">
-        {logo}
-        {noticeAlert ? <Box className="mt-4">{noticeAlert}</Box> : null}
-        <Box
-          onLayout={(e) => setFanSpace(e.nativeEvent.layout.height)}
-          className="my-4 flex-1 items-center justify-center"
-        >
-          {fanScale >= MIN_FAN_SCALE ? (
-            <Box style={{ width: '100%', transform: [{ scale: fanScale }] }}>{fan}</Box>
-          ) : null}
-        </Box>
-        {pitch}
-        <Box className="mt-6">{actions}</Box>
-      </VStack>
+      {/* Scrolls only when it doesn't fit even without the fan (small phones, a reason callout, larger text) */}
+      <ScrollView alwaysBounceVertical={false} contentContainerStyle={{ flexGrow: 1 }}>
+        <VStack className="w-full max-w-[480px] flex-1 self-center px-6 pb-4 pt-2">
+          <HStack className="items-center justify-between">
+            {logo}
+            <Box className="-mr-2.5">{closeButton}</Box>
+          </HStack>
+          {noticeAlert ? <Box className="mt-4">{noticeAlert}</Box> : null}
+          {reasonCallout ? <Box className="mt-4">{reasonCallout}</Box> : null}
+          <Box
+            onLayout={(e) => setFanSpace(e.nativeEvent.layout.height)}
+            className="my-4 flex-1 items-center justify-center"
+          >
+            {fanScale >= MIN_FAN_SCALE ? (
+              <Box style={{ width: '100%', transform: [{ scale: fanScale }] }}>{fan}</Box>
+            ) : null}
+          </Box>
+          {pitch}
+          <Box className="mt-6">{actions}</Box>
+        </VStack>
+      </ScrollView>
     </SafeAreaView>
   );
 }

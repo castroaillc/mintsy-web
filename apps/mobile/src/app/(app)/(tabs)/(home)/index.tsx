@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView } from 'react-native';
 
+import { FormAlert } from '@/components/auth/form-alert';
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { ChipRow } from '@/components/mintsy/chip-row';
 import { ContinueCard } from '@/components/mintsy/continue-card';
@@ -20,6 +21,8 @@ import { useWideLayout } from '@/hooks/use-wide-layout';
 import { CATEGORIES, type Book, type CategoryFilter } from '@/data/types';
 import { authClient } from '@/lib/auth-client';
 import { useCatalog } from '@/lib/catalog';
+import { clearFlash, useFlash } from '@/lib/flash';
+import { promptAccount } from '@/lib/guest';
 import { useIsLocked, useOpenEpisode, usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
 import { useSaved } from '@/lib/saved';
@@ -74,6 +77,9 @@ export default function BrowseScreen() {
   ].filter((row) => row.books.length > 0);
 
   const initial = session?.user.name?.trim().charAt(0).toUpperCase();
+  // "You're signed out" / "Your account has been deleted", after leaving the account
+  const notice = useFlash('home');
+  useEffect(() => () => clearFlash('home'), []);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
@@ -86,19 +92,38 @@ export default function BrowseScreen() {
       >
         <HStack className="items-center justify-between px-5 pb-3 pt-5">
           <Wordmark size={26} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Profile"
-            onPress={() => router.push('/profile')}
-            className="h-11 w-11 items-center justify-center rounded-full border border-input bg-surface-raised active:opacity-70"
-          >
-            {initial ? (
-              <Text className="font-display-medium text-[17px] text-foreground">{initial}</Text>
-            ) : (
-              <Icon name="profile" size={20} className="text-foreground" />
-            )}
-          </Pressable>
+          {session ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
+              onPress={() => router.push('/profile')}
+              className="h-11 w-11 items-center justify-center rounded-full border border-input bg-surface-raised active:opacity-70"
+            >
+              {initial ? (
+                <Text className="font-display-medium text-[17px] text-foreground">{initial}</Text>
+              ) : (
+                <Icon name="profile" size={20} className="text-foreground" />
+              )}
+            </Pressable>
+          ) : (
+            // Guests browse without an account; this is their way in
+            <Pressable
+              accessibilityRole="button"
+              accessibilityHint="Sign in or create a free account"
+              onPress={() => promptAccount()}
+              className="h-11 flex-row items-center gap-2 rounded-full border border-input bg-surface-raised px-4 active:opacity-70"
+            >
+              <Icon name="profile" size={18} className="text-foreground" />
+              <Text className="font-inter-semibold text-[15px] text-foreground">Sign in</Text>
+            </Pressable>
+          )}
         </HStack>
+
+        {notice ? (
+          <Pressable accessibilityHint="Dismisses the message" onPress={() => clearFlash('home')} className="px-5 pb-3">
+            <FormAlert tone="success" message={notice} />
+          </Pressable>
+        ) : null}
 
         {status === 'error' ? (
           <OfflineNotice retry={retry} retrying={retrying} />

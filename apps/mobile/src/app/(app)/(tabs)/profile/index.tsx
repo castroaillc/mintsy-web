@@ -1,12 +1,18 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
+import { FormAlert } from '@/components/auth/form-alert';
 import { Avatar } from '@/components/mintsy/avatar';
+import { BrandButton } from '@/components/mintsy/brand-button';
 import { CoverTile } from '@/components/mintsy/cover-tile';
+import { Icon } from '@/components/mintsy/icon';
 import { IconButton } from '@/components/mintsy/icon-button';
 import { ProgressBar } from '@/components/mintsy/progress-bar';
 import { ScreenHeader } from '@/components/mintsy/screen-header';
 import { SafeAreaView } from '@/components/safe-area-view';
+import { AppearanceSettings, PlaybackSettings, SupportSettings } from '@/components/settings/device-settings';
 import { SettingsLinkRow } from '@/components/settings/settings-rows';
 import { SettingsSection } from '@/components/settings/settings-section';
 import { Box } from '@/components/ui/box';
@@ -16,6 +22,8 @@ import { VStack } from '@/components/ui/vstack';
 import { goalLabel } from '@/data/interests';
 import { authClient } from '@/lib/auth-client';
 import { useCatalog } from '@/lib/catalog';
+import { clearFlash, useFlash } from '@/lib/flash';
+import { useIsGuest } from '@/lib/guest';
 import { useOnboarding } from '@/lib/onboarding';
 import { usePremium } from '@/lib/premium';
 import { useProgress } from '@/lib/progress';
@@ -34,6 +42,81 @@ function memberSince(createdAt: Date | string | undefined) {
 }
 
 export default function ProfileScreen() {
+  return useIsGuest() ? <GuestProfile /> : <AccountProfile />;
+}
+
+/** What an account adds, for the guest pitch. */
+const ACCOUNT_BENEFITS = [
+  'Save series and episodes to My List',
+  'Pick up where you left off on any device',
+  'Track your streak and daily goal',
+  'Go Premium for every episode, full transcripts and downloads',
+];
+
+/**
+ * Signed out: an invitation to create an account (or sign in), and the settings that live on the device.
+ * Sign-in opens over the app and closes by itself, back to here.
+ */
+function GuestProfile() {
+  // "Sign in again, then … Delete account" after Delete account signed them out
+  const notice = useFlash('profile');
+  useEffect(() => () => clearFlash('profile'), []);
+
+  return (
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-background">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{ maxWidth: 720, width: '100%', alignSelf: 'center' }}
+      >
+        <ScreenHeader title="Profile" backHref="/" backLabel="Back to browse" />
+
+        {notice ? (
+          <Pressable accessibilityHint="Dismisses the message" onPress={() => clearFlash('profile')} className="mt-4">
+            <FormAlert tone="success" message={notice} />
+          </Pressable>
+        ) : null}
+
+        <VStack className="mt-[22px] gap-4 rounded-[18px] border border-border bg-card p-5">
+          <HStack className="items-center gap-3.5">
+            <Box className="h-14 w-14 items-center justify-center rounded-full bg-tag">
+              <Icon name="profile" size={24} className="text-brand" />
+            </Box>
+            <VStack className="min-w-0 flex-1 gap-1">
+              <Text accessibilityRole="header" className="font-display text-[20px] leading-[24px] text-foreground">
+                You’re browsing as a guest
+              </Text>
+              <Text className="font-inter text-[14px] text-muted-foreground">The first episodes of every series are free.</Text>
+            </VStack>
+          </HStack>
+          <VStack className="gap-2">
+            {ACCOUNT_BENEFITS.map((benefit) => (
+              <HStack key={benefit} className="items-start gap-2.5">
+                <Icon name="check" size={16} className="mt-0.5 text-brand" />
+                <Text className="flex-1 font-inter text-[15px] leading-[21px] text-foreground">{benefit}</Text>
+              </HStack>
+            ))}
+          </VStack>
+          <VStack className="gap-2.5">
+            <BrandButton label="Create free account" height={50} onPress={() => router.push('/sign-up')} />
+            <BrandButton label="Sign in" variant="outline" height={50} onPress={() => router.push('/sign-in')} />
+          </VStack>
+        </VStack>
+
+        <VStack className="mt-[26px] gap-[26px]">
+          <PlaybackSettings />
+          <AppearanceSettings />
+          <SupportSettings />
+        </VStack>
+
+        <Text className="mt-[18px] text-center font-inter text-[12px] text-faint">mintsy {Constants.expoConfig?.version}</Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+/** Signed in: name, stats, this week, series in progress, interests and links. */
+function AccountProfile() {
   const { data: session } = authClient.useSession();
   const { data: onboarding } = useOnboarding();
   const { progress, activity, continueWatching, finishedBooks: finished } = useProgress();

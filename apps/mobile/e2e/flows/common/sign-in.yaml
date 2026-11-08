@@ -1,6 +1,7 @@
-# From Welcome: Sign in with EMAIL / SIGNIN_PASSWORD (doesn't wait for the result).
+# From Home as a guest, or from Welcome: Sign in with EMAIL / SIGNIN_PASSWORD (doesn't wait for the result).
 appId: com.getmintsy.app.dev
 ---
+- runFlow: open-welcome.yaml
 - scrollUntilVisible:
     element: "Sign in"
     direction: DOWN

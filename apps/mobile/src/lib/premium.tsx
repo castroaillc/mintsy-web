@@ -272,7 +272,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   }, [available, userId, syncBackend]);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    // Guests have no entitlements to read; still refetch the catalog (pull to refresh)
+    if (!userId) return refreshCatalog();
     if (available && rcUser.current === userId) {
       try {
         setInfo(await Purchases.getCustomerInfo());
@@ -281,7 +282,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       }
     }
     await syncBackend();
-  }, [available, userId, syncBackend]);
+  }, [available, userId, syncBackend, refreshCatalog]);
 
   const value = useMemo<PremiumContextValue>(() => {
     const ent = info?.entitlements.active[ENTITLEMENT_ID];

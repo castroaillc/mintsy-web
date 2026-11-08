@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 
@@ -112,8 +113,8 @@ export default function DeleteAccountScreen() {
       return;
     }
 
-    // The account is gone: clear everything it left on this device, then let the guard return to Welcome
-    setFlash('welcome', 'Your account has been deleted. Thanks for learning with mintsy.');
+    // The account is gone: clear everything it left on this device, then carry on browsing as a guest
+    setFlash('home', 'Your account has been deleted. Thanks for learning with mintsy.');
     downloads.removeAll();
     // The API already deleted the watch progress; drop the cache and unsent saves, then the user's whole folder
     progress.discardLocal();
@@ -125,12 +126,14 @@ export default function DeleteAccountScreen() {
     ]);
     // Clears the stored session cookie; the server session is already gone, so ignore its answer
     await authClient.signOut().catch(() => {});
+    // This screen needs an account, so the profile stack drops it; Home shows the confirmation
+    router.navigate('/');
   }
 
-  /** Same as Settings › Sign out; Welcome then asks them to sign in again and come back. */
+  /** Same as Settings › Sign out; Profile (signed out) then asks them to sign in again and come back. */
   async function signOutToReauthenticate() {
     setSigningOut(true);
-    setFlash('welcome', 'Sign in again, then go to Settings › Delete account to finish.');
+    setFlash('profile', 'Sign in again, then go to Settings › Delete account to finish.');
     await unregisterPushNotifications().catch(() => {});
     await cancelDailyReminder().catch(() => {});
     downloads.removeAll();
