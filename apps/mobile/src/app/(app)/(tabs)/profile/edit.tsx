@@ -82,14 +82,6 @@ export default function EditProfileScreen() {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="px-5 pb-10">
           <VStack className="mt-5 items-center gap-2.5">
             <Avatar name={name || session?.user.name} size={92} />
-            <Pressable
-              accessibilityRole="button"
-              // TODO: photo upload once the API supports avatars
-              onPress={() => Alert.alert('Change photo', 'Profile photos are coming soon.')}
-              className="h-11 justify-center px-3"
-            >
-              <Text className="font-inter-semibold text-[15px] text-brand">Change photo</Text>
-            </Pressable>
           </VStack>
 
           <VStack className="mt-3 gap-[18px]">
