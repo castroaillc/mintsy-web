@@ -10,15 +10,18 @@ import {
   type LayoutRectangle,
   type ScrollViewInstance,
 } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandButton } from '@/components/mintsy/brand-button';
 import { EpisodeThumb } from '@/components/mintsy/episode-thumb';
+import { FadingControls } from '@/components/mintsy/fading-controls';
 import { Icon } from '@/components/mintsy/icon';
 import { IconButton } from '@/components/mintsy/icon-button';
 import { Scrubber } from '@/components/mintsy/scrubber';
 import { SegmentedProgress } from '@/components/mintsy/segmented-progress';
+import { Spinner } from '@/components/mintsy/spinner';
 import { SplitArrangement } from '@/components/mintsy/split-arrangement';
 import { TranscriptList } from '@/components/mintsy/transcript-list';
 import { UnderlineTabs } from '@/components/mintsy/underline-tabs';
@@ -32,6 +35,7 @@ import { VStack } from '@/components/ui/vstack';
 import { FREE_EPISODES, type Book, type CaptionPhrase, type Episode, type EpisodeVoice, type TranscriptLine } from '@/data/types';
 import { useEpisodeVoices } from '@/hooks/use-episode-voices';
 import { usePlaybackClock, type PlaybackClock, type PlaybackClockOptions } from '@/hooks/use-playback-clock';
+import { usePlayerControls } from '@/hooks/use-player-controls';
 import { useVideoClock } from '@/hooks/use-video-clock';
 import {
   PHONE_SIDEWAYS_MAX_HEIGHT,
@@ -77,6 +81,9 @@ const TRANSPORT_HEIGHT = 60;
 
 /** Gap kept between app-drawn captions and the controls below them. */
 const CAPTION_GAP = 8;
+
+/** App-drawn captions with the controls hidden, up from whatever the video has to clear at the bottom. */
+const LOWERED_CAPTION_GAP = 12;
 
 /** A failed source is retried with fresh URLs at most this often, so a file that's really gone can't loop. */
 const RECOVERY_INTERVAL_MS = 60_000;
@@ -531,6 +538,8 @@ function Player({
     if (target < episode.durationSec) setPosition(episode.id, target, { saveNow: true });
   };
 
+  const controls = usePlayerControls({ playing: clock.playing, buffering: clock.buffering });
+
   const [tab, setTab] = useState<Tab>('transcript');
   const [captions, setCaptions] = useState(prefs.captionsByDefault);
   const [wantsExpanded, setExpanded] = useState(false);
@@ -573,8 +582,11 @@ function Player({
 
   const watchedFlags = book.episodes.map((e) => !!progress[e.id]?.completed);
 
-  /** Video (or tint), plus captions or the chapter title, inset from the given edges. Timed captions sit `captionBottom` up, clear of the controls. */
-  const videoLayer = (left: number, right: number, top: number, captionBottom: number) => (
+  /**
+   * Video (or tint), plus captions or the chapter title, inset from the given edges. Timed captions sit `lowered` up
+   * from the bottom with the controls hidden, and `raised` up, clear of them, with the controls showing.
+   */
+  const videoLayer = (left: number, right: number, top: number, { lowered, raised }: { lowered: number; raised: number }) => (
     <>
       {video ? (
         <VideoView
@@ -585,8 +597,11 @@ function Player({
         />
       ) : null}
 
+      {/* VoiceOver reaches everything through the controls, which stay up while it's on */}
+      <Pressable accessible={false} onPress={controls.toggle} className="absolute bottom-0 left-0 right-0 top-0" />
+
       {/* Captions take the place of the chapter title while they're on; the title only shows without video */}
-      <VStack style={{ left, right, top }} className="absolute gap-2">
+      <VStack pointerEvents="none" style={{ left, right, top }} className="absolute gap-2">
         {showTranscriptOverlay ? (
           <Text
             accessibilityLiveRegion="polite"
@@ -605,18 +620,23 @@ function Player({
       </VStack>
 
       {phrase ? (
-        <Box
-          pointerEvents="none"
-          style={{ left: Math.max(0, left - 16), right: Math.max(0, right - 16), bottom: captionBottom }}
-          className="absolute items-center"
-        >
-          <Text
-            accessibilityLiveRegion="polite"
-            className="max-w-[620px] rounded-md bg-scrim/80 px-2.5 py-1.5 text-center font-inter-medium text-[15px] leading-[21px] text-on-scrim"
-          >
-            {phrase.text}
-          </Text>
-        </Box>
+        <TimedCaption
+          text={phrase.text}
+          left={Math.max(0, left - 16)}
+          right={Math.max(0, right - 16)}
+          lowered={lowered}
+          raised={raised}
+          progress={controls.progress}
+        />
+      ) : null}
+
+      {clock.buffering ? (
+        // Centered in the space above where the captions are, so it doesn't sit on them
+        <Center pointerEvents="none" style={{ bottom: controls.visible ? raised : lowered }} className="absolute left-0 right-0 top-0">
+          <Center className="h-11 w-11 rounded-full bg-scrim/60">
+            <Spinner className="text-on-scrim" />
+          </Center>
+        </Center>
       ) : null}
     </>
   );
@@ -626,7 +646,7 @@ function Player({
   );
 
   const viewButtons = (
-    <HStack className="gap-2">
+    <HStack pointerEvents="box-none" className="gap-2">
       <IconButton
         icon="captions"
         accessibilityLabel={captions ? 'Hide captions' : 'Show captions'}
@@ -707,13 +727,23 @@ function Player({
 
   const pickVoice = () => {
     if (!voice) return;
-    Alert.alert('Narrator', undefined, [
-      ...voice.options.map((v) => ({
-        text: v.id === voice.selected?.id ? `${v.name} ✓` : v.name,
-        onPress: () => voice.onPick(v.id),
-      })),
-      { text: 'Cancel', style: 'cancel' as const },
-    ]);
+    controls.setMenuOpen(true);
+    const closed = () => controls.setMenuOpen(false);
+    Alert.alert(
+      'Narrator',
+      undefined,
+      [
+        ...voice.options.map((v) => ({
+          text: v.id === voice.selected?.id ? `${v.name} ✓` : v.name,
+          onPress: () => {
+            closed();
+            voice.onPick(v.id);
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' as const, onPress: closed },
+      ],
+      { onDismiss: closed },
+    );
   };
 
   /** Only when there's a choice to make. Next to speed; `showName` is off in the phone row, which has no room for it. */
@@ -802,12 +832,13 @@ function Player({
     ) : null;
 
   // ── Tabletop (half folded, horizontal fold): video above the fold, controls and "Now" card below ──
+  // Only what's drawn over the video hides here. The bottom half is the control surface, and has nothing else to show.
   if (tabletop && fold) {
     const videoTop = insets.top + 16;
     const controlsTop = fold.frame.y + fold.frame.height + FOLD_CLEARANCE;
     const nextLine = transcript[activeIndex + 1]?.text;
     return (
-      <Box className="flex-1 bg-background">
+      <Box onTouchStart={controls.touch} className="flex-1 bg-background">
         <Box
           style={{
             top: videoTop,
@@ -818,9 +849,12 @@ function Player({
           }}
           className="absolute overflow-hidden rounded-[18px]"
         >
-          {videoLayer(40, 40, 72, 12)}
-          <Box className="absolute left-3.5 top-3.5">{closeButton}</Box>
-          <Box className="absolute right-3.5 top-3.5">{viewButtons}</Box>
+          {/* The controls aren't over this video's bottom edge, so its captions don't need to move */}
+          {videoLayer(40, 40, 72, { lowered: 12, raised: 12 })}
+          <FadingControls controls={controls}>
+            <Box className="absolute left-3.5 top-3.5">{closeButton}</Box>
+            <Box className="absolute right-3.5 top-3.5">{viewButtons}</Box>
+          </FadingControls>
         </Box>
 
         {/* Nothing tappable within FOLD_CLEARANCE of the fold */}
@@ -840,7 +874,13 @@ function Player({
               {speedButton}
             </HStack>
           </HStack>
-          <Scrubber tone="surface" positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
+          <Scrubber
+            tone="surface"
+            positionSec={clock.positionSec}
+            durationSec={clock.durationSec}
+            onSeek={seekToLine}
+            onScrubbingChange={controls.setScrubbing}
+          />
           <HStack className="items-center justify-center gap-7">{transport(60, 88)}</HStack>
           <VStack
             accessibilityLiveRegion="polite"
@@ -864,15 +904,22 @@ function Player({
     const videoColumn = (
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5">
         <Box style={{ aspectRatio: 16 / 9, backgroundColor: book.tint }} className="w-full overflow-hidden rounded-2xl">
-          {/* Above the scrubber */}
-          {videoLayer(32, 32, 72, 66)}
-          <HStack className="absolute left-0 right-0 top-0 justify-between p-3">
-            {closeButton}
-            {viewButtons}
-          </HStack>
-          <Box className="absolute bottom-2 left-5 right-5">
-            <Scrubber positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
-          </Box>
+          {/* Above the scrubber while it shows */}
+          {videoLayer(32, 32, 72, { lowered: LOWERED_CAPTION_GAP, raised: 66 })}
+          <FadingControls controls={controls}>
+            <HStack pointerEvents="box-none" className="absolute left-0 right-0 top-0 justify-between p-3">
+              {closeButton}
+              {viewButtons}
+            </HStack>
+            <Box pointerEvents="box-none" className="absolute bottom-2 left-5 right-5">
+              <Scrubber
+                positionSec={clock.positionSec}
+                durationSec={clock.durationSec}
+                onSeek={seekToLine}
+                onScrubbingChange={controls.setScrubbing}
+              />
+            </Box>
+          </FadingControls>
         </Box>
 
         <HStack className="items-start justify-between gap-5">
@@ -929,6 +976,7 @@ function Player({
     const sideFoldInset = sideFold ? Math.max(insets.left, insets.right, RAIL_WIDTH) : undefined;
     return (
       <Box
+        onTouchStart={controls.touch}
         style={{
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
@@ -949,7 +997,7 @@ function Player({
   }
 
   // ── Phone (also folded, and wide windows below iOS 27.1) ──
-  // Controls stay on screen, as in the mockup: close/captions/fullscreen top, transport bottom right.
+  // Controls over the video, as in the mockup: close/captions/fullscreen top, transport bottom right. They fade while watching.
   // The video tint runs edge to edge; controls add the side insets.
   // Full screen reaches the bottom edge, so the controls clear the home indicator
   const controlsBottom = fullScreen ? insets.bottom : 0;
@@ -977,30 +1025,45 @@ function Player({
       style={[{ backgroundColor: book.tint }, fullScreen ? { flex: 1 } : { height: PANEL_HEIGHT }]}
       className="w-full overflow-hidden"
     >
-      {videoLayer(safeLeft + 24, safeRight + 24, controlsTop + 70, transportBottom + TRANSPORT_HEIGHT + CAPTION_GAP)}
+      {videoLayer(safeLeft + 24, safeRight + 24, controlsTop + 70, {
+        lowered: controlsBottom + LOWERED_CAPTION_GAP,
+        raised: transportBottom + TRANSPORT_HEIGHT + CAPTION_GAP,
+      })}
 
-      <HStack
-        style={{ paddingLeft: safeLeft + 12, paddingRight: safeRight + 12, paddingTop: controlsTop + 12 }}
-        className="absolute left-0 right-0 top-0 justify-between pb-3"
-      >
-        {closeButton}
-        {viewButtons}
-      </HStack>
+      <FadingControls controls={controls}>
+        <HStack
+          pointerEvents="box-none"
+          style={{ paddingLeft: safeLeft + 12, paddingRight: safeRight + 12, paddingTop: controlsTop + 12 }}
+          className="absolute left-0 right-0 top-0 justify-between pb-3"
+        >
+          {closeButton}
+          {viewButtons}
+        </HStack>
 
-      <HStack style={{ right: safeRight + 20, bottom: transportBottom }} className="absolute items-center gap-3.5">
-        <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
-        {playButton(60, 22)}
-        <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
-      </HStack>
+        <HStack
+          pointerEvents="box-none"
+          style={{ right: safeRight + 20, bottom: transportBottom }}
+          className="absolute items-center gap-3.5"
+        >
+          <IconButton icon="back10" accessibilityLabel="Back 10 seconds" onPress={() => seekTo(clock.positionSec - 10)} />
+          {playButton(60, 22)}
+          <IconButton icon="forward10" accessibilityLabel="Forward 10 seconds" onPress={() => seekTo(clock.positionSec + 10)} />
+        </HStack>
 
-      <Box style={{ left: safeLeft + 16, right: safeRight + 16, bottom: controlsBottom }} className="absolute">
-        <Scrubber positionSec={clock.positionSec} durationSec={clock.durationSec} onSeek={seekToLine} />
-      </Box>
+        <Box pointerEvents="box-none" style={{ left: safeLeft + 16, right: safeRight + 16, bottom: controlsBottom }} className="absolute">
+          <Scrubber
+            positionSec={clock.positionSec}
+            durationSec={clock.durationSec}
+            onSeek={seekToLine}
+            onScrubbingChange={controls.setScrubbing}
+          />
+        </Box>
+      </FadingControls>
     </Box>
   );
 
   return (
-    <Box style={{ paddingTop: fullScreen ? 0 : insets.top }} className="flex-1 bg-background">
+    <Box onTouchStart={controls.touch} style={{ paddingTop: fullScreen ? 0 : insets.top }} className="flex-1 bg-background">
       {fullScreen ? <StatusBar style="light" /> : null}
       {panel}
 
@@ -1071,6 +1134,35 @@ function Player({
         </Box>
       )}
     </Box>
+  );
+}
+
+/** One timed phrase, moving with the controls so it never sits under them. Its timing is `activeCaption`'s. */
+function TimedCaption({
+  text,
+  left,
+  right,
+  lowered,
+  raised,
+  progress,
+}: {
+  text: string;
+  left: number;
+  right: number;
+  lowered: number;
+  raised: number;
+  progress: SharedValue<number>;
+}) {
+  const lift = useAnimatedStyle(() => ({ transform: [{ translateY: (lowered - raised) * progress.value }] }));
+  return (
+    <Animated.View pointerEvents="none" style={[{ left, right, bottom: lowered }, lift]} className="absolute items-center">
+      <Text
+        accessibilityLiveRegion="polite"
+        className="max-w-[620px] rounded-md bg-scrim/80 px-2.5 py-1.5 text-center font-inter-medium text-[15px] leading-[21px] text-on-scrim"
+      >
+        {text}
+      </Text>
+    </Animated.View>
   );
 }
 

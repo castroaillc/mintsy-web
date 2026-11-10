@@ -12,6 +12,8 @@ type ScrubberProps = {
   onSeek: (sec: number) => void;
   /** `overlay` sits on video (default); `surface` sits on the page background (tabletop player). */
   tone?: 'overlay' | 'surface';
+  /** A finger went down on the track, or came off it. */
+  onScrubbingChange?: (scrubbing: boolean) => void;
 };
 
 const TONES = {
@@ -20,7 +22,7 @@ const TONES = {
 } as const;
 
 /** Draggable seek bar with current time / duration. Tap or drag anywhere on the track. */
-export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay' }: ScrubberProps) {
+export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay', onScrubbingChange }: ScrubberProps) {
   const colors = TONES[tone];
   const [width, setWidth] = useState(0);
   const [dragSec, setDragSec] = useState<number | null>(null);
@@ -30,11 +32,15 @@ export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay' }:
   const pan = usePanGesture({
     runOnJS: true,
     minDistance: 0,
-    onBegin: (e) => setDragSec(toSec(e.x)),
+    onBegin: (e) => {
+      setDragSec(toSec(e.x));
+      onScrubbingChange?.(true);
+    },
     onUpdate: (e) => setDragSec(toSec(e.x)),
     onFinalize: (e) => {
       if (!e.canceled) onSeek(toSec(e.x));
       setDragSec(null);
+      onScrubbingChange?.(false);
     },
   });
 
@@ -42,7 +48,7 @@ export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay' }:
   const pct = durationSec > 0 ? (shown / durationSec) * 100 : 0;
 
   return (
-    <Box className="gap-1.5">
+    <Box pointerEvents="box-none" className="gap-1.5">
       <GestureDetector gesture={pan}>
         {/* 28pt tall hit area around the 4pt track */}
         <Box
@@ -64,7 +70,7 @@ export function Scrubber({ positionSec, durationSec, onSeek, tone = 'overlay' }:
           />
         </Box>
       </GestureDetector>
-      <HStack className="justify-between">
+      <HStack pointerEvents="none" className="justify-between">
         <Text className={`font-inter-medium text-[12px] tabular-nums ${colors.time}`}>{formatTime(shown)}</Text>
         <Text className={`font-inter-medium text-[12px] tabular-nums ${colors.time}`}>{formatTime(durationSec)}</Text>
       </HStack>

@@ -10,6 +10,7 @@ import { EpisodeRow } from '@/components/mintsy/episode-row';
 import { Icon, type IconName } from '@/components/mintsy/icon';
 import { IconButton } from '@/components/mintsy/icon-button';
 import { ProgressBar } from '@/components/mintsy/progress-bar';
+import { Spinner } from '@/components/mintsy/spinner';
 import { UnderlineTabs } from '@/components/mintsy/underline-tabs';
 import { SafeAreaView } from '@/components/safe-area-view';
 import { Box } from '@/components/ui/box';
@@ -43,8 +44,19 @@ function goBack() {
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const book = useCatalog().getBook(id);
+  const catalog = useCatalog();
+  const book = catalog.getBook(id);
 
+  // Opened before the catalog's first load (e.g. a link at launch, with nothing saved on the device)
+  if (!book && catalog.status === 'loading') {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <Center accessible accessibilityRole="progressbar" accessibilityLabel="Loading" className="flex-1">
+          <Spinner className="text-muted-foreground" />
+        </Center>
+      </SafeAreaView>
+    );
+  }
   if (!book) {
     return (
       <SafeAreaView className="flex-1 bg-background">

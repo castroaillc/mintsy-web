@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { FormAlert } from '@/components/auth/form-alert';
 import { SocialSignIn } from '@/components/auth/social-sign-in';
@@ -9,6 +10,7 @@ import { CoverTile } from '@/components/mintsy/cover-tile';
 import { Icon } from '@/components/mintsy/icon';
 import { Wordmark } from '@/components/mintsy/wordmark';
 import { SafeAreaView } from '@/components/safe-area-view';
+import { Skeleton } from '@/components/states/skeleton';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
@@ -48,7 +50,10 @@ const SAMPLE_COVERS: Book[] = [
 ].map((b, i) => ({ ...b, id: `sample-${i}`, category: 'Finance', description: '', episodes: [] }));
 
 export default function WelcomeScreen() {
-  const { books } = useCatalog();
+  const { books, status } = useCatalog();
+  // A fresh install has no catalog saved yet: placeholders hold the fan's shape until the covers arrive, then fade in
+  const loading = status === 'loading';
+  const [fadeIn] = useState(loading);
   const { wide, shortWide, paneWidth, tightPanes } = useWideLayout();
   const insets = useRailInsets();
   // Same pick as Home: the first playable book in catalog order is featured; the next two fan out behind it
@@ -82,13 +87,13 @@ export default function WelcomeScreen() {
       {[
         { book: left, rotate: '-9deg', edge: { left: fanLayout.sideInset } },
         { book: right, rotate: '9deg', edge: { right: fanLayout.sideInset } },
-      ].map(({ book, rotate, edge }) => (
-        <Box key={book.id} style={{ position: 'absolute', top: fanLayout.sideTop, ...edge, transform: [{ rotate }] }}>
-          <CoverTile book={book} width={fanLayout.side} />
+      ].map(({ book, rotate, edge }, i) => (
+        <Box key={i} style={{ position: 'absolute', top: fanLayout.sideTop, ...edge, transform: [{ rotate }] }}>
+          <FanCover book={book} width={fanLayout.side} loading={loading} fadeIn={fadeIn} />
         </Box>
       ))}
       <Box style={{ position: 'absolute', top: fanLayout.mainTop, left: '50%', marginLeft: -fanLayout.main / 2 }}>
-        <CoverTile book={main} width={fanLayout.main} />
+        <FanCover book={main} width={fanLayout.main} loading={loading} fadeIn={fadeIn} />
       </Box>
       {featured && first ? (
         <HStack style={{ top: fanLayout.pillTop }} className="absolute left-0 right-0 justify-center">
@@ -213,5 +218,15 @@ export default function WelcomeScreen() {
         <Box className="mt-6">{actions}</Box>
       </VStack>
     </SafeAreaView>
+  );
+}
+
+/** One tile of the fan: a placeholder while the catalog's first load runs, then the cover (faded in if it came late). */
+function FanCover({ book, width, loading, fadeIn }: { book: Book; width: number; loading: boolean; fadeIn: boolean }) {
+  if (loading) return <Skeleton width={width} height={Math.round(width * 1.5)} radius={8} />;
+  return (
+    <Animated.View key={book.id} entering={fadeIn ? FadeIn.duration(300) : undefined}>
+      <CoverTile book={book} width={width} />
+    </Animated.View>
   );
 }

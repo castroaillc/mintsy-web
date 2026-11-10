@@ -185,6 +185,8 @@ export function useVideoClock(
     /** The latest position, for use after an `await`. */
     currentPosition: () => resumeSec.current,
     playing: isPlaying,
+    /** Waiting for data: a source loading, or a stall. `playing` is false during these too. */
+    buffering: isSwapping || status === 'loading',
     speed,
     seek,
     skip: (deltaSec: number) => seek(positionSec + deltaSec),

@@ -52,6 +52,8 @@ export function usePlaybackClock({
     durationSec,
     ended,
     playing,
+    /** Waiting for data. A simulated clock never does. */
+    buffering: false as boolean,
     speed,
     seek,
     skip: (deltaSec: number) => seek(positionSec + deltaSec),

@@ -55,7 +55,8 @@ export default function MyListScreen() {
           My List
         </Text>
 
-        {!saved.loaded ? (
+        {/* Saved ids resolve through the catalog: wait for its first load too */}
+        {!saved.loaded || catalog.status === 'loading' ? (
           <Center className="flex-1">
             <Spinner className="text-muted-foreground" />
           </Center>

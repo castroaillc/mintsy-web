@@ -5,6 +5,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { Icon } from '@/components/mintsy/icon';
 import { SafeAreaView } from '@/components/safe-area-view';
+import { Skeleton } from '@/components/states/skeleton';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Input, InputField, InputSlot } from '@/components/ui/input';
@@ -13,7 +14,9 @@ import { useCatalog } from '@/lib/catalog';
 
 /** Placeholder: a simple filterable catalog until real search exists. */
 export default function SearchScreen() {
-  const { books, refresh } = useCatalog();
+  const { books, status, refresh } = useCatalog();
+  // The catalog's first load, with nothing saved on the device
+  const loading = status === 'loading';
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -52,9 +55,17 @@ export default function SearchScreen() {
             className="font-inter text-[15px] text-foreground placeholder:text-faint"
           />
         </Input>
-        <Text className="font-inter text-[13px] text-muted-foreground">
-          {results.length} series
-        </Text>
+        {loading ? (
+          <HStack accessible accessibilityRole="progressbar" accessibilityLabel="Loading" className="flex-wrap gap-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} width={104} height={156} radius={8} />
+            ))}
+          </HStack>
+        ) : (
+          <Text className="font-inter text-[13px] text-muted-foreground">
+            {results.length} series
+          </Text>
+        )}
         <HStack className="flex-wrap gap-3">
           {results.map((book) => (
             <CoverTile
@@ -66,7 +77,7 @@ export default function SearchScreen() {
             />
           ))}
         </HStack>
-        {results.length === 0 ? (
+        {results.length === 0 && !loading ? (
           <Box className="items-center pt-10">
             <Text className="font-inter text-[14px] text-muted-foreground">No books match “{query.trim()}”.</Text>
           </Box>

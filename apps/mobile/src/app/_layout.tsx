@@ -19,9 +19,10 @@ import { BrandButton } from '@/components/mintsy/brand-button';
 import { Center } from '@/components/ui/center';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { Text } from '@/components/ui/text';
-import { authClient } from '@/lib/auth-client';
 import { CatalogProvider, useCatalog } from '@/lib/catalog';
 import { DownloadsProvider, useDownloads } from '@/lib/downloads';
+import { launchGate } from '@/lib/launch-gate';
+import { useLaunchSession } from '@/lib/launch-session';
 import { OnboardingProvider, useOnboarding } from '@/lib/onboarding';
 import { applyOrientationRule, useOrientationRule } from '@/lib/orientation';
 import { PremiumProvider } from '@/lib/premium';
@@ -65,7 +66,7 @@ function RootLayout() {
 export default ObserveRoot.wrap(RootLayout);
 
 function RootNavigator() {
-  const { data: session, isPending } = authClient.useSession();
+  const { session, known: sessionKnown } = useLaunchSession();
   const { mode, isLoaded } = useThemeMode();
   const onboarding = useOnboarding();
   const catalog = useCatalog();
@@ -78,35 +79,44 @@ function RootNavigator() {
     SpaceGrotesk_500Medium,
     SpaceGrotesk_700Bold,
   });
-  // Only the first session check holds the app back. Later checks (e.g. signOut after deleteUser, when there's
-  // already no session) report isPending again; unmounting the whole tree then would drop screen state such as
-  // Welcome's "account deleted" notice.
-  const [sessionKnown, setSessionKnown] = useState(false);
-  if (!isPending && !sessionKnown) setSessionKnown(true);
-  // A font load error falls back to system fonts rather than holding the splash screen
-  const isReady = sessionKnown && isLoaded && (fontsLoaded || !!fontError) && catalog.status !== 'loading';
-  // On a cold start with a session, also wait for the onboarding flag so the auth screens don't flash
-  const canHideSplash = isReady && (!session || onboarding.isLoaded);
+  // What this launch waits for (src/lib/launch-gate.ts). Never the network: signed out needs no catalog, and signed in
+  // shows the catalog saved on the device, or the screens' loading state. The session comes from the device when it can
+  // (useLaunchSession), and only its first answer holds the app back: later checks (e.g. signOut after deleteUser) report
+  // isPending again, and unmounting the tree then would drop screen state such as Welcome's "account deleted" notice.
+  const gate = launchGate({
+    sessionKnown,
+    signedIn: !!session,
+    themeLoaded: isLoaded,
+    // A font load error falls back to system fonts rather than holding the splash screen
+    fontsReady: fontsLoaded || !!fontError,
+    onboardingLoaded: onboarding.isLoaded,
+    catalogStatus: catalog.status,
+    catalogDeviceChecked: catalog.deviceChecked,
+    catalogHasBooks: catalog.books.length > 0,
+    hasDownloads: downloads.items.length > 0,
+  });
+
+  // Latched: once the app is up it stays mounted. Signing in later waits for that user's onboarding answers again,
+  // which the guards below handle by staying on the auth screens, so the tree must not unmount meanwhile.
+  const [launched, setLaunched] = useState(false);
+  if (gate.show && !launched) setLaunched(true);
 
   useEffect(() => {
-    if (canHideSplash) SplashScreen.hideAsync();
-  }, [canHideSplash]);
+    if (launched) SplashScreen.hideAsync();
+  }, [launched]);
 
-  // Time to interactive: startup is done and a real screen is up, whichever one this launch opens on. Not the
-  // "Couldn't load mintsy" screen below. Only the first call counts.
+  // Time to interactive: a real screen is up with what it needs, whichever one this launch opens on. Not the
+  // "Couldn't load mintsy" screen below, and not a signed-in screen still waiting for the catalog. Only the first call counts.
   const { markInteractive } = useObserve();
-  const canInteract = canHideSplash && (catalog.status !== 'error' || (!!session && downloads.items.length > 0));
   useEffect(() => {
-    if (canInteract) markInteractive();
-  }, [canInteract, markInteractive]);
+    if (gate.interactive) markInteractive();
+  }, [gate.interactive, markInteractive]);
 
-  // Keep the splash screen up until we know the session, saved theme and fonts, and have the catalog
-  if (!isReady) return null;
+  if (!launched) return null;
 
-  // Offline at launch with downloads on the device: let a signed-in viewer in to watch them (Home shows an offline notice)
-  const offlineWithDownloads = catalog.status === 'error' && !!session && downloads.items.length > 0;
-
-  if (catalog.status === 'error' && !offlineWithDownloads) {
+  // Signed in with no catalog (none fetched, none saved) and no downloads to watch offline. With downloads, a signed-in
+  // viewer gets in to watch them (Home shows an offline notice).
+  if (gate.catalogError) {
     return (
       <GluestackUIProvider mode={mode}>
         <Center className="flex-1 gap-4 bg-background px-8">

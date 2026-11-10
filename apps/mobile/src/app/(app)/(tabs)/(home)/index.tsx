@@ -11,6 +11,7 @@ import { IconButton } from '@/components/mintsy/icon-button';
 import { SectionRow } from '@/components/mintsy/section-row';
 import { Wordmark } from '@/components/mintsy/wordmark';
 import { SafeAreaView } from '@/components/safe-area-view';
+import { Skeleton } from '@/components/states/skeleton';
 import { Box } from '@/components/ui/box';
 import { HStack } from '@/components/ui/hstack';
 import { Input, InputField, InputSlot } from '@/components/ui/input';
@@ -38,7 +39,7 @@ function openBook(book: Book) {
 export default function BrowseScreen() {
   const { data: session } = authClient.useSession();
   const { continueWatching, sync } = useProgress();
-  const { books, status, retry, retrying } = useCatalog();
+  const { books, status, fromDevice, retry, retrying } = useCatalog();
   // Re-reads Premium (purchases made elsewhere, renewals, expiry) and then refetches the catalog
   const { refresh } = usePremium();
   // Locked episodes (free tier) open the paywall instead of the player
@@ -101,7 +102,7 @@ export default function BrowseScreen() {
         </HStack>
 
         {status === 'error' ? (
-          <OfflineNotice retry={retry} retrying={retrying} />
+          <OfflineNotice retry={retry} retrying={retrying} fromDevice={fromDevice} />
         ) : null}
 
         <Box className="px-5 pt-1">
@@ -125,6 +126,8 @@ export default function BrowseScreen() {
         <Box className="pt-4">
           <ChipRow options={CATEGORIES} value={category} onChange={setCategory} />
         </Box>
+
+        {status === 'loading' ? <HomeSkeleton /> : null}
 
         {showFeatured && featured ? (
           <Box className="px-5 pt-5">
@@ -194,7 +197,7 @@ export default function BrowseScreen() {
           </SectionRow>
         ))}
 
-        {visible.length === 0 && status !== 'error' ? (
+        {visible.length === 0 && status === 'ready' ? (
           <VStack className="items-center gap-1.5 px-8 pt-16">
             <Text className="font-display text-[18px] text-foreground">Nothing here yet</Text>
             <Text className="text-center font-inter text-[14px] text-muted-foreground">
@@ -226,8 +229,34 @@ function SaveButton({ bookId, title }: { bookId: string; title: string }) {
   );
 }
 
-/** Launched offline with downloads on the device: the catalog couldn't load, downloads still play. */
-function OfflineNotice({ retry, retrying }: { retry: () => void; retrying: boolean }) {
+/**
+ * The catalog's first load, with nothing saved on the device (design 51, "Home skeleton"): the featured series, a
+ * Continue watching row and a row of covers. The header, search and chips above are the real ones.
+ */
+function HomeSkeleton() {
+  return (
+    <VStack accessible accessibilityRole="progressbar" accessibilityLabel="Loading" className="gap-3.5 px-5 pt-5">
+      <Skeleton height={250} radius={22} />
+      <Skeleton width={180} height={22} className="mt-2" />
+      <HStack className="gap-3 overflow-hidden">
+        <Skeleton width={236} height={133} radius={12} />
+        <Skeleton width={120} height={133} radius={12} />
+      </HStack>
+      <Skeleton width={150} height={22} className="mt-2" />
+      <HStack className="gap-3 overflow-hidden">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} width={124} height={186} radius={8} />
+        ))}
+      </HStack>
+    </VStack>
+  );
+}
+
+/**
+ * The API can't be reached: offline at launch with downloads on the device, or showing the catalog saved on the device.
+ * Downloads still play.
+ */
+function OfflineNotice({ retry, retrying, fromDevice }: { retry: () => void; retrying: boolean; fromDevice: boolean }) {
   return (
     <Box className="px-5 pb-3">
       <VStack className="gap-3 rounded-[18px] border border-border bg-card p-4">
@@ -236,7 +265,9 @@ function OfflineNotice({ retry, retrying }: { retry: () => void; retrying: boole
           <Text className="flex-1 font-inter-semibold text-[15px] text-foreground">You’re offline</Text>
         </HStack>
         <Text className="font-inter text-[14px] leading-[21px] text-muted-foreground">
-          Your downloaded episodes are ready to watch. Connect to browse everything else.
+          {fromDevice
+            ? 'Showing the series from your last visit. Downloaded episodes play now. Connect to watch the rest.'
+            : 'Your downloaded episodes are ready to watch. Connect to browse everything else.'}
         </Text>
         <HStack className="gap-2.5">
           <BrandButton label="Go to Downloads" height={44} onPress={() => router.navigate('/profile/downloads')} className="flex-1" />

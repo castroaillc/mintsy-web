@@ -4,6 +4,7 @@ import { BrandButton } from '@/components/mintsy/brand-button';
 import { CoverTile } from '@/components/mintsy/cover-tile';
 import { OnboardingShell, SecondaryAction } from '@/components/mintsy/onboarding-shell';
 import { RadioCard } from '@/components/mintsy/radio-card';
+import { SkeletonList } from '@/components/states/skeleton';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useCatalog } from '@/lib/catalog';
@@ -37,6 +38,12 @@ export default function FirstSeriesStep() {
         </>
       }
     >
+      {/* The catalog's first load, with nothing saved on the device */}
+      {catalog.status === 'loading' ? (
+        <VStack className="mt-6">
+          <SkeletonList rows={3} rowHeight={132} label="Loading series" />
+        </VStack>
+      ) : null}
       <VStack accessibilityRole="radiogroup" accessibilityLabel="First series" className="mt-6 gap-3">
         {picks.map(({ book, reason }) => {
           const meta = `${countLabel(book.episodes.length, 'episode')} · ${formatRuntime(totalRuntime(book))}`;

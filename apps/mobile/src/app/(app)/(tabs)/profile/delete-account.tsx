@@ -13,6 +13,7 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { authErrorMessage } from '@/lib/account';
 import { authClient } from '@/lib/auth-client';
+import { clearCatalogCache } from '@/lib/catalog';
 import { useDownloads } from '@/lib/downloads';
 import { setFlash } from '@/lib/flash';
 import { clearOnboardingData } from '@/lib/onboarding';
@@ -118,6 +119,8 @@ export default function DeleteAccountScreen() {
     // The API already deleted the watch progress; drop the cache and unsent saves, then the user's whole folder
     progress.discardLocal();
     if (userId) deleteUserFiles(userId);
+    // The catalog saved for this account (signed out, the next one saved has no user id)
+    clearCatalogCache();
     await Promise.all([
       logOutPurchases(),
       cancelDailyReminder().catch(() => {}),
