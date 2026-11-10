@@ -13,7 +13,7 @@ Accounts and sessions are handled by [Better Auth](https://www.better-auth.com),
 | Delete account                    | Password required for users who have one; fresh session for social-only users.                 |
 | Sign in with Google / Apple       | Only when the client IDs are configured. See [Sign in with Google / Apple](social-sign-in.md). |
 | Account linking                   | Google / Apple sign-ins link to an existing user with the same **verified** email.             |
-| Expo plugin (`@better-auth/expo`) | Lets the native app use deep-link schemes as origins and redirect targets.                     |
+| Expo plugin (`@better-auth/expo`) | Made for the retired Expo app: copies an `expo-origin` header into `Origin`, and can pass a session cookie through a custom-scheme redirect (an `after` hook in `src/auth.ts` stops that for `/verify-email`). The iOS app doesn't rely on it. Left for a later backend cleanup. |
 | OpenAPI plugin                    | Route reference at `/api/auth/reference`, development only.                                    |
 
 Storage: MongoDB adapter on the shared client (`user`, `session`, `account`, `verification` collections). Transactions are why MongoDB must be a replica set.
@@ -36,10 +36,10 @@ Better Auth rejects requests (403) whose origin, `redirectTo` or `callbackURL` i
 | `http://localhost:3000`                         | outside production, unless `WEB_ORIGINS` is set (`next dev`)              |
 | `WEB_ORIGINS` entries                           | when set; empty means no web app, as on the preview service               |
 | `mintsy://`, `mintsy-dev://`, `mintsy-preview://` | always (production, dev and preview builds of the app)                    |
-| `exp://`, `exp://**`                            | outside production (Expo Go / dev server)                                 |
+| `exp://`, `exp://**`                            | outside production (Expo Go / dev server, a leftover from the retired Expo app) |
 | `https://appleid.apple.com`                     | while Apple sign-in is configured (Apple's form\_post callback, web only) |
 
-The native app identifies its origin with the `expo-origin` header (for example `expo-origin: mintsy://`), set by the Better Auth Expo client.
+The iOS app sends `Origin: <scheme>://` (for example `Origin: mintsy://`). The Expo plugin also accepts the same value in an `expo-origin` header, which the retired Expo app sent.
 
 ## Base URL
 

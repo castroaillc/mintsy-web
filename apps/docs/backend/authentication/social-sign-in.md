@@ -2,12 +2,17 @@
 
 ## Native flow (iPhone app)
 
-The app uses the **ID-token flow**, with no browser redirect. It gets an ID token from `@react-native-google-signin/google-signin` or `expo-apple-authentication`, then calls:
+The [iOS app](../../services/ios.md) hasn't built social sign-in yet. What the backend expects from a native client is the **ID-token flow**, with no browser redirect: the app gets an ID token from Google or Apple on the device, then posts it (with a trusted `Origin`, see [Clients](clients.md)):
 
-```ts
-authClient.signIn.social({ provider, idToken: { token, nonce?, accessToken? } })
-// → POST /api/auth/sign-in/social
+```http
+POST /api/auth/sign-in/social
+Content-Type: application/json
+Origin: mintsy://
+
+{"provider":"apple","idToken":{"token":"...","nonce":"..."}}
 ```
+
+`idToken` also takes an optional `accessToken`. The retired Expo app made this call through Better Auth's client, `authClient.signIn.social({ provider, idToken })`.
 
 The response and session cookie are the same as email sign-in (`{ redirect: false, token, user }`).
 

@@ -1,6 +1,6 @@
 # Changing the schema
 
-The GraphQL schema is a contract with the mobile app. The App Store build in people's hands keeps calling the old schema for weeks after a release, so a breaking change here breaks real users, and there's nothing the app can do about it until they update.
+The GraphQL schema is a contract with the [iOS app](../../services/ios.md). Nothing is in the App Store yet and production has no users, so today a breaking change only means updating the app in step. Once builds ship, they stay installed and keep calling the old schema for weeks after a release, so a breaking change would break real users, and there's nothing the app can do about it until they update.
 
 ::: danger
 **Additive changes only**, unless a breaking change has been explicitly approved. Never rename or remove a field, make a nullable field non-null, add a required argument, or change an argument's type in one step.
@@ -28,7 +28,7 @@ The GraphQL schema is a contract with the mobile app. The App Store build in peo
     ```graphql
     oldField: String @deprecated(reason: "Use newField")
     ```
-2. **Mobile** (and the web app) adopt the new field and ship a release.
+2. **iOS** adopts the new field and ships a release.
 3. **Backend** removes the old field only after that release is live and the old builds are no longer in meaningful use.
 
 ## Steps
@@ -50,7 +50,7 @@ The GraphQL schema is a contract with the mobile app. The App Store build in peo
     ```
 
     For auth or route changes, also run `scripts/smoke-test.sh http://localhost:4000` (local only: it creates a throwaway user).
-8. Hand off to the mobile side with the final SDL of every changed type and an example query.
+8. Hand off to the iOS side with the final SDL of every changed type and an example query.
 
 ## Update these docs
 
@@ -68,7 +68,7 @@ Paste the output into the code block on the Full SDL page.
 
 | Change                   | Tell                                                                                                 |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Any schema change        | mobile (`mobile-app/src/lib/graphql.ts`, `src/lib/catalog.tsx`, `src/data/types.ts`) and the web app |
+| Any schema change        | iOS (`apps/ios/Mintsy/Networking/GraphQLClient.swift`, `Catalog/CatalogQueries.swift` and the models in `Catalog/`) |
 | New catalog field        | studio (writes drafts), admin (edits)                                                                |
-| `FREE_EPISODES`          | the apps get it from `packages/shared` (`@mintsy/shared`); change both together                      |
+| `FREE_EPISODES`          | web gets it from `packages/shared` (`@mintsy/shared`), iOS from a generated copy (`apps/ios/scripts/generate-brand.mjs`); change both together |
 | New stored per-user data | the privacy policy at getmintsy.com/privacy (no project owns its source now; tell the user)          |

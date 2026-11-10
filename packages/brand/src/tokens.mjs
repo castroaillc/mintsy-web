@@ -18,8 +18,8 @@ export const defaultTheme = 'ink-coral';
 export const defaultMode = 'dark';
 
 /**
- * Semantic colors per theme and mode. Token names match the mobile app
- * (src/global.css) and shadcn/ui. One difference by platform, kept on purpose:
+ * Semantic colors per theme and mode. Token names match shadcn/ui.
+ * One difference by platform, kept on purpose:
  * - Native (gluestack): `primary` is the neutral strong color (white in dark mode).
  * - Web (shadcn): `--primary` is the brand color, so default buttons are coral.
  */

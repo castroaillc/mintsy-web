@@ -4,7 +4,7 @@ What services must agree on. Changing one side means another service has to foll
 
 ## Rules for changing a contract
 
-1. **Additive first.** Add fields as nullable or with defaults. App Store builds keep calling the old schema for weeks.
+1. **Additive first.** Add fields as nullable or with defaults. Nothing is in the App Store yet and production has no users, so a breaking change costs nothing today. Keep the habit anyway: once the [iOS app](#ios-app) ships, App Store builds stay installed and keep calling the old schema for weeks.
 2. **Order.** The owner ships the new side, consumers adopt it, and the owner removes the old side only after the consumers' release is live.
 3. **Write down the exact shape** (types, names, nullability) for whoever picks it up next.
 4. **Data collection.** Any new stored field about a user, or a new SDK, needs a privacy policy update (`apps/web/src/app/privacy/page.tsx`), and the owner approves the text.
@@ -16,26 +16,37 @@ Paths starting `apps/` or `packages/` are in `mintsy-web`.
 
 | Contract | Owner | Consumers | Where |
 |---|---|---|---|
-| GraphQL schema | Backend | Mobile | `apps/backend/src/graphql/schema.ts` ↔ `apps/mobile/src/lib/graphql.ts`, `catalog.tsx`, `voices.ts`, `src/data/types.ts` |
-| Auth (Better Auth, `/api/auth/*`) | Backend | Mobile | `apps/backend/src/auth.ts` ↔ `apps/mobile/src/lib/auth-client.ts`, `deep-links.ts`, `src/app/+native-intent.tsx` |
+| GraphQL schema | Backend | iOS | `apps/backend/src/graphql/schema.ts` ↔ `apps/ios/Mintsy/Networking/GraphQLClient.swift`, `Catalog/CatalogQueries.swift`. See [iOS app](#ios-app) |
+| Auth (Better Auth, `/api/auth/*`) | Backend | iOS | `apps/backend/src/auth.ts` ↔ `apps/ios/Mintsy/Auth/AuthService.swift`, `CookieJar.swift`. See [iOS app](#ios-app) |
 | Catalog (`books`) | Backend (format, public filtering) | Studio writes drafts and swaps media, admin edits and publishes | `apps/backend/src/catalog.ts`, `apps/studio/pipeline/voices.ts` (checks `voices` before writing), `packages/shared/index.d.ts` |
 | Studio jobs (`studio_jobs`) | Studio | Admin creates jobs and reads results | `apps/studio/pipeline/jobs.ts` ↔ `apps/admin/src/lib/jobs.ts` |
-| Media | Studio | Backend stores paths and issues URLs, mobile streams | `gs://mintsy-media`, `apps/backend/src/media.ts` |
-| Free tier (`FREE_EPISODES = 3`) | Backend enforces | Mobile and web read it from `@mintsy/shared` | `apps/backend/src/constants.ts` is a hand-kept copy of the value in `packages/shared/index.js`; the two must match. |
-| Book categories | Studio, admin, mobile | | `apps/studio/pipeline/steps/ingest.ts`, `apps/admin/src/lib/schemas.ts`, `apps/mobile/src/data/types.ts`. Change all three together. |
-| Premium (RevenueCat) | Backend (entitlements), mobile (purchases) | Web (privacy policy) | `apps/backend/src/entitlements.ts`, `revenuecat-webhook.ts` ↔ `apps/mobile/src/lib/premium.tsx`, `offering.ts` |
+| Media | Studio | Backend stores paths and issues URLs, iOS streams | `gs://mintsy-media`, `apps/backend/src/media.ts` |
+| Free tier (`FREE_EPISODES = 3`) | Backend enforces | Web reads it from `@mintsy/shared`; iOS gets a generated copy (`apps/ios/scripts/generate-brand.mjs`) | `apps/backend/src/constants.ts` is a hand-kept copy of the value in `packages/shared/index.js`; the two must match. |
+| Book categories | Studio, admin, iOS | | `apps/studio/pipeline/steps/ingest.ts`, `apps/admin/src/lib/schemas.ts`, and `CATEGORIES` in `packages/shared/index.js`, which iOS copies into `apps/ios/Mintsy/Catalog/SharedConstants.generated.swift` (rerun `generate-brand.mjs`). Change them together. |
+| Premium (RevenueCat) | Backend (entitlements) | Web (privacy policy). No app makes purchases yet: iOS hasn't built the paywall | `apps/backend/src/entitlements.ts`, `revenuecat-webhook.ts` |
 | Email (Resend) | Backend | Web (privacy policy) | `apps/backend/src/email.ts` |
-| My List | Backend | Mobile | `apps/backend/src/saved.ts` ↔ `apps/mobile/src/lib/saved.tsx` |
-| Watch progress | Backend | Mobile | `apps/backend/src/progress.ts` ↔ `apps/mobile/src/lib/progress.tsx`, `voices.ts` |
-| Observe (performance data and native crash reports sent to Expo) | Mobile | Web (privacy policy) | `apps/mobile/src/app/_layout.tsx`, using `expo-observe`. What it sends: [Observe](services/mobile.md#observe) |
-| Support contacts | Mobile | Web must serve `/support` | `apps/mobile/src/lib/support.ts` ↔ `apps/web/src/app/support/page.tsx` |
-| Brand (`@mintsy/brand`) | `packages/brand` | Mobile, web, admin, studio | `packages/brand/src/tokens.mjs` generates everything. Studio links it from `../../packages/brand`. |
-| Free tier, categories, catalog types (`@mintsy/shared`) | `packages/shared` | Mobile, web, admin, studio | `packages/shared/index.js` and `index.d.ts`. Studio links it from `../../packages/shared`. The backend doesn't use it yet: `FREE_EPISODES` in `apps/backend/src/constants.ts` must be kept equal by hand. |
-| Book ids | Studio | Backend, mobile | `--book <id>` becomes the catalog `_id` and `work/<id>/` |
+| My List | Backend | None yet (not built in iOS) | `apps/backend/src/saved.ts` |
+| Watch progress | Backend | None yet (not built in iOS) | `apps/backend/src/progress.ts` |
+| Support contacts | Web serves `/support` | None yet (iOS has no support links) | `apps/web/src/app/support/page.tsx` |
+| Brand (`@mintsy/brand`) | `packages/brand` | iOS (generated by `apps/ios/scripts/generate-brand.mjs`), web, admin, studio | `packages/brand/src/tokens.mjs` generates everything. Studio links it from `../../packages/brand`. |
+| Free tier, categories, catalog types (`@mintsy/shared`) | `packages/shared` | iOS (generated copy of `FREE_EPISODES` and `CATEGORIES`), web, admin, studio | `packages/shared/index.js` and `index.d.ts`. Studio links it from `../../packages/shared`. The backend doesn't use it yet: `FREE_EPISODES` in `apps/backend/src/constants.ts` must be kept equal by hand. |
+| Book ids | Studio | Backend, iOS | `--book <id>` becomes the catalog `_id` and `work/<id>/` |
+
+## iOS app
+
+The Swift app in `apps/ios/` ([iOS](services/ios.md)) is the only app client. It replaced the Expo app (`apps/mobile/`, deleted on 2026-11-10; the last commit with it is `75b0adc`). Nothing is in the App Store yet.
+
+- **Routes.** GraphQL at `/graphql` and Better Auth at `/api/auth/*` (`sign-in/email`, `get-session`, `sign-out` so far).
+- **Session cookie.** Kept in the Keychain (`CredentialStore`, `CookieJar.swift`), not `HTTPCookieStorage`, and updated from every `Set-Cookie` the auth routes answer with. Every GraphQL request and every auth call except sign-in sends `Cookie: better-auth.session_token=…`, or `__Secure-better-auth.session_token` on https.
+- **Origin.** Every `/api/auth/*` call sends `Origin: <scheme>://` (`mintsy://`, `mintsy-dev://` or `mintsy-preview://`, from the build's URL scheme). All three are in `trustedOrigins` in `apps/backend/src/auth.ts`. Better Auth rejects a cookie-carrying POST without a trusted origin, so removing a scheme there signs the app out of every flow but sign-in.
+- **Fields.** It asks for `hlsUrl` on `Episode` only when HLS is on (`MINTSY_HLS_ENABLED`, see [Media](#media)). `episodeVoices` is a separate request per episode.
+- **Expo leftovers in the backend.** `apps/backend/src/auth.ts` still loads the `@better-auth/expo` plugin, which copies an `expo-origin` header into `Origin`, and trusts `exp://` outside production. The iOS app doesn't use either. They're harmless and left for a later backend cleanup. Push still goes through Expo's push service (`expo-server-sdk`), but no client registers tokens now.
+
+How it restores a session on launch: [Talking to the backend](services/ios.md#talking-to-the-backend).
 
 ## MongoDB
 
-One cluster, two databases. Mobile and web never connect to MongoDB.
+One cluster, two databases. iOS and web never connect to MongoDB.
 
 | Database | Collections | Access |
 |---|---|---|
@@ -54,6 +65,7 @@ One cluster, two databases. Mobile and web never connect to MongoDB.
 - Studio `ingest` inserts a draft book only if the `_id` doesn't exist. `render` and `upload` upsert one episode by `number` as a draft, which also hides every later episode until it's published again. `remaster` doesn't: it swaps the media in place and keeps the status.
 - Admin publishes episode *n* only when 1 to *n*-1 are published, and only unpublishes the highest published episode.
 - `order` drives the app's Home: lowest is featured, highest is "Recently added".
+- **Delay:** the API serves the published catalog from an in-memory copy on each instance (`CATALOG_CACHE_SECONDS`, default 60). A write from admin or studio (publish, unpublish, metadata, `remaster`, a `cover` upload) reaches the API within about 15 to 60 seconds, not at once, and the app then sees it on its next fetch. Details: [How the API reads it](backend/catalog/index.md#how-the-api-reads-it-and-how-fast-a-publish-shows).
 - `pnpm seed:catalog` is legacy. It uses `$setOnInsert`, so it can add missing books but never overwrites existing ones.
 
 - **Whole seconds:** `durationSec` and `transcript[].startSec` are `Int!` in GraphQL, at the top level and in `voices[]`. A fractional value fails the response rather than one field: `books` and `episodeVoices` return no data, and `book(id)` returns null. A locked episode's transcript isn't resolved, so it can't trigger this, but its `durationSec` can. Two checks keep bad values out, because the backend validates nothing:
@@ -103,7 +115,7 @@ The types are in the [Full SDL](backend/graphql-api/full-sdl.md).
 
 ### Order for the backfill
 
-`remaster` swaps live media immediately, and remastered episodes have no burned captions. So the backfill must wait until an app release with the captions UI is live. Older builds lose captions on remastered episodes, leaving only their transcript overlay, which is off by default. The same applies to any episode newly rendered and published before that release.
+`remaster` swaps live media without a draft step, so the app gets it as soon as the API's catalog copy refreshes, and remastered episodes have no burned captions. The rule is that the backfill waits until an app build with the captions UI is live, because older builds would lose captions on remastered episodes. The Expo builds this protected are gone, and the iOS app already draws captions from `voices[].captions` (`apps/ios/Mintsy/Player/TimedCaptionView.swift`), so no app build blocks it today. Apply the rule again once iOS builds are in the App Store.
 
 ## Studio jobs
 
@@ -150,7 +162,7 @@ interface ClipJobResult {
 }
 ```
 
-- **`remaster`** re-renders an existing episode from its local files and swaps its media, `durationSec`, `transcript` and `voices` in one write. It keeps the status, title, summary and takeaways, so a live episode stays live and changes at once. It refuses when transcript text in `books` differs, unless `overwriteTranscript` is set.
+- **`remaster`** re-renders an existing episode from its local files and swaps its media, `durationSec`, `transcript` and `voices` in one write. It keeps the status, title, summary and takeaways, so a live episode stays live and changes in the app within about 15 to 60 seconds (see [Catalog](#catalog)). It refuses when transcript text in `books` differs, unless `overwriteTranscript` is set.
 - **`clip`** renders a vertical clip locally. It only reads `books` and never touches the bucket. Only the free episodes can have clips.
 
 - **Admin** inserts jobs with `status: "queued"`, `log: []` and a `createdAt` that strictly increases within a batch. It never updates a job. It may delete a book's jobs while they're queued.
@@ -165,19 +177,19 @@ interface ClipJobResult {
 - **Captions:** episodes no longer have burned captions after a re-render, because the app draws them from `voices[].captions`. Clips do have them. Video already in the bucket keeps its captions until it's replaced.
 - The bucket is public today. With backend `SIGNED_MEDIA=true`, it's private and the API returns V4 signed URLs. `SIGNED_MEDIA` isn't set in production.
 - URLs come from the API, so clients refetch them rather than store them.
-- **HLS:** `Episode.hlsUrl` is null when locked, when there's no `hlsPath`, and always while `SIGNED_MEDIA` is on. Clients stream `hlsUrl ?? videoUrl` and fall back to `videoUrl` on an HLS error. Offline downloads use `videoUrl` only, so the MP4 must keep being uploaded.
-- Mobile only asks for `hlsUrl` when `EXPO_PUBLIC_HLS_ENABLED` is exactly `true`. Don't enable it for a build whose API lacks the field, because asking for an unknown field fails the whole request.
+- **HLS:** `Episode.hlsUrl` is null when locked, when there's no `hlsPath`, and always while `SIGNED_MEDIA` is on. Clients stream `hlsUrl ?? videoUrl` and fall back to `videoUrl` on an HLS error. The iOS app falls back from HLS to MP4 once, so the MP4 must keep being uploaded. Offline downloads, when built, would use `videoUrl` too.
+- The iOS app only asks for `hlsUrl` when `MINTSY_HLS_ENABLED = YES`. Don't enable it for a build whose API lacks the field, because asking for an unknown field fails the whole request.
 
 ## Premium
 
 - Entitlement `premium`, offering `default` with `$rc_annual` and `$rc_monthly`, products `mintsy_premium_monthly` and `mintsy_premium_yearly`. RevenueCat's `app_user_id` is the Better Auth user id.
 - `Episode.locked = number > FREE_EPISODES && !viewer.premium.active`, and signed out counts as not Premium. Locked episodes return `videoUrl: null`, `hlsUrl: null`, `transcript: []` and `takeaways: []`.
 - `POST /webhooks/revenuecat` checks `Authorization` against `REVENUECAT_WEBHOOK_AUTH`, is idempotent by event id and is order-safe by `event_timestamp_ms`. With `REVENUECAT_SECRET_API_KEY` set, it refetches the subscriber from RevenueCat's v1 REST API, so that key must be a v1 `sk_` key.
-- The app calls `refreshPremium` after a purchase, restore or entitlement change, then refetches the catalog.
+- After a purchase, restore or entitlement change, an app should call `refreshPremium`, then refetch the catalog. The iOS app has no purchases yet.
 
 ## Account flows
 
-`<scheme>` is `mintsy` (production) or `mintsy-dev` (dev builds), both in the backend's `trustedOrigins`.
+`<scheme>` is `mintsy` (production), `mintsy-preview` (preview builds) or `mintsy-dev` (dev builds), all in the backend's `trustedOrigins`. The iOS app hasn't built these flows or their deep links yet ([what's left](services/ios.md)).
 
 - **Password reset:** `requestPasswordReset({ email, redirectTo: <scheme>://reset-password })`, then an emailed link, then `<scheme>://reset-password/?token=<token>`, then `resetPassword({ newPassword, token })`. Links last 1 hour, work once, and the reset revokes every session.
 - **Change email:** `changeEmail({ newEmail, callbackURL: <scheme>://email-changed })`. Opening the link never creates a session.
@@ -187,10 +199,9 @@ interface ClipJobResult {
 ## My List and watch progress
 
 - `setSaved(kind, id, saved)` needs a session and is idempotent, with at most 500 saved items per kind. `User.savedBookIds` and `savedEpisodeIds` may include ids no longer in the catalog.
-- `setProgress(episodeId, positionSec, completed)` saves the viewer's place. The app calls it about every 10 seconds while playing, and on pause, seek and exit. A position at 95% of the duration or more counts as completed. `User.continueWatching(limit)` reads it back.
-- `positionSec` always stays on the default voice's timeline, whichever voice is playing. The app converts by matching transcript lines (`apps/mobile/src/lib/voices.ts`).
-- Offline downloads are Premium and stay on the device. Nothing about them reaches the API.
-- Daily activity stays on the device (`apps/mobile/src/lib/progress.tsx`).
+- `setProgress(episodeId, positionSec, completed)` saves the viewer's place. The iOS app doesn't call it yet. A position at 95% of the duration or more counts as completed. `User.continueWatching(limit)` reads it back.
+- `positionSec` always stays on the default voice's timeline, whichever voice is playing. The app converts by matching transcript lines (`VoiceLogic.switchPosition` in `apps/ios/Mintsy/Player/VoiceLogic.swift`). iOS doesn't call `setProgress` yet.
+- Offline downloads aren't built in iOS. When they are, they must stay on the device, or the privacy policy needs updating.
 
 ## Search and key ideas
 

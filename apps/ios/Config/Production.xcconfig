@@ -1,0 +1,10 @@
+// Mintsy: the App Store app.
+#include "Shared.xcconfig"
+
+MINTSY_VARIANT = production
+PRODUCT_BUNDLE_IDENTIFIER = com.getmintsy.app
+MINTSY_DISPLAY_NAME = Mintsy
+// From design/icons/icon.png, the brand icon (scripts/generate-brand.mjs)
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+MINTSY_URL_SCHEME = mintsy
+MINTSY_API_URL = $(MINTSY_API_URL_PRODUCTION)

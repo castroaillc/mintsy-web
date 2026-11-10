@@ -25,11 +25,13 @@ CI runs the same checks plus the Docker image, the smoke test and the tests. For
 
 ## Tests
 
-`pnpm test` needs a running local replica set (`docker compose up -d`). The tests use their own database (`TEST_MONGODB_URI`, default `mintsy-test` on localhost) and refuse to run against non-local hosts. `test/env.ts` sets a full test environment before anything from `src/` is imported, so your `.env` doesn't affect them.
+`pnpm test` needs a running local replica set (`docker compose up -d`). The tests use their own database (`TEST_MONGODB_URI`, default `mintsy-test` on localhost) and refuse to run against non-local hosts. `test/env.ts` sets a full test environment before anything from `src/` is imported, so your `.env` doesn't affect them. It sets `CATALOG_CACHE_SECONDS=0`, because tests change the catalog between reads. `test/catalog-cache.test.ts` turns the cache on.
 
 | File                               | Covers                                                                                                                                                        |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `test/catalog-db.test.ts`          | Catalog in a separate database (`MONGODB_CATALOG_DB`): reads come from it, user data goes to the app database, and a real server start creates nothing in it. |
+| `test/catalog-cache.test.ts`       | The cached catalog read path: parallel transcript load, staleness bounds, failed loads, and the per-episode `episodeVoices` cache. |
+| `test/ensure-indexes.test.ts`      | `ensureIndexes()`: creates missing indexes, only lists them when they exist, and still fails on an options conflict. |
 | `test/catalog-db-fallback.test.ts` | `MONGODB_CATALOG_DB` unset: the catalog is the app database.                                                                                                  |
 | `test/delete-account.test.ts`      | `POST /api/auth/delete-user`: password users vs. social-only users, `REAUTH_REQUIRED`, signed out.                                                            |
 | `test/progress.test.ts`            | `setProgress`, `continueWatching`, `progress(bookId)`, `finishedBookIds` through the GraphQL schema.                                                          |
@@ -64,7 +66,7 @@ To query as a user, sign up or sign in with a cookie jar and send it to `/graphq
 
 ```sh
 curl -s -c jar.txt localhost:4000/api/auth/sign-in/email -H 'Content-Type: application/json' \
-  -H 'expo-origin: mintsy://' -d '{"email":"you@example.com","password":"..."}'
+  -H 'Origin: mintsy://' -d '{"email":"you@example.com","password":"..."}'
 curl -s -b jar.txt localhost:4000/graphql -H 'Content-Type: application/json' \
   -d '{"query":"{ me { id email premium { active } } }"}'
 ```

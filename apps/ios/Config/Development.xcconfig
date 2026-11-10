@@ -1,0 +1,10 @@
+// Mintsy Dev: local runs.
+#include "Shared.xcconfig"
+
+MINTSY_VARIANT = development
+PRODUCT_BUNDLE_IDENTIFIER = com.getmintsy.app.dev
+MINTSY_DISPLAY_NAME = Mintsy Dev
+// From design/icons/icon-dev.png (scripts/generate-brand.mjs)
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Dev
+MINTSY_URL_SCHEME = mintsy-dev
+MINTSY_API_URL = $(MINTSY_API_URL_DEVELOPMENT)

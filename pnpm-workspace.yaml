@@ -1,9 +1,7 @@
 packages:
   - apps/*
-  # apps/mobile is its own workspace with its own lockfile, so Expo and React Native
-  # stay out of the backend image and the website's dependencies.
-  - '!apps/mobile'
-  # apps/studio is also its own workspace with its own lockfile, so Remotion stays out too.
+  # apps/studio is its own workspace with its own lockfile, so Remotion stays out of the
+  # backend image and the website's dependencies.
   - '!apps/studio'
   - packages/*
 

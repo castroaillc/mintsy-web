@@ -1,0 +1,193 @@
+# XcodeGen spec for the native mintsy iPhone app. Generate the project with `xcodegen generate`
+# (Mintsy.xcodeproj is gitignored: never edit it by hand).
+name: Mintsy
+
+options:
+  bundleIdPrefix: com.getmintsy
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: false
+
+configs:
+  Development: debug
+  Preview: release
+  Production: release
+
+configFiles:
+  Development: Config/Development.xcconfig
+  Preview: Config/Preview.xcconfig
+  Production: Config/Production.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # Swift 6 language mode is strict concurrency; app code runs on the main actor unless it opts out
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    TARGETED_DEVICE_FAMILY: "1,2"
+    # Generated Swift asset symbols would add Color(.primary) and friends, which collide with SwiftUI's own
+    # names; Palette.generated.swift is the typed access instead
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+  configs:
+    Development:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+
+targets:
+  Mintsy:
+    type: application
+    platform: iOS
+    sources:
+      - path: Mintsy
+        excludes:
+          - "Resources/Info.plist"
+      # Fonts come straight from the brand package, so there's one copy of each file
+      - path: ../../packages/brand/fonts/Inter-Regular.ttf
+        group: Fonts
+        buildPhase: resources
+      - path: ../../packages/brand/fonts/Inter-Medium.ttf
+        group: Fonts
+        buildPhase: resources
+      - path: ../../packages/brand/fonts/Inter-SemiBold.ttf
+        group: Fonts
+        buildPhase: resources
+      - path: ../../packages/brand/fonts/Inter-Bold.ttf
+        group: Fonts
+        buildPhase: resources
+      - path: ../../packages/brand/fonts/SpaceGrotesk-Medium.ttf
+        group: Fonts
+        buildPhase: resources
+      - path: ../../packages/brand/fonts/SpaceGrotesk-Bold.ttf
+        group: Fonts
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: Mintsy
+        INFOPLIST_FILE: Mintsy/Resources/Info.plist
+        # ASSETCATALOG_COMPILER_APPICON_NAME comes from each variant's xcconfig (its own icon)
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: Brand
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Mintsy/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: $(MINTSY_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes:
+              - $(MINTSY_URL_SCHEME)
+        # Read by AppConfig
+        MintsyAPIURL: $(MINTSY_API_URL)
+        MintsyURLScheme: $(MINTSY_URL_SCHEME)
+        MintsyVariant: $(MINTSY_VARIANT)
+        MintsyHLSEnabled: $(MINTSY_HLS_ENABLED)
+        UIAppFonts:
+          - Inter-Regular.ttf
+          - Inter-Medium.ttf
+          - Inter-SemiBold.ttf
+          - Inter-Bold.ttf
+          - SpaceGrotesk-Medium.ttf
+          - SpaceGrotesk-Bold.ttf
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        # Phones stay upright for now, as the Expo app did outside the player. Larger windows (iPad, iPhone Duo
+        # open) follow the device. The player's landscape mode is a later milestone.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        # Only standard (exempt) encryption such as HTTPS
+        ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          # A local API (http://localhost:4000) in development; everything else is HTTPS
+          NSAllowsLocalNetworking: true
+
+  MintsyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MintsyTests
+    dependencies:
+      - target: Mintsy
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.getmintsy.app.tests
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Mintsy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Mintsy
+
+  # Needs a backend and an account: skipped unless TEST_RUNNER_MINTSY_EMAIL / _PASSWORD are set (see the file)
+  MintsyUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: MintsyUITests
+    dependencies:
+      - target: Mintsy
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.getmintsy.app.uitests
+        # XCTestCase's initializers and setUp are nonisolated
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        TEST_TARGET_NAME: Mintsy
+
+schemes:
+  Mintsy Dev:
+    build:
+      targets:
+        Mintsy: all
+        MintsyTests: [test]
+        MintsyUITests: [test]
+    run:
+      config: Development
+    test:
+      config: Development
+      targets:
+        - MintsyTests
+        - MintsyUITests
+    profile:
+      config: Development
+    analyze:
+      config: Development
+    archive:
+      config: Development
+  Mintsy Preview:
+    build:
+      targets:
+        Mintsy: all
+    run:
+      config: Preview
+    test:
+      config: Preview
+    profile:
+      config: Preview
+    analyze:
+      config: Preview
+    archive:
+      config: Preview
+  Mintsy:
+    build:
+      targets:
+        Mintsy: all
+    run:
+      config: Production
+    test:
+      config: Production
+    profile:
+      config: Production
+    analyze:
+      config: Production
+    archive:
+      config: Production

@@ -1,0 +1,16 @@
+// Settings every variant shares. Variant files include this, then set their identity.
+
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1
+DEVELOPMENT_TEAM = 9496L7QUB2
+
+// Stream HLS when the API offers it (Episode.hlsUrl, EpisodeVoice.hlsUrl), like EXPO_PUBLIC_HLS_ENABLED.
+// Only YES turns it on. Keep NO for an API that doesn't have Episode.hlsUrl: the catalog request would fail.
+MINTSY_HLS_ENABLED = NO
+
+// Per-variant API URLs come from the gitignored API.xcconfig (copy API.xcconfig.example). The defaults below
+// are only used without it. `/$()/` keeps xcconfig from reading `//` as a comment.
+MINTSY_API_URL_DEVELOPMENT = http:/$()/localhost:4000
+MINTSY_API_URL_PREVIEW =
+MINTSY_API_URL_PRODUCTION = https:/$()/api.getmintsy.com
+#include? "API.xcconfig"

@@ -2,20 +2,21 @@
 
 ## iPhone app
 
-The Expo app talks to the API host directly: `https://api.getmintsy.com` from production builds, the `mintsy-api-preview` service from preview builds, and a local server from dev builds.
+The native Swift app ([iOS](../../services/ios.md)) talks to the API host directly. Dev builds default to `http://localhost:4000` and production builds to `https://api.getmintsy.com`. Preview builds have no default: set the URL (for example the `mintsy-api-preview` service) in `apps/ios/Config/API.xcconfig`.
 
-* It uses Better Auth's React client with the Expo plugin (`@better-auth/expo/client`). The plugin stores the session cookie in SecureStore and sends `expo-origin: <scheme>://` so the backend trusts the request.
-* Schemes: `mintsy` (production builds), `mintsy-preview` (preview builds) and `mintsy-dev` (dev builds). All three are trusted origins in `src/auth.ts`, on every service.
-* GraphQL requests send the cookie explicitly as a `Cookie` header (from `authClient.getCookie()`), with `credentials: "omit"`.
-* Sign in with Google / Apple uses the native ID-token flow: the app gets an ID token on the device and posts it to `/api/auth/sign-in/social`. No browser redirect.
-* Email links (password reset, email change) redirect to app deep links: `<scheme>://reset-password` and `<scheme>://email-changed`.
+* It calls Better Auth's REST routes itself and keeps the session cookie in a Keychain cookie jar, updated from every `Set-Cookie`.
+* Every `/api/auth/*` call sends `Origin: <scheme>://`. Schemes: `mintsy` (production builds), `mintsy-preview` (preview builds) and `mintsy-dev` (dev builds). All three are trusted origins in `src/auth.ts`, on every service.
+* GraphQL requests send the cookie as a `Cookie` header.
+* It only signs in with email and password so far. Social sign-in and the email-link flows (`<scheme>://reset-password`, `<scheme>://email-changed`) aren't built in the app yet, but the backend supports them as described in [Sign in with Google / Apple](social-sign-in.md) and [Account flows](account-flows.md).
+
+The backend still loads the `@better-auth/expo` plugin, which also accepts an `expo-origin: <scheme>://` header in place of `Origin`. That was for the retired Expo app; the iOS app doesn't use it.
 
 Example (what the app's auth client does):
 
 ```http
 POST /api/auth/sign-in/email
 Content-Type: application/json
-expo-origin: mintsy://
+Origin: mintsy://
 
 {"email":"you@example.com","password":"..."}
 ```
@@ -29,7 +30,7 @@ Cookie: __Secure-better-auth.session_token=...
 ```
 
 ::: info
-The client-side code lives in the mobile repo (`mobile-app/src/lib/auth-client.ts`, `src/lib/graphql.ts`). This page only covers what the backend expects.
+The client-side code is in `apps/ios/Mintsy/Auth/AuthService.swift`, `CookieJar.swift` and `apps/ios/Mintsy/Networking/GraphQLClient.swift`. This page only covers what the backend expects.
 :::
 
 ## Web app
@@ -50,12 +51,12 @@ So the session cookie is a first-party, host-only cookie on `app.getmintsy.com`:
 
 ## Other HTTP clients (curl, scripts)
 
-Use a cookie jar, and send `expo-origin: mintsy://` (or an `Origin` that's trusted) on auth calls:
+Use a cookie jar, and send a trusted `Origin` (for example `Origin: mintsy://`) on auth calls:
 
 ```sh
 curl -s -c jar.txt http://localhost:4000/api/auth/sign-up/email -H 'Content-Type: application/json' \
-  -H 'expo-origin: mintsy://' -d '{"email":"me@example.com","password":"password1234","name":"Me"}'
+  -H 'Origin: mintsy://' -d '{"email":"me@example.com","password":"password1234","name":"Me"}'
 curl -s -b jar.txt http://localhost:4000/graphql -H 'Content-Type: application/json' -d '{"query":"{ me { email } }"}'
 ```
 
-An untrusted origin (for example `expo-origin: evil://` or `Origin: https://evil.example.com`) gets 403.
+An untrusted origin (for example `Origin: https://evil.example.com`, or `expo-origin: evil://` through the Expo plugin) gets 403.

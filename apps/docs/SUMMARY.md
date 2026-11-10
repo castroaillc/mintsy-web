@@ -9,6 +9,6 @@
 * [Backend](backend/index.md)
 * [Studio](services/studio.md)
 * [Admin](services/admin.md)
-* [Mobile](services/mobile.md)
+* [iOS](services/ios.md)
 * [Web](services/web.md)
 * [Brand](services/brand.md)

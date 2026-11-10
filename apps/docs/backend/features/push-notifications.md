@@ -1,6 +1,10 @@
 # Push notifications
 
-Push goes through Expo's push service with `expo-server-sdk` (`src/push.ts`). The app registers its Expo push token; the backend sends to every device registered for a user.
+Push goes through Expo's push service with `expo-server-sdk` (`src/push.ts`). A client registers its Expo push token, and the backend sends to every device registered for a user.
+
+::: info No client registers tokens now
+The retired Expo app was the only client that registered tokens. The [iOS app](../../services/ios.md) hasn't built push yet, and a native app gets an APNs device token, not an Expo push token, so `registerPushToken` would reject it. How iOS push reaches the backend is still to be decided.
+:::
 
 ## Registering devices
 
