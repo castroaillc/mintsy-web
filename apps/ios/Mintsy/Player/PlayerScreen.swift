@@ -8,15 +8,17 @@ struct PlayerScreen: View {
 
     @Environment(CatalogStore.self) private var catalog
     @Environment(PlayerPresenter.self) private var presenter
+    @Environment(ProgressStore.self) private var progress
     @Environment(\.graphQL) private var graphQL
     @Environment(\.appConfig) private var config
     @State private var episodeID: String?
     @State private var model: PlayerModel?
-    @State private var lockedEpisode: Episode?
+    @State private var nowPlayingCoordinator = NowPlayingCoordinator()
 
     private var currentID: String { episodeID ?? route.episodeID }
 
     var body: some View {
+        @Bindable var presenter = presenter
         Group {
             if let model, model.episode.id == currentID {
                 PlayerView(model: model, onSelectEpisode: select, onClose: presenter.close)
@@ -35,31 +37,45 @@ struct PlayerScreen: View {
         }
         .background(Palette.background)
         .task(id: currentID) { await startEpisode(currentID) }
-        .onDisappear { model?.stop() }
-        .alert("Premium episode", item: $lockedEpisode) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { episode in
-            Text("Episode \(episode.number) is part of Premium. Subscribing isn’t in the native app yet.")
+        .onDisappear {
+            model?.stop()
+            nowPlayingCoordinator.stop()
+        }
+        .fullScreenCover(item: $presenter.playerPaywall) { route in
+            PaywallFlow(route: route, onClose: presenter.closePaywall, onPlay: playUnlocked, onHome: presenter.goHome)
         }
     }
 
     private func startEpisode(_ id: String) async {
         guard let found = catalog.episode(id: id) else { return }
         model?.stop()
-        let next = PlayerModel(book: found.book, episode: found.episode, client: graphQL, hlsEnabled: config?.hlsEnabled ?? false)
+        // The route's start point is for the episode it opened on; others resume from saved progress
+        let startSec = id == route.episodeID && episodeID == nil ? route.startSec : nil
+        let next = PlayerModel(
+            book: found.book, episode: found.episode, client: graphQL, hlsEnabled: config?.hlsEnabled ?? false,
+            progress: progress, startSec: startSec
+        )
         next.onAdvance = { episode in select(episode) }
+        next.onLockedNext = { episode in select(episode) }
         model = next
         activateAudioSession()
+        nowPlayingCoordinator.start(model: next)
         await next.start()
     }
 
-    /// Previous, next and Up next. A Premium-only episode explains itself instead of playing.
+    /// Previous, next and Up next. A Premium-only episode opens the paywall instead of playing.
     private func select(_ episode: Episode) {
         if episode.locked {
-            lockedEpisode = episode
+            presenter.showPaywall(for: episode)
         } else {
             episodeID = episode.id
         }
+    }
+
+    /// Welcome to Premium's Play button: the episode the viewer was blocked on, now unlocked, in this player.
+    private func playUnlocked(_ episode: Episode) {
+        presenter.closePaywall()
+        select(episode)
     }
 
     /// Plays with the silent switch on, like any video app.

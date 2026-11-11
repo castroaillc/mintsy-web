@@ -1,28 +1,52 @@
 import { MongoServerError } from "mongodb";
 import { PREMIUM_ENTITLEMENT } from "./constants.js";
-import { db } from "./db.js";
+import { db, ensureIndexes } from "./db.js";
 import { env } from "./env.js";
 
+/** Present while the entitlement is an App Store (StoreKit 2) subscription this API verified itself. */
+export interface AppStoreBinding {
+  /** The subscription. Unique across users: one Apple subscription unlocks one mintsy account. */
+  originalTransactionId: string;
+  /** The transaction the stored state comes from. */
+  transactionId: string;
+  /** Production | Sandbox | Xcode | LocalTesting. */
+  environment: string;
+  bundleId: string;
+  /** That transaction's purchaseDate: an older transaction never replaces a newer one. */
+  purchaseAtMs: number;
+  /** signedDate of the newest signed copy of that transaction applied; an older copy is ignored. */
+  signedAtMs: number;
+  /** signedDate of the newest renewal info applied (notifications and refreshPremium carry it; a sync from the app doesn't). */
+  renewalSignedAtMs?: number;
+  /** Auto-renew is on and Apple isn't retrying a failed payment. `willRenew` is this while the subscription is active. */
+  autoRenew?: boolean;
+  /** The transaction was refunded, revoked or replaced by an upgrade: no access whatever the dates. */
+  voided?: boolean;
+}
+
 /**
- * One document per Better Auth user id: the user's `premium` entitlement as last reported by
- * RevenueCat (REST API or webhook). Missing doc = never subscribed.
+ * One document per Better Auth user id: the user's `premium` entitlement, as last reported by
+ * RevenueCat (REST API or webhook) or by the App Store (src/app-store.ts, which sets `appStore`).
+ * Missing doc = never subscribed.
  */
 export interface EntitlementDoc {
   userId: string;
   active: boolean;
   productId: string | null;
-  /** RevenueCat period type, lowercased: "trial" | "normal" | "intro" (others passed through). */
+  /** RevenueCat period type, lowercased: "trial" | "normal" | "intro" (others passed through). App Store writes use the same three. */
   periodType: string | null;
   /** End of the current period; null = never expires (lifetime) or unknown. */
   expiresAt: Date | null;
   /** Billing-issue grace period end, if any; access continues until then. */
   graceExpiresAt?: Date | null;
   willRenew: boolean;
-  /** Where it was bought, lowercased RevenueCat store: "app_store" | "rc_billing" (Web Billing) | "stripe" | "play_store" | ... */
+  /** Where it was bought, lowercased RevenueCat store: "app_store" | "rc_billing" (Web Billing) | "stripe" | "play_store" | ... App Store writes use "app_store" too. */
   store: string | null;
   updatedAt: Date;
   /** event_timestamp_ms of the newest webhook applied; older events are ignored. */
   lastEventAtMs?: number;
+  /** Set by App Store writes and removed by RevenueCat ones, so it also says who wrote the state. */
+  appStore?: AppStoreBinding;
 }
 
 /** The GraphQL `Premium` shape. */
@@ -44,9 +68,19 @@ export const revenueCatEvents = db.collection<{ _id: string; type: string; recei
 );
 
 export async function ensureEntitlementIndexes() {
-  await entitlements.createIndex({ userId: 1 }, { unique: true });
-  // _id is the event id; keep 90 days of ids (RevenueCat stops retrying after a few hours)
-  await revenueCatEvents.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 90 * 24 * 3600 });
+  await Promise.all([
+    ensureIndexes(entitlements, [
+      { key: { userId: 1 }, unique: true },
+      // One mintsy account per App Store subscription; partial, so RevenueCat documents aren't indexed
+      {
+        key: { "appStore.originalTransactionId": 1 },
+        unique: true,
+        partialFilterExpression: { "appStore.originalTransactionId": { $type: "string" } },
+      },
+    ]),
+    // _id is the event id; keep 90 days of ids (RevenueCat stops retrying after a few hours)
+    ensureIndexes(revenueCatEvents, [{ key: { receivedAt: 1 }, expireAfterSeconds: 90 * 24 * 3600 }]),
+  ]);
 }
 
 export const NOT_PREMIUM: Premium = {
@@ -81,11 +115,22 @@ export function isAnonymousAppUserId(id: string) {
   return id.startsWith("$RCAnonymousID:");
 }
 
-type EntitlementState = Omit<EntitlementDoc, "userId" | "updatedAt" | "lastEventAtMs">;
+export type EntitlementState = Omit<EntitlementDoc, "userId" | "updatedAt" | "lastEventAtMs" | "appStore">;
+
+/** Matches a document whose App Store subscription gives access right now. */
+const activeAppStore = (now: Date) => ({
+  appStore: { $exists: true },
+  active: true,
+  $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }, { graceExpiresAt: { $gt: now } }],
+});
 
 /**
- * Stores state for a user. With `eventAtMs`, the write only applies if no newer event has been
+ * Stores RevenueCat state for a user. With `eventAtMs`, the write only applies if no newer event has been
  * stored (order-safe); returns false when it was skipped as stale.
+ *
+ * It also returns false, without writing, while the user has an active App Store subscription
+ * (src/app-store.ts): RevenueCat doesn't know about those, so its "no entitlement" must not end one.
+ * Otherwise the write takes the document over (`appStore` is removed).
  */
 export async function storeEntitlement(
   userId: string,
@@ -95,21 +140,33 @@ export async function storeEntitlement(
   const updatedAt = new Date();
   if (eventAtMs === undefined) {
     // A REST refetch is current state, so it always applies (and keeps lastEventAtMs as is)
-    await entitlements.updateOne({ userId }, { $set: { ...state, updatedAt } }, { upsert: true });
-    return true;
+    try {
+      await entitlements.updateOne(
+        { userId, $nor: [activeAppStore(updatedAt)] },
+        { $set: { ...state, updatedAt }, $unset: { appStore: "" } },
+        { upsert: true },
+      );
+      return true;
+    } catch (err) {
+      // An active App Store subscription owns the doc, so the upsert collided on userId
+      if (err instanceof MongoServerError && err.code === 11000) return false;
+      throw err;
+    }
   }
   try {
     await entitlements.updateOne(
       {
         userId,
         $or: [{ lastEventAtMs: { $exists: false } }, { lastEventAtMs: { $lte: eventAtMs } }],
+        $nor: [activeAppStore(updatedAt)],
       },
-      { $set: { ...state, updatedAt, lastEventAtMs: eventAtMs } },
+      { $set: { ...state, updatedAt, lastEventAtMs: eventAtMs }, $unset: { appStore: "" } },
       { upsert: true },
     );
     return true;
   } catch (err) {
-    // The filter missed an existing doc with a newer event, so the upsert collided on userId
+    // The filter missed an existing doc (a newer event, or an active App Store subscription), so the
+    // upsert collided on userId
     if (err instanceof MongoServerError && err.code === 11000) return false;
     throw err;
   }

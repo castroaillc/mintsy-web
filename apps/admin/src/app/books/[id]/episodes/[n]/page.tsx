@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { StatusBadge } from "@/components/badges";
 import { Time } from "@/components/time";
 import { mediaUrl } from "@/lib/media";
-import { booksCol } from "@/lib/mongo";
+import { findPageBook } from "@/lib/catalog";
 import { canPublishEpisode, canUnpublishEpisode, effectiveStatus } from "@/lib/status";
 import { EpisodeEditor } from "./episode-editor";
 
@@ -20,7 +20,8 @@ export default async function EpisodePage({ params }: PageProps<"/books/[id]/epi
   const { id, n: nRaw } = await params;
   const n = Number(nRaw);
   if (!Number.isInteger(n) || n < 1) notFound();
-  const book = await (await booksCol()).findOne({ _id: id });
+  // Only this episode's transcript text is shown; the others are only checked by the publish rule.
+  const book = await findPageBook(id, n);
   const ep = book?.episodes.find((e) => e.number === n);
   if (!book || !ep) notFound();
 

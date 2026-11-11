@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct MintsyApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var launch = AppLaunch.fromMainBundle()
 
     var body: some Scene {

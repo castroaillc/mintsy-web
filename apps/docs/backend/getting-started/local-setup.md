@@ -46,7 +46,12 @@ Server ready at http://localhost:4000
   Database: mintsy (catalog: mintsy_studio)
   Media:    https://storage.googleapis.com/mintsy-media
   Auth API: http://localhost:4000/api/auth/reference
+  Startup:  listening 1943ms after process start (node + imports 1608ms, mongo connect 147ms, indexes 13ms, apollo 29ms)
 ```
+
+The `Startup:` line splits the time to listening into Node boot plus imports, MongoDB connect, index checks and Apollo's start. Cloud Run logs it on every cold start too.
+
+The API keeps the published catalog in memory for up to 60 s, so something you publish in admin can take that long to show. Set `CATALOG_CACHE_SECONDS=0` in `.env` to see changes at once. See [Catalog model](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows).
 
 It also prints warnings for optional integrations that aren't configured (RevenueCat, Resend, Google, Apple). They're expected locally. See [Environment variables](environment-variables.md).
 

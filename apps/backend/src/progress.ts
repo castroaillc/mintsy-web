@@ -1,6 +1,6 @@
 import { MongoServerError } from "mongodb";
-import { books, catalogProjection, publicBook, type BookDoc, type EpisodeDoc } from "./catalog.js";
-import { db } from "./db.js";
+import { getPublishedBooks, type BookDoc, type EpisodeDoc } from "./catalog.js";
+import { db, ensureIndexes } from "./db.js";
 
 /**
  * Watch progress: one doc per (user, episode). Written by setProgress from the iPhone and web apps,
@@ -25,11 +25,13 @@ export interface WatchProgressDoc {
 export const watchProgress = db.collection<WatchProgressDoc>("watch_progress");
 
 export async function ensureProgressIndexes() {
-  await watchProgress.createIndex({ userId: 1, episodeId: 1 }, { unique: true });
-  // continueWatching: the user's most recent activity first
-  await watchProgress.createIndex({ userId: 1, updatedAt: -1 });
-  // progress(bookId)
-  await watchProgress.createIndex({ userId: 1, bookId: 1, episodeNumber: 1 });
+  await ensureIndexes(watchProgress, [
+    { key: { userId: 1, episodeId: 1 }, unique: true },
+    // continueWatching: the user's most recent activity first
+    { key: { userId: 1, updatedAt: -1 } },
+    // progress(bookId)
+    { key: { userId: 1, bookId: 1, episodeNumber: 1 } },
+  ]);
 }
 
 /** A position at or past this fraction of the duration marks the episode completed. */
@@ -56,18 +58,6 @@ export function parseEpisodeId(id: string): { bookId: string; number: number } |
   return number >= 1 ? { bookId: match[1]!, number } : null;
 }
 
-/** Published versions of the given books (drafts and books without published episodes are left out). */
-async function publishedBooks(ids: string[]): Promise<Map<string, BookDoc>> {
-  if (!ids.length) return new Map();
-  const docs = await books.find({ _id: { $in: ids }, status: { $ne: "draft" } }, { projection: catalogProjection }).toArray();
-  const map = new Map<string, BookDoc>();
-  for (const doc of docs) {
-    const book = publicBook(doc);
-    if (book) map.set(book._id, book);
-  }
-  return map;
-}
-
 function view(doc: Omit<WatchProgressDoc, "userId">, book: BookDoc | null): ProgressView {
   const { episodeId, bookId, episodeNumber, positionSec, durationSec, completed, updatedAt } = doc;
   const episode = book?.episodes.find((e) => e.number === episodeNumber) ?? null;
@@ -91,7 +81,7 @@ export async function setProgress(
 ): Promise<SetProgressResult> {
   const parsed = parseEpisodeId(episodeId);
   if (!parsed) return "unknown-episode";
-  const book = (await publishedBooks([parsed.bookId])).get(parsed.bookId) ?? null;
+  const book = (await getPublishedBooks([parsed.bookId])).get(parsed.bookId) ?? null;
   const episode = book?.episodes.find((e) => e.number === parsed.number);
   if (!book || !episode) return "unknown-episode";
   if (isLocked(episode)) return "locked";
@@ -158,7 +148,7 @@ export async function continueWatching(userId: string, limit: number): Promise<P
     if (list) list.push(doc);
     else byBook.set(doc.bookId, [doc]);
   }
-  const catalog = await publishedBooks([...byBook.keys()]);
+  const catalog = await getPublishedBooks([...byBook.keys()]);
   const result: ProgressView[] = [];
   for (const [bookId, list] of byBook) {
     if (result.length >= max) break;
@@ -199,7 +189,7 @@ export async function continueWatching(userId: string, limit: number): Promise<P
 export async function progressForBook(userId: string, bookId: string): Promise<ProgressView[]> {
   const docs = await watchProgress.find({ userId, bookId }).sort({ episodeNumber: 1 }).toArray();
   if (!docs.length) return [];
-  const book = (await publishedBooks([bookId])).get(bookId) ?? null;
+  const book = (await getPublishedBooks([bookId])).get(bookId) ?? null;
   return docs.map((d) => view(d, book));
 }
 
@@ -216,7 +206,7 @@ export async function finishedBookIds(userId: string): Promise<string[]> {
     if (set) set.add(d.episodeNumber);
     else completed.set(d.bookId, new Set([d.episodeNumber]));
   }
-  const catalog = await publishedBooks([...completed.keys()]);
+  const catalog = await getPublishedBooks([...completed.keys()]);
   return [...completed.keys()].filter((bookId) => {
     const book = catalog.get(bookId);
     return !!book && book.episodes.every((e) => completed.get(bookId)!.has(e.number));

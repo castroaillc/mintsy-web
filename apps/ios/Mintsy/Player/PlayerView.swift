@@ -11,7 +11,6 @@ struct PlayerView: View {
     @State private var isFullScreen = false
 
     var body: some View {
-        @Bindable var model = model
         VStack(spacing: 0) {
             PlayerPanel(model: model, isFullScreen: $isFullScreen, onClose: onClose)
                 .frame(maxHeight: isFullScreen ? .infinity : 260)
@@ -25,11 +24,6 @@ struct PlayerView: View {
         .statusBarHidden(isFullScreen)
         .onChange(of: voiceOverEnabled, initial: true) { _, enabled in
             model.isVoiceOverRunning = enabled
-        }
-        .alert("Episode \((model.nextEpisode?.number).map(String.init) ?? "") is part of Premium", isPresented: $model.nextIsLocked) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Free accounts get the first \(SharedConstants.freeEpisodes) episodes of each series. Subscribing isn’t in the native app yet.")
         }
     }
 }

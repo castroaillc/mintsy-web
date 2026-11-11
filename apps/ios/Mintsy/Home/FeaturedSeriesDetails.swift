@@ -3,6 +3,7 @@ import SwiftUI
 /// The text side of the featured card.
 struct FeaturedSeriesDetails: View {
     let book: Book
+    let start: PlayStart?
     let onPlay: () -> Void
 
     var body: some View {
@@ -23,7 +24,7 @@ struct FeaturedSeriesDetails: View {
                 .font(BrandFont.inter(14, relativeTo: .subheadline))
                 .foregroundStyle(Palette.mutedForeground)
             Button(action: onPlay) {
-                Label("Play Episode 1", systemImage: "play.fill")
+                Label("\(start?.resume == true ? "Resume" : "Play") Episode \(start?.episode.number ?? 1)", systemImage: "play.fill")
             }
             .buttonStyle(.brand(height: 48))
             .padding(.top, 6)

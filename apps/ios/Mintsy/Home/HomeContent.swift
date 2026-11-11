@@ -8,6 +8,7 @@ struct HomeContent: View {
     let category: String
 
     @Environment(CatalogStore.self) private var catalog
+    @Environment(ProgressStore.self) private var progress
 
     var body: some View {
         switch status {
@@ -25,10 +26,15 @@ struct HomeContent: View {
             }
             .padding(.top, 40)
         case .ready:
+            let continueItems = progress.continueWatching(in: catalog).filter { sections.visible.contains($0.book) }
             if let featured = sections.featured {
                 FeaturedSeriesCard(book: featured)
                     .padding(.horizontal, Metrics.gutter)
                     .padding(.top, 20)
+            }
+            if !continueItems.isEmpty {
+                ContinueWatchingRail(items: continueItems)
+                    .padding(.top, 32)
             }
             ForEach(sections.rows) { row in
                 BookRail(title: row.title, books: row.books)

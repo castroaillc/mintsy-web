@@ -37,6 +37,7 @@ struct HomeView: View {
         HomeView(user: .preview, onOpenProfile: {})
     }
     .environment(CatalogStore.preview)
+    .environment(ProgressStore(client: .preview))
     .environment(PlayerPresenter())
     .preferredColorScheme(.dark)
 }

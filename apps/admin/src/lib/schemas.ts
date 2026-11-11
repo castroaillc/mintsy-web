@@ -29,6 +29,12 @@ export type BookMetaDraft = Omit<BookMeta, "category"> & { category: string };
 
 export const statusSchema = z.object({ status: z.enum(["draft", "published"]) });
 
+/** Publish several episodes at once. Bulk unpublish isn't offered: only the highest published one can go. */
+export const bulkPublishSchema = z.object({
+  numbers: z.array(z.number().int("Whole numbers").min(1, "Episode numbers start at 1")).min(1, "Select at least one episode").max(1000),
+  status: z.literal("published"),
+});
+
 export const transcriptLineSchema = z.object({
   startSec: z.number().finite().min(0, "Must be 0 or more"),
   text: z.string().trim().min(1, "Line text is required"),

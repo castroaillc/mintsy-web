@@ -4,6 +4,7 @@ import SwiftUI
 struct EpisodeRowView: View {
     let book: Book
     let episode: Episode
+    let entry: EpisodeProgress?
     let isExpanded: Bool
     let onToggle: () -> Void
     let onPlay: () -> Void
@@ -11,11 +12,12 @@ struct EpisodeRowView: View {
 
     var body: some View {
         let label = SeriesFormat.episodeLabel(episode, in: book)
-        let meta = episode.locked ? "Premium · \(label)" : label
+        let status = ProgressLogic.status(entry)
+        let meta = episode.locked ? "Premium · \(label)" : status == .watched ? "\(label) · Watched" : label
         VStack(alignment: .leading, spacing: 0) {
             Button(action: onToggle) {
                 HStack(alignment: .top, spacing: 14) {
-                    EpisodeThumb(episode: episode, locked: episode.locked)
+                    EpisodeThumb(episode: episode, locked: episode.locked, progress: status == .unwatched ? nil : ProgressLogic.fraction(episode, entry))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(meta)
                             .font(BrandFont.inter(12, .semibold, relativeTo: .caption))

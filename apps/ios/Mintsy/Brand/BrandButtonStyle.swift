@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The coral call-to-action (`BrandButton` in the Expo app), or its quiet outline sibling.
+/// The coral call-to-action (`BrandButton` in the Expo app), its quiet outline sibling, or a destructive one.
 struct BrandButtonStyle: ButtonStyle {
-    enum Variant { case brand, outline }
+    enum Variant { case brand, outline, destructive }
 
     var variant: Variant = .brand
     /// 44 (compact), 48, 52 (hero) or 56.
@@ -12,7 +12,7 @@ struct BrandButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(BrandFont.inter(textSize, variant == .brand || height >= 54 ? .semibold : .medium, relativeTo: .headline))
+            .font(BrandFont.inter(textSize, variant != .outline || height >= 54 ? .semibold : .medium, relativeTo: .headline))
             .lineLimit(1)
             .foregroundStyle(foreground)
             .padding(.horizontal, 16)
@@ -34,6 +34,7 @@ struct BrandButtonStyle: ButtonStyle {
         switch variant {
         case .brand: isEnabled ? Palette.brandForeground : Palette.mutedForeground
         case .outline: Palette.foreground
+        case .destructive: isEnabled ? Palette.onScrim : Palette.mutedForeground
         }
     }
 
@@ -41,6 +42,7 @@ struct BrandButtonStyle: ButtonStyle {
         switch variant {
         case .brand: isEnabled ? Palette.brand : Palette.border
         case .outline: .clear
+        case .destructive: isEnabled ? Palette.destructive : Palette.border
         }
     }
 }

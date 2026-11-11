@@ -45,6 +45,7 @@ targets:
       - path: Mintsy
         excludes:
           - "Resources/Info.plist"
+          - "Resources/Mintsy.entitlements"
       # Fonts come straight from the brand package, so there's one copy of each file
       - path: ../../packages/brand/fonts/Inter-Regular.ttf
         group: Fonts
@@ -71,6 +72,14 @@ targets:
         # ASSETCATALOG_COMPILER_APPICON_NAME comes from each variant's xcconfig (its own icon)
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: Brand
         CODE_SIGN_STYLE: Automatic
+    # Written by XcodeGen like Info.plist (gitignored). Sign in with Apple is enabled on all three App IDs.
+    # In-app purchase (StoreKit 2) needs no entitlement key: it's on for every App ID.
+    entitlements:
+      path: Mintsy/Resources/Mintsy.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        aps-environment: development
     info:
       path: Mintsy/Resources/Info.plist
       properties:
@@ -118,6 +127,9 @@ targets:
     platform: iOS
     sources:
       - path: MintsyTests
+      # For SKTestSession: the same test products the Mintsy Dev scheme runs with
+      - path: StoreKit/Mintsy.storekit
+        buildPhase: resources
     dependencies:
       - target: Mintsy
     settings:
@@ -152,6 +164,10 @@ schemes:
         MintsyUITests: [test]
     run:
       config: Development
+      # StoreKit Testing in Xcode: local test products, so the paywall and a purchase work in the simulator without
+      # App Store Connect. Its prices and trial are test values; real ones come from App Store Connect. It only
+      # applies when the app is run from Xcode with this scheme, never to a build that ships.
+      storeKitConfiguration: StoreKit/Mintsy.storekit
     test:
       config: Development
       targets:

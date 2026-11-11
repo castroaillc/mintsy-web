@@ -7,6 +7,8 @@ struct EpisodeThumb: View {
     let episode: Episode
     var size: Size = .medium
     var locked = false
+    /// 0–1 watched, drawn along the bottom; nil for none.
+    var progress: Double?
 
     var body: some View {
         let medium = size == .medium
@@ -46,6 +48,12 @@ struct EpisodeThumb: View {
                 .padding(.trailing, 6)
                 .padding(.bottom, medium ? 9 : 6)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        }
+        .overlay(alignment: .bottom) {
+            if let progress {
+                ProgressBar(value: progress, height: 3, track: Palette.onScrim.opacity(0.25))
+                    .clipShape(.rect)
+            }
         }
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .frame(width: medium ? 132 : 112, height: medium ? 76 : 64)

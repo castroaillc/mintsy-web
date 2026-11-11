@@ -8,7 +8,7 @@ import {
   type EpisodeVoiceDoc,
 } from "../catalog.js";
 import { FREE_EPISODES } from "../constants.js";
-import { refreshPremium } from "../entitlements.js";
+import { appAccountTokenFor, AppStoreError, refreshPremium, syncAppStoreTransaction } from "../app-store.js";
 import { hlsUrl, thumbnailUrl, videoUrl } from "../media.js";
 import {
   isValidPushToken,
@@ -36,8 +36,10 @@ export const typeDefs = `#graphql
     name: String!
     emailVerified: Boolean!
     image: String
-    "The user's mintsy Premium subscription (RevenueCat entitlement premium)."
+    "The user's mintsy Premium subscription: an App Store subscription this API verified, or the RevenueCat entitlement premium."
     premium: Premium!
+    "The account's App Store token: a UUID (lowercase), the same on every read. Pass it to StoreKit when buying, Product.purchase(options: [.appAccountToken(uuid)]), so the purchase and its renewals are tied to this account."
+    appAccountToken: String!
     "Book ids the user saved to My List, most recently saved first. May include ids no longer in the catalog: skip those."
     savedBookIds: [ID!]!
     "Episode ids (<bookId>-<number>) the user saved, most recently saved first. May include ids no longer in the catalog."
@@ -89,11 +91,11 @@ export const typeDefs = `#graphql
     expiresAt: String
     "False once the user cancelled or billing failed."
     willRenew: Boolean!
-    "RevenueCat period type, lowercased: trial, normal or intro. Null if never subscribed."
+    "trial (free trial), intro (paid introductory offer) or normal; RevenueCat's period type, lowercased, and the same three for App Store purchases. Null if never subscribed."
     periodType: String
     "Store product id of the subscription, e.g. the yearly or monthly product."
     productId: String
-    "Where it was bought (lowercased RevenueCat store): app_store, rc_billing (web), stripe, play_store, promotional, ... Null if never subscribed. Manage the subscription where it was bought."
+    "Where it was bought: app_store (also what syncAppStoreTransaction stores), rc_billing (web), stripe, play_store, promotional, ... (lowercased RevenueCat store names). Null if never subscribed. Manage the subscription where it was bought."
     store: String
   }
 
@@ -209,14 +211,27 @@ export const typeDefs = `#graphql
   }
 
   type Mutation {
-    "Registers an Expo push token for the current user's device."
+    "Registers a push token for the current user's device. Accepts both Expo push tokens (ExponentPushToken[…]) and native APNs device tokens (a 64-char lowercase hex string)."
     registerPushToken(token: String!, platform: String!): Boolean!
     "Removes a push token, e.g. when the user signs out on that device."
     unregisterPushToken(token: String!): Boolean!
     "Sends a test push to all of the current user's devices. Returns the number of devices targeted."
     sendTestPush: Int!
-    "Refetches the current user's subscription from RevenueCat (call right after a purchase or restore), stores and returns it."
+    "Looks at the current user's subscription again, stores and returns it. An App Store subscription is refetched from Apple when the server has App Store Server API credentials, otherwise what's stored is returned; anything else is refetched from RevenueCat."
     refreshPremium: Premium!
+    """
+    Hands the API a StoreKit 2 transaction signed by the App Store (the JWS: VerificationResult.jwsRepresentation)
+    and returns the viewer's Premium. Call it for every verified transaction (a purchase, Transaction.updates,
+    Transaction.currentEntitlements) and finish the transaction once it answers without an error. A valid
+    transaction that changes nothing (older than what's stored, expired, refunded) is not an error.
+    A transaction with an appAccountToken must carry the viewer's (me.appAccountToken); one without (bought
+    outside the app) goes to the first account that syncs it.
+    Errors (extensions.code): UNAUTHENTICATED; APP_STORE_INVALID_TRANSACTION (not a JWS Apple signed;
+    extensions.reason is malformed, chain, signature or payload); APP_STORE_WRONG_ENVIRONMENT;
+    APP_STORE_WRONG_BUNDLE; APP_STORE_WRONG_PRODUCT; APP_STORE_WRONG_ACCOUNT (bought for another mintsy
+    account); APP_STORE_SUBSCRIPTION_IN_USE (the subscription already unlocks another mintsy account).
+    """
+    syncAppStoreTransaction(signedTransaction: String!): Premium!
     "Saves (saved: true) or removes (saved: false) a book or episode in the viewer's My List. Idempotent; re-saving keeps the original position. At most 500 per kind. Returns the updated viewer."
     setSaved(kind: SavedKind!, id: ID!, saved: Boolean!): User!
     """
@@ -305,6 +320,10 @@ export const resolvers = {
       viewerOnly(user, ctx);
       return ctx.viewerPremium();
     },
+    appAccountToken: (user: { id: string }, _args: unknown, ctx: Context) => {
+      viewerOnly(user, ctx);
+      return appAccountTokenFor(user.id);
+    },
     savedBookIds: (user: { id: string }, _args: unknown, ctx: Context) => {
       viewerOnly(user, ctx);
       return listSaved(user.id, "book");
@@ -357,7 +376,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(ctx);
       if (!isValidPushToken(args.token)) {
-        throw new GraphQLError("Invalid Expo push token", {
+        throw new GraphQLError("Invalid push token", {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
@@ -381,6 +400,19 @@ export const resolvers = {
       const premium = await refreshPremium(user.id);
       ctx.setViewerPremium(premium);
       return premium;
+    },
+    syncAppStoreTransaction: async (_parent: unknown, args: { signedTransaction: string }, ctx: Context) => {
+      const user = requireUser(ctx);
+      try {
+        const premium = await syncAppStoreTransaction(user.id, args.signedTransaction);
+        ctx.setViewerPremium(premium);
+        return premium;
+      } catch (err) {
+        if (!(err instanceof AppStoreError)) throw err;
+        throw new GraphQLError(err.message, {
+          extensions: { code: err.code, ...(err.reason ? { reason: err.reason } : {}) },
+        });
+      }
     },
     setSaved: async (
       _parent: unknown,

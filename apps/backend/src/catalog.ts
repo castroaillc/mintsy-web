@@ -120,15 +120,179 @@ export function publicBook(book: BookDoc | null): BookDoc | null {
   return episodes.length ? { ...book, episodes } : null;
 }
 
+/*
+ * Reading the published catalog.
+ *
+ * Reads from the Atlas cluster are slow per byte: one query streams its result at roughly 80 KB/s
+ * (measured 2026-11-06 from us-central1 and from outside GCP, with and without wire compression),
+ * while the server-side work is a few milliseconds. A published book is ~1 MB stored (voices ~900 KB,
+ * transcripts ~100 KB), so the old single `find` that left only voices out took ~1.3 s on every
+ * request, and episodeVoices, which fetched every episode's voices, ~10 s. Hence:
+ *
+ *  - The catalog is fetched as one small query without transcripts plus a few transcript queries in
+ *    parallel (the limit is per query, so parallel queries finish several times sooner).
+ *  - The result is kept in memory (CATALOG_CACHE_SECONDS, default 60) and shared by every reader:
+ *    books, book, search, watch progress. Nothing it hands out may be mutated.
+ *  - episodeVoices fetches the voices of the one episode asked for, also cached.
+ */
+
+/** Book list query: everything the app sees except transcripts (fetched in parallel) and voices. */
+const listProjection = { ...catalogProjection, "episodes.transcript": 0 } as const;
+/** Most transcript queries per catalog load. */
+const TRANSCRIPT_QUERIES = 8;
+/** Fewest episodes per transcript query. */
+const MIN_EPISODES_PER_QUERY = 2;
+
+type TranscriptChunk = { _id: string; e: { n: number; t?: TranscriptLine[] }[] | null };
+
+/** Fetches the public catalog from MongoDB: the books the app may see, in listing order, without voices. */
+async function loadPublishedCatalog(): Promise<BookDoc[]> {
+  const docs = await books.find(notDraft, { projection: listProjection }).sort({ order: 1 }).toArray();
+  const published = docs.map(publicBook).filter((b): b is BookDoc => b !== null);
+  if (!published.length) return published;
+
+  // Transcripts by position in the stored episodes array, which publicBook may have cut or reordered,
+  // so each comes back with its episode number and is matched by that.
+  const byNumber = new Map(published.map((b) => [b._id, new Map(b.episodes.map((e) => [e.number, e]))]));
+  for (const book of published) for (const e of book.episodes) e.transcript = [];
+  const stored = Math.max(...docs.filter((d) => byNumber.has(d._id)).map((d) => d.episodes?.length ?? 0));
+  const size = Math.max(MIN_EPISODES_PER_QUERY, Math.ceil(stored / TRANSCRIPT_QUERIES));
+  const starts = Array.from({ length: Math.ceil(stored / size) }, (_, i) => i * size);
+  const chunks = await Promise.all(
+    starts.map((start) =>
+      books
+        .aggregate<TranscriptChunk>([
+          { $match: { _id: { $in: [...byNumber.keys()] } } },
+          {
+            $project: {
+              e: { $map: { input: { $slice: ["$episodes", start, size] }, as: "e", in: { n: "$$e.number", t: "$$e.transcript" } } },
+            },
+          },
+        ])
+        .toArray(),
+    ),
+  );
+  for (const rows of chunks) {
+    for (const row of rows) {
+      const episodes = byNumber.get(row._id);
+      for (const { n, t } of row.e ?? []) {
+        const episode = episodes?.get(n);
+        if (episode && Array.isArray(t)) episode.transcript = t;
+      }
+    }
+  }
+  return published;
+}
+
+/**
+ * Keeps the last load for up to maxAgeMs. Past a quarter of that it's still served, and a refresh
+ * starts in the background; past maxAgeMs callers wait for a fresh load. One load at a time; failed
+ * loads aren't kept. maxAgeMs 0 loads on every call.
+ */
+function cached<T>(load: () => Promise<T>, maxAgeMs: number) {
+  let value: { loadedAt: number; data: T } | null = null;
+  let inflight: Promise<T> | null = null;
+  const refresh = () =>
+    (inflight ??= (async () => {
+      const startedAt = Date.now();
+      try {
+        const data = await load();
+        // Age counts from the start of the load, so data is never older than the bound
+        value = { loadedAt: startedAt, data };
+        return data;
+      } finally {
+        inflight = null;
+      }
+    })());
+  return {
+    get(): Promise<T> {
+      if (maxAgeMs <= 0) return load();
+      const age = value ? Date.now() - value.loadedAt : Infinity;
+      if (value && age < maxAgeMs) {
+        if (age >= maxAgeMs / 4) refresh().catch((err) => console.error("Catalog refresh failed:", err));
+        return Promise.resolve(value.data);
+      }
+      return refresh();
+    },
+    clear() {
+      value = null;
+    },
+  };
+}
+
+const cacheMs = env.catalogCacheSeconds * 1000;
+
+const catalogCache = cached(async () => {
+  const list = await loadPublishedCatalog();
+  return { list, byId: new Map(list.map((b) => [b._id, b])) };
+}, cacheMs);
+
+/** Starts loading the catalog (at startup), so the first request doesn't pay for it. Never throws. */
+export function warmCatalog() {
+  if (cacheMs > 0) catalogCache.get().catch((err) => console.error("Catalog warm-up failed:", err));
+}
+
 /** Published catalog for the public GraphQL API, in listing order. */
-export async function listPublishedBooks() {
-  const docs = await books.find(notDraft, { projection: catalogProjection }).sort({ order: 1 }).toArray();
-  return docs.map(publicBook).filter((b): b is BookDoc => b !== null);
+export async function listPublishedBooks(): Promise<BookDoc[]> {
+  return (await catalogCache.get()).list;
 }
 
 /** One published book for the public GraphQL API, or null if it's missing or not live. */
-export async function getPublishedBook(id: string) {
-  return publicBook(await books.findOne({ _id: id, ...notDraft }, { projection: catalogProjection }));
+export async function getPublishedBook(id: string): Promise<BookDoc | null> {
+  return (await catalogCache.get()).byId.get(id) ?? null;
+}
+
+/** The given books as the public catalog has them, by id; missing and unpublished ones are left out. */
+export async function getPublishedBooks(ids: string[]): Promise<Map<string, BookDoc>> {
+  const found = new Map<string, BookDoc>();
+  if (!ids.length) return found;
+  const { byId } = await catalogCache.get();
+  for (const id of ids) {
+    const book = byId.get(id);
+    if (book) found.set(id, book);
+  }
+  return found;
+}
+
+/** Fetches one episode's voices, under the same visibility as the public catalog. */
+async function loadEpisodeVoices(bookId: string, number: number): Promise<EpisodeVoiceDoc[]> {
+  // Every episode's number and status (for publishedRun), but only this episode's voices
+  const [book] = await books
+    .aggregate<Pick<BookDoc, "status" | "episodes">>([
+      { $match: { _id: bookId, ...notDraft } },
+      {
+        $project: {
+          status: 1,
+          episodes: {
+            $map: {
+              input: "$episodes",
+              as: "e",
+              in: {
+                number: "$$e.number",
+                status: "$$e.status",
+                voices: { $cond: [{ $eq: ["$$e.number", number] }, "$$e.voices", "$$REMOVE"] },
+              },
+            },
+          },
+        },
+      },
+    ])
+    .toArray();
+  if (!book?.episodes) return [];
+  return publishedRun(book).find((e) => e.number === number)?.voices ?? [];
+}
+
+/**
+ * Cached voices per episode (~50 KB each). Only episodes in the public catalog get an entry, and at
+ * most VOICES_CACHE_MAX are kept (oldest entry out first).
+ */
+const voicesCache = new Map<string, ReturnType<typeof cached<EpisodeVoiceDoc[]>>>();
+const VOICES_CACHE_MAX = 100;
+
+/** Forgets every cached catalog read (tests). */
+export function clearCatalogCache() {
+  catalogCache.clear();
+  voicesCache.clear();
 }
 
 /**
@@ -136,12 +300,17 @@ export async function getPublishedBook(id: string) {
  * or unpublished episode, or one with no voices. Doesn't check locking: the caller must.
  */
 export async function getPublishedEpisodeVoices(bookId: string, number: number): Promise<EpisodeVoiceDoc[]> {
-  const book = await books.findOne<Pick<BookDoc, "status" | "episodes">>(
-    { _id: bookId, ...notDraft },
-    { projection: { status: 1, "episodes.number": 1, "episodes.status": 1, "episodes.voices": 1 } },
-  );
-  if (!book) return [];
-  return publishedRun(book).find((e) => e.number === number)?.voices ?? [];
+  if (cacheMs <= 0) return loadEpisodeVoices(bookId, number);
+  const book = await getPublishedBook(bookId);
+  if (!book?.episodes.some((e) => e.number === number)) return [];
+  const key = `${bookId}\n${number}`;
+  let entry = voicesCache.get(key);
+  if (!entry) {
+    entry = cached(() => loadEpisodeVoices(bookId, number), cacheMs);
+    voicesCache.set(key, entry);
+    if (voicesCache.size > VOICES_CACHE_MAX) voicesCache.delete(voicesCache.keys().next().value!);
+  }
+  return entry.get();
 }
 
 /** Public URL for an object in the media bucket, or null when the episode has no file yet. */

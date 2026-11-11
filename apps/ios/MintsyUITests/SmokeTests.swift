@@ -20,6 +20,11 @@ final class SmokeTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
+        // Signed out, the app opens on Welcome
+        let welcomeSignIn = app.buttons["Sign in"].firstMatch
+        if app.buttons["Create account"].waitForExistence(timeout: 5) {
+            welcomeSignIn.tap()
+        }
         let emailField = app.textFields["Email"]
         if emailField.waitForExistence(timeout: 5) {
             emailField.tap()
@@ -31,12 +36,13 @@ final class SmokeTests: XCTestCase {
         }
 
         dismissSavePassword(app)
-        XCTAssertTrue(app.buttons["Play Episode 1"].waitForExistence(timeout: 15), "Home didn't load the catalog")
+        let featuredPlay = app.buttons.matching(NSPredicate(format: "label ENDSWITH 'Episode 1' OR label BEGINSWITH 'Resume Episode'")).firstMatch
+        XCTAssertTrue(featuredPlay.waitForExistence(timeout: 15), "Home didn't load the catalog")
         sleep(2) // covers load
         save(app, "02-home")
 
         app.buttons["Open The Science of Getting Rich"].firstMatch.tap()
-        let play = app.buttons["Play Episode 1 of 5"]
+        let play = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Play Episode' OR label BEGINSWITH 'Resume Episode'")).firstMatch
         XCTAssertTrue(play.waitForExistence(timeout: 5))
         sleep(1)
         save(app, "03-book")

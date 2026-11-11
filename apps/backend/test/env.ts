@@ -22,6 +22,20 @@ export function useTestEnv(overrides: Record<string, string> = {}) {
     APPLE_CLIENT_ID: "",
     APPLE_CLIENT_SECRET: "",
     SIGNED_MEDIA: "",
+    APP_STORE_BUNDLE_IDS: "",
+    APP_STORE_PRODUCT_IDS: "",
+    APP_STORE_ENVIRONMENTS: "",
+    APP_STORE_ISSUER_ID: "",
+    APP_STORE_KEY_ID: "",
+    APP_STORE_PRIVATE_KEY: "",
+    APP_STORE_APP_APPLE_ID: "",
+    APPLE_APP_BUNDLE_IDENTIFIER: "",
+    APNS_KEY_ID: "",
+    APNS_TEAM_ID: "",
+    APNS_AUTH_KEY: "",
+    APNS_BUNDLE_ID: "",
+    // Tests change the catalog between reads; test/catalog-cache.test.ts turns the cache on
+    CATALOG_CACHE_SECONDS: "0",
     ...overrides,
   });
 }

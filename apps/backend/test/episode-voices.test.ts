@@ -312,29 +312,57 @@ describe("episodeVoices", () => {
       assert.equal(projected!.episodes[3]!.number, 4);
     });
 
-    test("listPublishedBooks and getPublishedBook ask MongoDB to leave voices out", async () => {
+    /** Runs fn and checks that no catalog query it makes asks MongoDB for voices. */
+    async function withoutVoiceReads(fn: () => Promise<void>) {
       const find = mock.method(books, "find");
       const findOne = mock.method(books, "findOne");
+      const aggregate = mock.method(books, "aggregate");
       try {
-        hasNoVoices((await listPublishedBooks()).find((b) => b._id === bookId));
-        hasNoVoices(await getPublishedBook(bookId));
-        assert.deepEqual((find.mock.calls[0]!.arguments as unknown[])[1], { projection: catalogProjection });
-        assert.deepEqual((findOne.mock.calls[0]!.arguments as unknown[])[1], { projection: catalogProjection });
+        await fn();
+        assert.ok(find.mock.callCount() > 0);
+        for (const call of [...find.mock.calls, ...findOne.mock.calls]) {
+          const projection = ((call.arguments as unknown[])[1] as { projection?: Record<string, unknown> })?.projection;
+          assert.equal(projection?.["episodes.voices"], catalogProjection["episodes.voices"]);
+        }
+        for (const call of aggregate.mock.calls) {
+          // A field path (episodes.voices, $$e.voices) or a voices key; book ids may contain "voices-"
+          assert.doesNotMatch(JSON.stringify((call.arguments as unknown[])[0]), /\.voices\b|"voices"/);
+        }
       } finally {
         find.mock.restore();
         findOne.mock.restore();
+        aggregate.mock.restore();
       }
+    }
+
+    test("listPublishedBooks and getPublishedBook ask MongoDB to leave voices out", async () => {
+      await withoutVoiceReads(async () => {
+        hasNoVoices((await listPublishedBooks()).find((b) => b._id === bookId));
+        hasNoVoices(await getPublishedBook(bookId));
+      });
     });
 
     test("watch progress asks MongoDB to leave voices out", async () => {
-      const find = mock.method(books, "find");
-      try {
+      await withoutVoiceReads(async () => {
         await setProgress(session!.user.id, `${bookId}-1`, 10, null, () => false);
-        assert.equal(find.mock.callCount(), 1);
-        assert.deepEqual((find.mock.calls[0]!.arguments as unknown[])[1], { projection: catalogProjection });
+      });
+    });
+
+    test("episodeVoices fetches only the episode asked for", async () => {
+      const aggregate = mock.method(books, "aggregate");
+      let pipeline: object[];
+      try {
+        assert.equal((await voices(`${bookId}-4`, PREMIUM_VIEWER)).length, 2);
+        assert.equal(aggregate.mock.callCount(), 1);
+        pipeline = (aggregate.mock.calls[0]!.arguments as unknown[])[0] as object[];
       } finally {
-        find.mock.restore();
+        aggregate.mock.restore();
       }
+      // What that query returns: every episode's number and status, and voices for episode 4 only
+      const [returned] = await books.aggregate<BookDoc>(pipeline).toArray();
+      assert.deepEqual(returned!.episodes.map((e) => e.number), [1, 2, 3, 4]);
+      assert.deepEqual(returned!.episodes.filter((e) => "voices" in e).map((e) => e.number), [4]);
+      assert.deepEqual(returned!.episodes.map((e) => e.status), ["published", "published", "published", "published"]);
     });
 
     test("watch progress never hands voices on, for writes or reads", async () => {

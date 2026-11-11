@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Title, author, facts, the play button and the description.
+/// Title, author, facts, Play or Resume, Save to My List, how much is watched, and the description.
 struct BookSummary: View {
     let book: Book
+    let start: PlayStart?
+    let watched: Int
     let onPlay: () -> Void
 
     var body: some View {
@@ -21,15 +23,20 @@ struct BookSummary: View {
                 TagPill(text: "Transcripts")
             }
 
-            if let first = book.episodes.first {
-                Button(action: onPlay) {
-                    Label(
-                        first.locked ? "Unlock Episode \(first.number) with Premium" : "Play \(SeriesFormat.episodeLabel(first, in: book))",
-                        systemImage: "play.fill"
-                    )
+            HStack(spacing: 10) {
+                if let start {
+                    Button(action: onPlay) {
+                        Label(playTitle(start), systemImage: "play.fill")
+                    }
+                    .buttonStyle(.brand(height: 52))
                 }
-                .buttonStyle(.brand(height: 52))
-                .padding(.top, 6)
+                SaveBookButton(book: book)
+            }
+            .padding(.top, 6)
+
+            if watched > 0 {
+                WatchedProgress(watched: watched, total: book.episodes.count)
+                    .padding(.top, 4)
             }
 
             Text(book.description)
@@ -38,5 +45,10 @@ struct BookSummary: View {
                 .foregroundStyle(Palette.secondaryForeground)
                 .padding(.top, 6)
         }
+    }
+
+    private func playTitle(_ start: PlayStart) -> String {
+        if start.episode.locked { return "Unlock Episode \(start.episode.number) with Premium" }
+        return "\(start.resume ? "Resume" : "Play") \(SeriesFormat.episodeLabel(start.episode, in: book))"
     }
 }

@@ -107,8 +107,12 @@ export type NewStudioJob = Omit<StudioJob, "_id">;
 
 // ─── Serialized forms passed to client components / JSON APIs ─────
 
-export type JobView = Omit<StudioJob, "_id" | "createdAt" | "startedAt" | "finishedAt" | "scriptJson" | "scenesJson"> & {
+/** A job in lists and polls (`listJobs` in src/lib/jobs.ts). Admin-internal: not a contract shape. */
+export type JobView = Omit<StudioJob, "_id" | "createdAt" | "startedAt" | "finishedAt" | "scriptJson" | "scenesJson" | "log"> & {
   id: string;
+  /** The whole log while the job is queued or running. Otherwise missing: fetch GET /api/jobs/<id>/log. */
+  log?: string[];
+  logLines: number;
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;

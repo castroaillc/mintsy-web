@@ -20,8 +20,8 @@ Owned by studio. The worker creates the index `{ status: 1, createdAt: 1 }` at s
 | `script` | Writes the episode script and scenes for a chapter.                                                                                                                                                      |
 | `render` | Voices an episode and renders one video per voice, uploads each voice's MP4 and HLS files and the episode's JPG (content-hashed names) to the media bucket, and upserts the episode into `books` as a draft, including `voices`. Result: `durationSec`, `videoPath`, `thumbnailPath`, `hlsPath`. With `preview: true` it renders locally and writes nothing to the bucket or `books`. |
 | `upload` | Uploads the last local render and upserts the draft episode, without rendering again. |
-| `cover`  | Renders the book's cover. With `upload: true` it also uploads it and sets `coverPath`, which is live at once if the book is published. |
-| `remaster` | Re-renders an existing episode from its local files and swaps its media, `durationSec`, `transcript` and `voices`. The status stays, so a live episode changes at once. |
+| `cover`  | Renders the book's cover. With `upload: true` it also uploads it and sets `coverPath`, which is live within 60 s (the API's catalog cache) if the book is published. |
+| `remaster` | Re-renders an existing episode from its local files and swaps its media, `durationSec`, `transcript` and `voices`. The status stays, so a live episode changes without a publish, within 60 s. |
 | `clip` | Renders a vertical social clip on the staff machine. Only reads `books`, and uploads nothing. |
 
 Jobs go `queued` → `running` → `succeeded` / `failed`. Admin inserts them and never changes them afterwards; the worker claims the oldest queued job atomically and runs one at a time.
@@ -30,7 +30,7 @@ The full job schema is in [Contracts](../../contracts.md#studio-jobs), owned by 
 
 ## What reaches the app
 
-New books and episodes aren't visible until staff publish them in the admin dashboard: they're drafts, and the public API filters drafts out (see [Catalog model](./)). The exceptions are `remaster` and a `cover` upload, which change a live episode or book at once. The uploaded media is unlisted (and private once `SIGNED_MEDIA` is on).
+New books and episodes aren't visible until staff publish them in the admin dashboard: they're drafts, and the public API filters drafts out (see [Catalog model](./)). The exceptions are `remaster` and a `cover` upload, which change a live episode or book without a publish (in the app within 60 s, see [How the API reads it](./#how-the-api-reads-it-and-how-fast-a-publish-shows)). The uploaded media is unlisted (and private once `SIGNED_MEDIA` is on).
 
 ## `catalog.json` and studio
 

@@ -11,6 +11,7 @@ import { Time, formatDuration } from "@/components/time";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkerBanner } from "@/components/worker-banner";
+import { useJobLog } from "@/hooks/use-job-log";
 import { useJobs } from "@/hooks/use-jobs";
 import type { ChapterRow } from "@/lib/catalog";
 import { callApi } from "@/lib/client-api";
@@ -218,7 +219,7 @@ export function ChapterView({
                   </span>
                 </div>
                 {j.error && <p className="text-xs text-destructive">{j.error}</p>}
-                <JobLog lines={j.log} />
+                <JobLog job={j} />
               </div>
             ))}
           </CardContent>
@@ -229,7 +230,8 @@ export function ChapterView({
 }
 
 function JobProgress({ job, now }: { job: JobView; now: number }) {
-  const steps = jobSteps(job);
+  // Steps come from the log, so a finished job's is fetched; until it arrives the steps go by status alone.
+  const steps = jobSteps(job, useJobLog(job, true) ?? []);
   const done = steps.filter((s) => s.state === "done" || s.state === "skipped").length;
   const elapsed = job.startedAt ? (job.finishedAt ? Date.parse(job.finishedAt) : now) - Date.parse(job.startedAt) : null;
   const waiting = job.status === "queued" ? now - Date.parse(job.createdAt) : null;
@@ -281,7 +283,7 @@ function JobProgress({ job, now }: { job: JobView; now: number }) {
         {job.error && (
           <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{job.error}</p>
         )}
-        <JobLog lines={job.log} follow defaultOpen={job.status === "running" || job.status === "failed"} />
+        <JobLog job={job} follow defaultOpen={job.status === "running" || job.status === "failed"} />
       </CardContent>
     </Card>
   );

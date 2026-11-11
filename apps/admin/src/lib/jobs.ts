@@ -1,17 +1,18 @@
 import "server-only";
-import type { Filter } from "mongodb";
+import type { Filter, ObjectId } from "mongodb";
 import { jobsCol, workersCol } from "./mongo";
 import type { JobView, NewStudioJob, StudioJob, WorkerView } from "./types";
 
-export function toJobView(j: StudioJob): JobView {
-  const { _id, createdAt, startedAt, finishedAt, scriptJson, scenesJson, ...rest } = j;
+export function toJobView(j: JobListItem): JobView {
+  // dryRun is for the server's plan only.
+  const { _id, createdAt, startedAt, finishedAt, dryRun, ...rest } = j;
+  void dryRun;
   return {
     ...rest,
     id: _id.toHexString(),
     createdAt: createdAt.toISOString(),
     startedAt: startedAt?.toISOString(),
     finishedAt: finishedAt?.toISOString(),
-    hasEdits: scriptJson !== undefined || scenesJson !== undefined,
   };
 }
 
@@ -65,14 +66,50 @@ export async function cancelQueuedJobs(bookId: string) {
   return renders.deletedCount + rest.deletedCount;
 }
 
-export async function listJobs(filter: Filter<StudioJob> = {}, limit = 200) {
+/** Statuses whose whole log lists carry: the UI follows them live. A finished job's log is fetched on demand. */
+const LIVE_STATUSES: StudioJob["status"][] = ["queued", "running"];
+
+/**
+ * A job as lists see it. Left out, because MongoDB is remote and a poll's time is mostly bytes: the
+ * log of finished jobs (`logLines` counts it; `readJobLog` fetches it), a script job's `result.script`
+ * and `result.scenes` (read with `latestScript`), and an edited render's `scriptJson` / `scenesJson`.
+ */
+export type JobListItem = Omit<StudioJob, "log" | "scriptJson" | "scenesJson"> & {
+  /** The whole log, only while the job is queued or running. */
+  log?: string[];
+  logLines: number;
+  /** The render carries an edited script.json or scenes.json. */
+  hasEdits: boolean;
+  /** The log has a dry-run worker's `<step>: (dry run)` line. */
+  dryRun: boolean;
+};
+
+/** Newest first. Computes the derived fields in MongoDB so the left-out ones never cross the network. */
+export async function listJobs(filter: Filter<StudioJob> = {}, limit = 200): Promise<JobListItem[]> {
   const col = await jobsCol();
-  // Large render payloads aren't needed for lists.
+  const log = { $ifNull: ["$log", []] };
   return col
-    .find(filter, { projection: { scriptJson: 0, scenesJson: 0 } })
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(limit)
+    .aggregate<JobListItem>([
+      { $match: filter },
+      { $sort: { createdAt: -1, _id: -1 } },
+      { $limit: limit },
+      {
+        $set: {
+          logLines: { $size: log },
+          hasEdits: { $or: [{ $ne: [{ $type: "$scriptJson" }, "missing"] }, { $ne: [{ $type: "$scenesJson" }, "missing"] }] },
+          dryRun: { $anyElementTrue: [{ $map: { input: log, as: "line", in: { $regexMatch: { input: "$$line", regex: "dry run\\)$" } } } }] },
+          log: { $cond: [{ $in: ["$status", LIVE_STATUSES] }, "$log", "$$REMOVE"] },
+        },
+      },
+      { $unset: ["scriptJson", "scenesJson", "result.script", "result.scenes"] },
+    ])
     .toArray();
+}
+
+/** One job's whole log, or null when there's no such job. */
+export async function readJobLog(id: ObjectId) {
+  const job = await (await jobsCol()).findOne({ _id: id }, { projection: { log: 1 } });
+  return job ? (job.log ?? []) : null;
 }
 
 export async function hasActiveJob(bookId: string, chapter?: number) {

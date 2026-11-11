@@ -12,5 +12,6 @@ xcuserdata/
 *.xcresult
 .swiftpm/
 
-# Written by XcodeGen from project.yml (targets.Mintsy.info)
+# Written by XcodeGen from project.yml (targets.Mintsy.info and .entitlements)
 Mintsy/Resources/Info.plist
+Mintsy/Resources/Mintsy.entitlements

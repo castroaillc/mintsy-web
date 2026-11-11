@@ -105,7 +105,7 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
                 initialNow={new Date().toISOString()}
               />
             )}
-            <ChaptersTable bookId={id} chapters={chapters} canQueue={!!book} />
+            <ChaptersTable bookId={id} chapters={chapters} canQueue={!!book} bookPublished={!!book && effectiveStatus(book.status) === "published"} />
           </CardContent>
         </Card>
       )}

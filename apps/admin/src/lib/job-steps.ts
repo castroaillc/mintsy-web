@@ -49,7 +49,8 @@ const STEPS_BY_KIND: Record<JobView["kind"], string[]> = {
 // Not `script narration changed …: regenerating scenes` (no colon right after the name).
 const HEADER = /^([a-z]+)(?: \d+%)?:(?:\s+(.*))?$/;
 
-export function jobSteps(job: JobView): JobStep[] {
+/** `log` is the job's whole log: `job.log` is missing once the job has finished (see useJobLog). */
+export function jobSteps(job: JobView, log: string[]): JobStep[] {
   // A preview render and a cover without upload stop before the upload step
   const names = STEPS_BY_KIND[job.kind].filter(
     (n) => n !== "upload" || !((job.kind === "render" && job.preview) || (job.kind === "cover" && !job.upload)),
@@ -59,7 +60,7 @@ export function jobSteps(job: JobView): JobStep[] {
   );
 
   let current: JobStep | null = null;
-  for (const line of job.log) {
+  for (const line of log) {
     const header = /^\s/.test(line) ? null : line.match(HEADER);
     const step = header ? steps.get(header[1]) : undefined;
     if (step) {

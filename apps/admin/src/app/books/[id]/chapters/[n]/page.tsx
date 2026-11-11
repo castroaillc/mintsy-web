@@ -19,10 +19,15 @@ export default async function ChapterPage({ params }: PageProps<"/books/[id]/cha
   const { id, n: nRaw } = await params;
   const n = Number(nRaw);
   if (!Number.isInteger(n) || n < 1) notFound();
-  const { book, chapters, jobs } = await getBookPageData(id);
+  // All at once: MongoDB is remote, so each read waited on the one before.
+  const [{ book, chapters, jobs }, script, preview, localCover] = await Promise.all([
+    getBookPageData(id),
+    latestScript(id, n),
+    getLocalPreview(id, n),
+    getLocalCover(id),
+  ]);
   const chapter = chapters.find((c) => c.number === n);
   if (!book || !chapter) notFound();
-  const [script, preview, localCover] = await Promise.all([latestScript(id, n), getLocalPreview(id, n), getLocalCover(id)]);
   const cover = localCover ? `/api/books/${id}/cover?v=${localCover.version}` : mediaUrl(book.coverPath);
   const prev = chapters.find((c) => c.number === n - 1);
   const next = chapters.find((c) => c.number === n + 1);

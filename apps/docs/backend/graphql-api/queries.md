@@ -59,6 +59,10 @@ The published catalog, ordered by the book's `order` field (lowest first; the ap
 
 Draft books are hidden, and each book only contains the contiguous run of published episodes starting at 1. A book with none is hidden. See [Catalog model](../catalog/).
 
+The API serves `books`, `book`, `search` and `episodeVoices` from an in-memory copy of the catalog, so a publish or edit shows up within 60 s (`CATALOG_CACHE_SECONDS`), not at once. See [How the API reads it](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows).
+
+**Cost:** `{ books { id } }` and the app's full `Books` query cost the server the same, because the whole catalog is cached. What a bigger selection costs is response size: every episode's `transcript` is most of the bytes, and the first screen doesn't need it.
+
 ```graphql
 query Books {
   books {
@@ -141,7 +145,7 @@ query Search($q: String!) {
 Highlight the match with `snippet.slice(matchStart, matchStart + matchLength)`.
 
 ::: info
-Search scans every published book on each request. That's fine for the current catalog; once it grows, the plan in `src/search.ts` is a MongoDB text index or Atlas Search on title, author, category and `episodes.transcript.text`.
+Search scans the in-memory published catalog on each request. That's fine for the current catalog; once it grows, the plan in `src/search.ts` is a MongoDB text index or Atlas Search on title, author, category and `episodes.transcript.text`.
 :::
 
 ## episodeVoices

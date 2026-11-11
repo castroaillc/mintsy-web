@@ -1,6 +1,6 @@
 import "server-only";
 import { getBookPageData } from "./catalog";
-import { applySelection, hasDryRunLog, planChapter, type PlannedChapter } from "./generate-all";
+import { applySelection, planChapter, type PlannedChapter } from "./generate-all";
 import { hasActiveJob } from "./jobs";
 import { getChapterPages, getLocalPreview, getScriptFiles, hasScriptJson } from "./studio-work";
 
@@ -20,7 +20,7 @@ export async function loadPlan(bookId: string, selected?: number[]): Promise<Pla
       const lastScript = jobs.find((j) => j.chapter === c.number && j.kind === "script" && j.status === "succeeded");
       const lastPreview = jobs.find((j) => j.chapter === c.number && j.kind === "render" && j.preview && j.status === "succeeded");
       const dryPreviewCurrent =
-        !!lastPreview && hasDryRunLog(lastPreview) && (!lastScript || (lastPreview.finishedAt ?? lastPreview.createdAt) >= (lastScript.finishedAt ?? lastScript.createdAt));
+        !!lastPreview && lastPreview.dryRun && (!lastScript || (lastPreview.finishedAt ?? lastPreview.createdAt) >= (lastScript.finishedAt ?? lastScript.createdAt));
       const renderCurrent = (!!preview.video && preview.video.version >= (files?.newestMs ?? 0)) || dryPreviewCurrent;
       return planChapter({
         number: c.number,
@@ -29,7 +29,7 @@ export async function loadPlan(bookId: string, selected?: number[]): Promise<Pla
         episodeStatus: c.episodeStatus,
         active,
         scriptJobSucceeded: !!lastScript,
-        scriptJobDryRun: !!lastScript && hasDryRunLog(lastScript),
+        scriptJobDryRun: !!lastScript && lastScript.dryRun,
         scriptOnDisk: !!files,
         scriptJsonOnDisk: scriptJson,
         renderCurrent,

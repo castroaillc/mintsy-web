@@ -38,9 +38,6 @@ final class PlayerModel {
     private(set) var activeLineIndex = 0
     private(set) var activeCaption: CaptionPhrase?
     private(set) var controlsVisible = true
-    /// Set when the episode ends and the next one needs Premium.
-    var nextIsLocked = false
-
     var isScrubbing = false {
         didSet { refreshControls() }
     }
@@ -56,12 +53,27 @@ final class PlayerModel {
     @ObservationIgnored private var fetchedAt: ContinuousClock.Instant?
     @ObservationIgnored private var lastRecovery: ContinuousClock.Instant?
     @ObservationIgnored private var hideTask: Task<Void, Never>?
+    /// Where the viewer's place is saved (nil in previews).
+    @ObservationIgnored private let progress: (any PlaybackProgressSink)?
+    /// Where playback starts, on the default voice's timeline: an explicit point (a search match) or the saved place.
+    @ObservationIgnored private let startSec: Double
+    /// The last whole second reported, so each one is saved once.
+    @ObservationIgnored private var lastReportedSec: Int?
     /// Opens the next episode (autoplay).
     @ObservationIgnored var onAdvance: ((Episode) -> Void)?
+    /// Called when the episode ends and the next one needs Premium.
+    @ObservationIgnored var onLockedNext: ((Episode) -> Void)?
 
-    init(book: Book, episode: Episode, client: GraphQLClient?, hlsEnabled: Bool, preferences: PlayerPreferences = PlayerPreferences()) {
+    init(
+        book: Book, episode: Episode, client: GraphQLClient?, hlsEnabled: Bool,
+        progress: (any PlaybackProgressSink)? = nil, startSec: Double? = nil,
+        preferences: PlayerPreferences = PlayerPreferences()
+    ) {
         self.book = book
         self.episode = episode
+        self.progress = progress
+        // Resume where the viewer left off; watched or new episodes start at the top
+        self.startSec = startSec ?? ProgressLogic.resumePosition(progress?.entry(for: episode.id))
         self.hlsEnabled = hlsEnabled
         self.preferences = preferences
         loader = EpisodeVoicesLoader(client: client)
@@ -70,7 +82,7 @@ final class PlayerModel {
         captionsOn = preferences.captionsByDefault
         engine = PlaybackEngine(durationSec: Double(episode.durationSec))
         engine.onTick = { [weak self] sec in self?.positionChanged(sec) }
-        engine.onStateChange = { [weak self] in self?.refreshControls() }
+        engine.onStateChange = { [weak self] in self?.playbackStateChanged() }
         engine.onEnd = { [weak self] in self?.episodeEnded() }
         engine.onFailure = { [weak self] in self?.sourceFailed() }
     }
@@ -125,9 +137,10 @@ final class PlayerModel {
         begun = true
         if let voice, !voice.isDefault, let stream = StreamSource(voice: voice, hlsEnabled: hlsEnabled) {
             selectedVoiceID = voice.id
-            engine.load(stream, at: 0, durationSec: Double(voice.durationSec))
+            let at = VoiceLogic.convertPosition(startSec, from: defaultTimeline, to: voice.timeline)
+            engine.load(stream, at: at, durationSec: Double(voice.durationSec))
         } else {
-            engine.load(catalogSource, at: 0, durationSec: Double(episode.durationSec))
+            engine.load(catalogSource, at: startSec, durationSec: Double(episode.durationSec))
         }
     }
 
@@ -154,6 +167,17 @@ final class PlayerModel {
         return Timeline(transcript: episode.transcript, durationSec: duration)
     }
 
+    /// The default voice's timeline: the one saved progress and search matches use.
+    private var defaultTimeline: Timeline {
+        Timeline(transcript: episode.transcript, durationSec: Double(episode.durationSec))
+    }
+
+    /// A position on the voice being heard, moved to the default voice's timeline.
+    private func defaultTimelineSec(_ sec: Double) -> Double {
+        guard let selectedVoice, !selectedVoice.isDefault else { return sec }
+        return VoiceLogic.convertPosition(sec, from: currentTimeline, to: defaultTimeline)
+    }
+
     /// Switches narrator at the start of the sentence being spoken, and remembers the choice.
     func pickVoice(_ id: String) async {
         preferences.defaultVoiceID = id
@@ -178,6 +202,23 @@ final class PlayerModel {
         if line != activeLineIndex { activeLineIndex = line }
         let caption = captionsOn ? VoiceLogic.activeCaption(phrases, at: sec) : nil
         if caption != activeCaption { activeCaption = caption }
+        reportPosition(sec, saveNow: false)
+    }
+
+    /// Saves each whole second played, as the Expo player did: not 0 (nothing watched yet) and not the end (that's
+    /// a completion). A seek saves at once, even back to the start.
+    private func reportPosition(_ sec: Double, saveNow: Bool) {
+        guard begun, !engine.hasEnded else { return }
+        let whole = Int(defaultTimelineSec(sec).rounded(.down))
+        guard whole < episode.durationSec, saveNow || (whole > 0 && whole != lastReportedSec) else { return }
+        lastReportedSec = whole
+        progress?.setPosition(episode.id, positionSec: whole, saveNow: saveNow)
+    }
+
+    /// Pausing (or stalling for good) sends the place now rather than at the next interval.
+    private func playbackStateChanged() {
+        refreshControls()
+        if begun, !engine.isPlaying, !engine.isBuffering { progress?.saveNow() }
     }
 
     func setCaptions(_ on: Bool) {
@@ -188,12 +229,14 @@ final class PlayerModel {
     func seek(to sec: Double) {
         engine.seek(to: sec)
         positionChanged(engine.positionSec)
+        reportPosition(engine.positionSec, saveNow: true)
     }
 
     private func episodeEnded() {
+        progress?.markCompleted(episode.id)
         guard let next = nextEpisode else { return }
         if next.locked {
-            nextIsLocked = true
+            onLockedNext?(next)
         } else if preferences.autoplayNext {
             onAdvance?(next)
         }
@@ -213,9 +256,13 @@ final class PlayerModel {
         }
     }
 
+    /// Leaving the episode: stops playback, and sends the place and reloads progress for the screens underneath.
     func stop() {
         hideTask?.cancel()
         engine.stop()
+        if let progress {
+            Task { await progress.sync() }
+        }
     }
 
     // MARK: Controls

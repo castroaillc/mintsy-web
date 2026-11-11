@@ -18,7 +18,7 @@ No query crosses the two: the backend uses no `$lookup` or other cross-collectio
 
 MongoDB must be a **replica set**, because Better Auth uses transactions.
 
-Indexes on the app collections are created at startup (`ensure*Indexes()` in `src/index.ts`). **The backend never writes to the catalog database or creates indexes there**; studio owns those indexes.
+Indexes on the app collections are created at startup (`ensure*Indexes()`, called from `src/index.ts`, through `ensureIndexes()` in `src/db.ts`, which creates only the missing ones). **The backend never writes to the catalog database or creates indexes there**; studio owns those indexes.
 
 ## Overview
 

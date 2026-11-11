@@ -5,6 +5,7 @@ struct BookDetailView: View {
     let book: Book
 
     @Environment(PlayerPresenter.self) private var player
+    @Environment(ProgressStore.self) private var progress
     @State private var tab: BookTab = .episodes
     @State private var rangeStart = 0
     @State private var expandedEpisodeID: String?
@@ -12,11 +13,12 @@ struct BookDetailView: View {
 
     var body: some View {
         let range = Array(book.episodes.dropFirst(rangeStart).prefix(Metrics.episodeRange))
+        let start = ProgressLogic.playStart(book, progress.progress)
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     BookHero(book: book)
-                    BookSummary(book: book, onPlay: playNext)
+                    BookSummary(book: book, start: start, watched: ProgressLogic.watchedCount(book, progress.progress), onPlay: playNext)
                         .padding(.horizontal, Metrics.gutter)
                         .padding(.top, 22)
                     UnderlineTabs(tabs: BookTab.allCases, selection: $tab)
@@ -35,6 +37,7 @@ struct BookDetailView: View {
                             EpisodeRowView(
                                 book: book,
                                 episode: episode,
+                                entry: progress.entry(for: episode.id),
                                 isExpanded: expandedEpisodeID == episode.id,
                                 onToggle: { toggle(episode) },
                                 onPlay: { player.open(episode) },
@@ -69,11 +72,13 @@ struct BookDetailView: View {
             }
         }
         .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+        // The latest from the API: episodes may have been watched on another device
+        .task(id: book.id) { await progress.refreshBook(book.id) }
     }
 
-    /// The first episode, the way the Expo app starts a book with no progress. Progress is a later milestone.
+    /// The episode in progress (Resume), else the first one not watched.
     private func playNext() {
-        if let first = book.episodes.first { player.open(first) }
+        if let start = ProgressLogic.playStart(book, progress.progress) { player.open(start.episode) }
     }
 
     private func toggle(_ episode: Episode) {
@@ -96,6 +101,8 @@ struct BookDetailView: View {
         BookDetailView(book: .preview)
     }
     .environment(PlayerPresenter())
+    .environment(ProgressStore(client: .preview))
+    .environment(SavedStore(client: .preview))
     .preferredColorScheme(.dark)
 }
 #endif

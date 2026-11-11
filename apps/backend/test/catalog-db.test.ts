@@ -48,16 +48,16 @@ const book = (id: string) => ({
 const inCatalogDb = randomId("in-catalog-db");
 const inAppDb = randomId("in-app-db");
 
-/** Runs the real server (src/index.ts) until /health answers. */
+/** Runs the real server (src/index.ts), with the catalog cache on, until /health answers. */
 async function startRealServer() {
   const port = 41000 + Math.floor(Math.random() * 2000);
   const child = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
-    env: { ...process.env, PORT: String(port), DOTENV_CONFIG_PATH: "/dev/null" },
+    env: { ...process.env, PORT: String(port), DOTENV_CONFIG_PATH: "/dev/null", CATALOG_CACHE_SECONDS: "60" },
     stdio: "ignore",
   });
   for (let i = 0; i < 100; i++) {
     const ok = await fetch(`http://localhost:${port}/health`).then((r) => r.ok, () => false);
-    if (ok) return child;
+    if (ok) return { child, url: `http://localhost:${port}` };
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   child.kill();
@@ -80,7 +80,15 @@ describe("catalog in a separate database", () => {
   });
 
   test("a full server start and the app's index setup create nothing in the catalog database", async () => {
-    const child = await startRealServer();
+    const { child, url } = await startRealServer();
+    // Listening means ready: the first catalog request is answered (from the startup warm-up's load)
+    const res = await fetch(`${url}/graphql`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: "{ books { id } }" }),
+    });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { data: { books: [] } });
     child.kill();
     await new Promise((resolve) => child.once("exit", resolve));
     assert.deepEqual(await catalogDb.listCollections().toArray(), []);

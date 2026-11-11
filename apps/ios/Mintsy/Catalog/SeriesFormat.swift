@@ -21,6 +21,11 @@ nonisolated enum SeriesFormat {
         "Episode \(episode.number) of \(book.episodes.count)"
     }
 
+    /// "1 episode", "20 episodes"
+    static func episodeCount(_ count: Int) -> String {
+        "\(count) \(count == 1 ? "episode" : "episodes")"
+    }
+
     static func totalRuntime(_ book: Book) -> Int {
         book.episodes.reduce(0) { $0 + $1.durationSec }
     }
