@@ -11,12 +11,12 @@ This folder is its own pnpm workspace with its own lockfile, so Remotion stays o
 ```sh
 pnpm install
 cp .env.example .env     # everything in it is optional except MONGODB_URI for the worker
-ant auth login           # or set ANTHROPIC_API_KEY in .env
+claude auth login        # Claude Code CLI on your Claude subscription; `claude` must be on the worker's PATH
 brew install uv espeak-ng ffmpeg
 (cd tts && uv sync)      # required: the Kokoro narration environment, about 1 GB with PyTorch
 ```
 
-See [`tts/README.md`](tts/README.md) for voices. Uploads also need `gcloud` signed in with access to `gs://mintsy-media`.
+See [`tts/README.md`](tts/README.md) for voices. Uploads run the `gcloud` CLI, so it must be installed, but they don't need `gcloud auth login`: they authenticate with the service account key at `STUDIO_GCP_KEY_FILE` (default `~/.config/mintsy/studio-uploader.json`). Without that file, they fall back to your own `gcloud` login, which needs access to `gs://mintsy-media`.
 
 ## Run
 

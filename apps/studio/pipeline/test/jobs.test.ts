@@ -21,6 +21,8 @@ describe("upload and remaster", { skip: uri ? false : "set STUDIO_TEST_MONGODB_U
   const work = path.join(root, "work");
   const bin = path.join(root, "bin");
   const gcloudLog = path.join(root, "gcloud.log");
+  const gcloudCredentials = path.join(root, "gcloud-credentials.log");
+  const fakeKey = path.join(root, "fake-key.json");
   const BOOK = "tiny-book";
   const epDir = path.join(work, BOOK, "ep-01");
   const VOICES = ["af_heart", "am_michael"];
@@ -66,11 +68,15 @@ describe("upload and remaster", { skip: uri ? false : "set STUDIO_TEST_MONGODB_U
     process.env.KOKORO_SPEED = "1";
     delete process.env.STUDIO_WORKER_DRY_RUN;
     delete process.env.MONGODB_URI;
+    // Never the real key, even as a path handed to the stub
+    writeFileSync(fakeKey, "not a key");
+    process.env.STUDIO_GCP_KEY_FILE = fakeKey;
+    delete process.env.CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE;
 
     // Stubs first on PATH: gcloud only records, and both can be told to fail
     mkdirSync(bin);
     const realFfmpeg = execFileSync("which", ["ffmpeg"]).toString().trim();
-    writeFileSync(path.join(bin, "gcloud"), `#!/bin/sh\necho "$*" >> "${gcloudLog}"\ncase "$*" in *"$STUB_GCLOUD_FAIL_ON"*) [ -n "$STUB_GCLOUD_FAIL_ON" ] && exit 1;; esac\nexit 0\n`);
+    writeFileSync(path.join(bin, "gcloud"), `#!/bin/sh\necho "$*" >> "${gcloudLog}"\necho "$CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE" >> "${gcloudCredentials}"\ncase "$*" in *"$STUB_GCLOUD_FAIL_ON"*) [ -n "$STUB_GCLOUD_FAIL_ON" ] && exit 1;; esac\nexit 0\n`);
     writeFileSync(path.join(bin, "ffmpeg"), `#!/bin/sh\ncase "$*" in *"$STUB_FFMPEG_FAIL_ON"*) [ -n "$STUB_FFMPEG_FAIL_ON" ] && exit 1;; esac\nexec "${realFfmpeg}" "$@"\n`);
     chmodSync(path.join(bin, "gcloud"), 0o755);
     chmodSync(path.join(bin, "ffmpeg"), 0o755);
@@ -207,6 +213,8 @@ describe("upload and remaster", { skip: uri ? false : "set STUDIO_TEST_MONGODB_U
       assert.ok(lines[lines.length - 1][0].includes("master.m3u8"), `${v.id}: master last`);
     }
     assert.ok(log.every((l) => l.includes("gs://stub-bucket-not-real/")), "nothing else is touched");
+    // Every call, MP4, HLS and thumbnail alike, authenticated with the key
+    assert.deepEqual([...new Set(readFileSync(gcloudCredentials, "utf8").trim().split("\n"))], [fakeKey]);
   });
 
   test("remaster: differing transcript text refuses before voicing, rendering or uploading, and leaves the doc alone", async () => {

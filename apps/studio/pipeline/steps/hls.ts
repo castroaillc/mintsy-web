@@ -17,9 +17,9 @@ const CONTENT_TYPES = { m3u8: "application/vnd.apple.mpegurl", m4s: "video/iso.s
  * Runs a command in its own process group, so the first Ctrl-C (which means "stop after the current
  * job", see worker.ts) doesn't reach it through the terminal. If the worker exits, the group goes too.
  */
-function runIsolated(command: string, args: string[]) {
+function runIsolated(command: string, args: string[], env?: NodeJS.ProcessEnv) {
   return new Promise<void>((resolve, reject) => {
-    const child = spawn(command, args, { detached: true, stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(command, args, { detached: true, stdio: ["ignore", "ignore", "pipe"], env });
     const killGroup = () => {
       if (child.pid) {
         try {
@@ -90,14 +90,14 @@ export async function hlsUploadPlan(dir: string) {
 }
 
 /** Uploads everything under `<prefix>/`. `master.m3u8` goes last, so it only exists once all it points to does. */
-export async function uploadHls(dir: string, prefix: string, cacheControl: string) {
+export async function uploadHls(dir: string, prefix: string, cacheControl: string, env: NodeJS.ProcessEnv) {
   const batches = await hlsUploadPlan(dir);
   const total = batches.reduce((sum, batch) => sum + batch.files.length, 0);
   console.log(`hls: uploading ${total} files`);
   for (const { files, subdir, contentType } of batches) {
     const dest = `${MEDIA_BUCKET}/${prefix}/${subdir ? `${subdir}/` : ""}`;
     try {
-      await runIsolated("gcloud", ["storage", "cp", ...files, dest, "--content-type", contentType, "--cache-control", cacheControl]);
+      await runIsolated("gcloud", ["storage", "cp", ...files, dest, "--content-type", contentType, "--cache-control", cacheControl], env);
     } catch (err) {
       throw new Error(`HLS upload to ${dest} failed: ${err instanceof Error ? err.message : String(err)}`);
     }

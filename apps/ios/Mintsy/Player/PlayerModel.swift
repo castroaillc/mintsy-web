@@ -318,14 +318,17 @@ final class PlayerModel {
 
     /// The task's value if it finishes within `limit`, else nil. The task keeps running either way.
     private static func value<T: Sendable>(of task: Task<T, Never>, within limit: Duration) async -> T? {
-        let race = FirstResult<T?>()
-        return await withCheckedContinuation { continuation in
-            race.continuation = continuation
-            Task { race.finish(await task.value) }
-            Task {
+        // withTaskGroup handles the race safely: cancels the loser task without any shared mutable
+        // state, eliminating the double-resume risk that the old FirstResult approach had.
+        await withTaskGroup(of: Optional<T>.self) { group in
+            group.addTask { Optional(await task.value) }
+            group.addTask {
                 try? await Task.sleep(for: limit)
-                race.finish(nil)
+                return nil
             }
+            let first = await group.next()!
+            group.cancelAll()
+            return first
         }
     }
 }

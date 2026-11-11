@@ -5,6 +5,7 @@ import path from "node:path";
 
 import type { EpisodeDoc } from "@mintsy/shared";
 
+import { uploadEnv } from "../gcloud";
 import { bookDir, CATALOG_PATH, files, MEDIA_BUCKET } from "../paths";
 import { readJson, run, writeJson } from "../util";
 import {
@@ -51,6 +52,7 @@ export type EpisodeMedia = { videoPath: string; thumbnailPath: string; hlsPath: 
  */
 export async function uploadMedia(bookId: string, chapter: number, epDir: string, fields: EpisodeFields): Promise<EpisodeMedia> {
   checkVoiceText(fields.voices);
+  const env = uploadEnv();
   const targets = await renderTargets(epDir);
   const thumbnail = path.join(epDir, files.thumbnail);
   if (!existsSync(thumbnail)) throw new Error(`No ${files.thumbnail} in ${epDir}: render it first`);
@@ -74,12 +76,12 @@ export async function uploadMedia(bookId: string, chapter: number, epDir: string
     await encodeHls(video, hlsDir);
   }
   for (const { video, prefix, hlsDir } of items) {
-    await run("gcloud", ["storage", "cp", video, `${MEDIA_BUCKET}/${prefix}.mp4`, "--cache-control", CACHE_CONTROL]);
+    await run("gcloud", ["storage", "cp", video, `${MEDIA_BUCKET}/${prefix}.mp4`, "--cache-control", CACHE_CONTROL], { env });
     console.log(`  uploaded ${MEDIA_BUCKET}/${prefix}.mp4`);
-    await uploadHls(hlsDir, prefix, CACHE_CONTROL);
+    await uploadHls(hlsDir, prefix, CACHE_CONTROL, env);
   }
   const main = items[0].prefix;
-  await run("gcloud", ["storage", "cp", thumbnail, `${MEDIA_BUCKET}/${main}.jpg`, "--cache-control", CACHE_CONTROL]);
+  await run("gcloud", ["storage", "cp", thumbnail, `${MEDIA_BUCKET}/${main}.jpg`, "--cache-control", CACHE_CONTROL], { env });
   console.log(`  uploaded ${MEDIA_BUCKET}/${main}.jpg`);
 
   return {

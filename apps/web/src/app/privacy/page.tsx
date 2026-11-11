@@ -191,9 +191,20 @@ export default function Privacy() {
         whatever you write. We use it only to answer you and improve mintsy.
       </p>
 
+      <h2>App diagnostics</h2>
+      <p>
+        The app uses two Expo services to tell us whether it&apos;s working well. Expo Insights sends a message each time the app starts, with a random identifier created
+        when the app is installed, the app version, and your device&apos;s platform and operating system version. Expo Observe sends performance measurements (such as how
+        long the app takes to start) and crash reports, with your device model, operating system and version, language, app version and build, app update details, a session
+        ID and the same random identifier. Neither includes your name, email address or mintsy account ID, and we don&apos;t use them for advertising or to track you across
+        other apps. Expo receives your IP address as part of the connection. You can read <a href="https://expo.dev/privacy">Expo&apos;s privacy policy</a>.
+      </p>
+
       <h2>What we don&apos;t do</h2>
       <ul>
-        <li>No advertising, and no advertising or analytics SDKs in the app.</li>
+        <li>
+          No advertising, and no advertising SDKs in the app. The only analytics are the Expo diagnostics described above, which aren&apos;t linked to your account.
+        </li>
         <li>No tracking across other apps or websites.</li>
         <li>We don&apos;t sell or rent your information.</li>
       </ul>
@@ -201,7 +212,7 @@ export default function Privacy() {
       <h2>Service providers</h2>
       <p>
         We use Google Cloud (hosting the API and the episode videos), Vercel (hosting this website), MongoDB Atlas (database), Expo (delivering push notifications and app
-        updates), RevenueCat (managing subscriptions) and Resend (sending account emails). They process data only to provide these services to us. If you use Sign in with Apple or Sign in with Google, Apple or Google also
+        updates, and app diagnostics), RevenueCat (managing subscriptions) and Resend (sending account emails). They process data only to provide these services to us. If you use Sign in with Apple or Sign in with Google, Apple or Google also
         processes your sign-in under its own privacy policy (see above).
       </p>
 

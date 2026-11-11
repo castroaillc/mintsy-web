@@ -102,6 +102,8 @@ targets:
           - Inter-Bold.ttf
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-Bold.ttf
+        UIBackgroundModes:
+          - audio
         UILaunchScreen:
           UIColorName: LaunchBackground
         UIApplicationSceneManifest:

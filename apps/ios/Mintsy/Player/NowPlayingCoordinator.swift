@@ -24,9 +24,13 @@ final class NowPlayingCoordinator {
         registerCommands(engine: model.engine)
         startArtworkFetch(episode: model.episode, book: model.book)
         observationTask = Task { [weak self] in
-            self?.publish(model: model)
+            guard let self else { return }
+            publish(model: model)
             while !Task.isCancelled {
-                await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                // UnsafeContinuation (vs Checked) avoids a fatal "Continuation leaked" if stop()
+                // cancels this task while the engine is simultaneously deallocated before onChange
+                // has a chance to fire. The worst-case outcome is a silent no-resume, not a crash.
+                await withUnsafeContinuation { (cont: UnsafeContinuation<Void, Never>) in
                     withObservationTracking {
                         _ = model.engine.positionSec
                         _ = model.engine.isPlaying
@@ -37,7 +41,7 @@ final class NowPlayingCoordinator {
                     }
                 }
                 if Task.isCancelled { break }
-                self?.publish(model: model)
+                self.publish(model: model)
             }
         }
     }
@@ -89,29 +93,29 @@ final class NowPlayingCoordinator {
     private func registerCommands(engine: PlaybackEngine) {
         let center = MPRemoteCommandCenter.shared()
 
-        center.playCommand.addTarget { [weak engine] _ in
+        center.playCommand.addTarget { @Sendable [weak engine] _ in
             Task { @MainActor [weak engine] in engine?.play() }
             return .success
         }
-        center.pauseCommand.addTarget { [weak engine] _ in
+        center.pauseCommand.addTarget { @Sendable [weak engine] _ in
             Task { @MainActor [weak engine] in engine?.pause() }
             return .success
         }
-        center.togglePlayPauseCommand.addTarget { [weak engine] _ in
+        center.togglePlayPauseCommand.addTarget { @Sendable [weak engine] _ in
             Task { @MainActor [weak engine] in engine?.togglePlay() }
             return .success
         }
         center.skipBackwardCommand.preferredIntervals = [10]
-        center.skipBackwardCommand.addTarget { [weak engine] _ in
+        center.skipBackwardCommand.addTarget { @Sendable [weak engine] _ in
             Task { @MainActor [weak engine] in engine?.skip(by: -10) }
             return .success
         }
         center.skipForwardCommand.preferredIntervals = [10]
-        center.skipForwardCommand.addTarget { [weak engine] _ in
+        center.skipForwardCommand.addTarget { @Sendable [weak engine] _ in
             Task { @MainActor [weak engine] in engine?.skip(by: 10) }
             return .success
         }
-        center.changePlaybackPositionCommand.addTarget { [weak engine] event in
+        center.changePlaybackPositionCommand.addTarget { @Sendable [weak engine] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let position = event.positionTime
             Task { @MainActor [weak engine] in engine?.seek(to: position) }

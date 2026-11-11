@@ -5,6 +5,7 @@ import { bundle } from "@remotion/bundler";
 import { renderStill, selectComposition } from "@remotion/renderer";
 
 import type { BookCoverProps } from "../../src/collage/covers";
+import { uploadEnv } from "../gcloud";
 import { bookDir, MEDIA_BUCKET, STUDIO_DIR } from "../paths";
 import { run } from "../util";
 
@@ -25,10 +26,11 @@ export async function renderCover(bookId: string, props: BookCoverProps) {
 
 /** Uploads the local cover as books/<book>/cover-<sha256 8>.jpg; a changed cover gets a new name. */
 export async function uploadCover(bookId: string) {
+  const env = uploadEnv();
   const file = coverFile(bookId);
   const hash = createHash("sha256").update(await readFile(file)).digest("hex").slice(0, 8);
   const coverPath = `books/${bookId}/cover-${hash}.jpg`;
-  await run("gcloud", ["storage", "cp", file, `${MEDIA_BUCKET}/${coverPath}`, "--cache-control", "private, max-age=31536000"]);
+  await run("gcloud", ["storage", "cp", file, `${MEDIA_BUCKET}/${coverPath}`, "--cache-control", "private, max-age=31536000"], { env });
   console.log(`  uploaded ${MEDIA_BUCKET}/${coverPath}`);
   return coverPath;
 }
