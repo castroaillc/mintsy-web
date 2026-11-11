@@ -4,6 +4,8 @@ import {
   calculateCollageMetadata,
   CollageEpisode,
 } from "./collage/CollageEpisode";
+import { calculateClipMetadata, CollageClip } from "./collage/CollageClip";
+import { CLIP_HEIGHT, CLIP_WIDTH } from "./collage/clipLayout";
 import { BookCover, CollageThumbnail } from "./collage/covers";
 import { calculateEpisodeMetadata, Episode } from "./episode/Episode";
 import { FPS, HEIGHT, WIDTH } from "./episode/timing";
@@ -221,6 +223,46 @@ export const RemotionRoot: React.FC = () => {
                       { text: "Fresh 24 hours every morning", cue: "" },
                       { text: "Stop waiting for more time", cue: "" },
                     ],
+                  },
+                },
+              ],
+            },
+          ],
+        }}
+      />
+      <Composition
+        id="CollageClip"
+        component={CollageClip}
+        durationInFrames={300}
+        fps={FPS}
+        width={CLIP_WIDTH}
+        height={CLIP_HEIGHT}
+        calculateMetadata={calculateClipMetadata}
+        defaultProps={{
+          bookTitle: "How to Live on 24 Hours a Day",
+          polish: true,
+          captions: true,
+          safeAreaGuide: false,
+          scenes: [
+            {
+              narration: "",
+              audio: "",
+              audioSec: 5,
+              cueSec: {},
+              words: [
+                { text: "A", startSec: 0.2, endSec: 0.4 },
+                { text: "sample", startSec: 0.4, endSec: 1 },
+                { text: "caption.", startSec: 1, endSec: 2 },
+              ],
+              beats: [
+                {
+                  startCue: "",
+                  background: "pink" as const,
+                  beat: {
+                    layout: "headline" as const,
+                    lines: [{ text: "Live on 24 hours a day", highlight: "24 hours", cue: "" }],
+                    numbered: false,
+                    stamp: null,
                   },
                 },
               ],

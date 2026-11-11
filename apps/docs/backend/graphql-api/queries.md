@@ -7,6 +7,7 @@
 | `books`  | none             | `[Book!]!`      | public           |
 | `book`   | `id: ID!`        | `Book`          | public           |
 | `search` | `query: String!` | `SearchResult!` | public           |
+| `episodeVoices` | `episodeId: ID!` | `[EpisodeVoice!]!` | public |
 
 ## health
 
@@ -57,6 +58,10 @@ query BookProgress($bookId: ID!) {
 The published catalog, ordered by the book's `order` field (lowest first; the app shows the lowest as featured and the highest as "Recently added"). Public: the welcome screen shows it before sign-in.
 
 Draft books are hidden, and each book only contains the contiguous run of published episodes starting at 1. A book with none is hidden. See [Catalog model](../catalog/).
+
+The API serves `books`, `book`, `search` and `episodeVoices` from an in-memory copy of the catalog, so a publish or edit shows up within 60 s (`CATALOG_CACHE_SECONDS`), not at once. See [How the API reads it](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows).
+
+**Cost:** `{ books { id } }` and the app's full `Books` query cost the server the same, because the whole catalog is cached. What a bigger selection costs is response size: every episode's `transcript` is most of the bytes, and the first screen doesn't need it.
 
 ```graphql
 query Books {
@@ -140,5 +145,30 @@ query Search($q: String!) {
 Highlight the match with `snippet.slice(matchStart, matchStart + matchLength)`.
 
 ::: info
-Search scans every published book on each request. That's fine for the current catalog; once it grows, the plan in `src/search.ts` is a MongoDB text index or Atlas Search on title, author, category and `episodes.transcript.text`.
+Search scans the in-memory published catalog on each request. That's fine for the current catalog; once it grows, the plan in `src/search.ts` is a MongoDB text index or Atlas Search on title, author, category and `episodes.transcript.text`.
+:::
+
+## episodeVoices
+
+The narrator choices for one episode, with their videos and timed text. It works signed out. It's separate from the catalog because timed text for every voice would bloat `books`, see [Episode voices](../../contracts.md#episode-voices).
+
+Returns `[]` when the episode is locked for the viewer, isn't in the public catalog, doesn't exist, or has no voices. These look the same: play `Episode.videoUrl` / `hlsUrl` instead.
+
+```graphql
+query EpisodeVoices($episodeId: ID!) {
+  episodeVoices(episodeId: $episodeId) {
+    id
+    name
+    isDefault
+    videoUrl
+    hlsUrl
+    durationSec
+    transcript { startSec text }
+    captions { startSec endSec text }
+  }
+}
+```
+
+::: info Not live yet
+As of 2026-11-03 this query isn't deployed. An API without it fails the request with a validation error, so send it on its own rather than alongside the catalog query.
 :::

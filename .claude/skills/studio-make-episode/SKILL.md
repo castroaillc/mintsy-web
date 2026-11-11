@@ -23,9 +23,11 @@ Use an existing book id to add episodes to an existing series. If the PDF path i
 - Fix by editing the JSON by hand, because edits survive, or rerun with `--from script` or `--from scenes`.
 
 ## Review gate 2: the render
-- `episode.mp4` is about 5 minutes and `thumbnail.jpg` looks right. View it.
-- Spot-check a few frames with `ffmpeg -ss <t> -i episode.mp4 -frames:v 1 <file>.jpg`, and view them for overflowing text or missing props.
-- For visual fixes, change the templates, then rerun with `--from render`.
+- Each voice in `voices/index.json` has its own video, all about 5 minutes: `episode.mp4` for the default, `renders/kokoro-<voice>/episode.mp4` for the others. Check them, because durations differ between voices. `thumbnail.jpg` looks right. View it.
+- Spot-check at least 5 frames of **every voice** with `ffmpeg -ss <t> -i <video> -frames:v 1 <file>.jpg`, including moments with narration. View them for overflowing text or missing props.
+- Confirm **no burned captions** in any voice: no phrase bar along the bottom of the picture while the narrator speaks. The app draws captions from timed text. `beat.caption` tape labels are part of the design and stay.
+- A human listens to each voice. Word timings can't show mispronunciations, and captions have to match what's heard.
+- For visual fixes, change the templates, then rerun with `--from render`, which re-renders every voice.
 
 ## Getting it to the app
 1. Uploading goes to the production bucket and writes a draft to MongoDB, so **it needs approval**. The worker's `render` and `upload` jobs do this.

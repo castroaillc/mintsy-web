@@ -44,6 +44,7 @@
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
+    "test": "DOTENV_CONFIG_PATH=/dev/null tsx --test pipeline/test/*.test.ts",
     "pipeline": "tsx pipeline/cli.ts",
     "worker": "tsx pipeline/worker.ts"
   },

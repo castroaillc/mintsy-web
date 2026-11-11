@@ -201,6 +201,20 @@ export type CollageEpisodeProps = {
   chapter: number;
   episodeTitle: string;
   scenes: TimedCollageScene[];
-  /** Motion/sound polish: spring transitions, camera drift, scene wipes, word captions, SFX, music ducking. */
+  /** Motion/sound polish: spring transitions, camera drift, scene wipes, SFX, music ducking. */
   polish?: boolean;
+  /** Burn word-synced captions into the picture. Off for episodes, where the app draws them from timed text. */
+  captions?: boolean;
+};
+
+export type CollageClipProps = {
+  bookTitle: string;
+  /** 1 to 3 consecutive whole scenes, all from one voice's track. */
+  scenes: TimedCollageScene[];
+  /** Clips keep motion and sound polish, like the episode. */
+  polish?: boolean;
+  /** Burned in: clip viewers have no toggle, and many watch muted. */
+  captions?: boolean;
+  /** Review only: draws the safe area over the picture. Never set for a clip that gets posted. */
+  safeAreaGuide?: boolean;
 };

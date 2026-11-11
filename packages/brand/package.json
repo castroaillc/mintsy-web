@@ -1,7 +1,7 @@
 {
   "name": "@mintsy/brand",
   "version": "0.1.0",
-  "description": "mintsy brand: colors, typography, logos, icons and fonts for the admin and mobile app",
+  "description": "mintsy brand: colors, typography, logos, icons and fonts for the iOS app, website, admin and studio videos",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",

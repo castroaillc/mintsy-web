@@ -18,6 +18,7 @@ import { INTRO_FRAMES, sceneFrames } from "../episode/timing";
 import { PaperFinish, Stripes } from "./kit";
 import { BACKGROUNDS, BeatView, CueContext } from "./Layouts";
 import { Camera, Captions, MOTION, SceneWipe, speechRanges, WIPE_FRAMES } from "./polish";
+import { PortraitBeatView } from "./PortraitLayouts";
 import type { CollageEpisodeProps, TimedCollageScene } from "./schema";
 
 export const calculateCollageMetadata: CalculateMetadataFunction<
@@ -31,12 +32,15 @@ export const calculateCollageMetadata: CalculateMetadataFunction<
 const SLIDE_FRAMES = 14;
 
 /** One scene: its beats in order, each sliding in when its start cue is spoken. */
-const CollageSceneView: React.FC<{ scene: TimedCollageScene; polish?: boolean }> = ({
+export const CollageSceneView: React.FC<{ scene: TimedCollageScene; polish?: boolean; captions?: boolean; portrait?: boolean }> = ({
   scene,
   polish = false,
+  captions = false,
+  portrait = false,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames, height } = useVideoConfig();
+  const View = portrait ? PortraitBeatView : BeatView;
   const starts = scene.beats.map((b, i) =>
     i === 0
       ? 0
@@ -84,15 +88,15 @@ const CollageSceneView: React.FC<{ scene: TimedCollageScene; polish?: boolean }>
           return (
             <AbsoluteFill
               key={i}
-              style={{ translate: `0 ${(1 - enter - leave) * 720}px` }}
+              style={{ translate: `0 ${(1 - enter - leave) * height}px` }}
             >
               <Stripes a={bg.a} b={bg.b} />
               {polish ? (
                 <Camera seed={`b${i}`} durationInFrames={to - from}>
-                  <BeatView beat={b.beat} start={starts[i]} background={b.background} />
+                  <View beat={b.beat} start={starts[i]} background={b.background} />
                 </Camera>
               ) : (
-                <BeatView
+                <View
                   beat={b.beat}
                   start={starts[i]}
                   background={b.background}
@@ -106,7 +110,7 @@ const CollageSceneView: React.FC<{ scene: TimedCollageScene; polish?: boolean }>
             </AbsoluteFill>
           );
         })}
-        {polish && scene.words?.length ? <Captions words={scene.words} /> : null}
+        {captions && scene.words?.length ? <Captions words={scene.words} portrait={portrait} /> : null}
       </AbsoluteFill>
     </CueContext.Provider>
   );
@@ -119,6 +123,7 @@ export const CollageEpisode: React.FC<CollageEpisodeProps> = ({
   chapter,
   episodeTitle,
   polish = false,
+  captions = false,
 }) => {
   const { fps } = useVideoConfig();
   // Body-relative start frame of each scene (same arithmetic as Series below)
@@ -142,7 +147,7 @@ export const CollageEpisode: React.FC<CollageEpisodeProps> = ({
               durationInFrames={sceneFrames(scene.audioSec)}
               premountFor={fps}
             >
-              <CollageSceneView scene={scene} polish={polish} />
+              <CollageSceneView scene={scene} polish={polish} captions={captions} />
               {scene.audio ? <Audio src={staticFile(scene.audio)} /> : null}
             </Series.Sequence>
           ))}

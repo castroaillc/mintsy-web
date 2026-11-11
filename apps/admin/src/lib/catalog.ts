@@ -1,7 +1,7 @@
 import "server-only";
 import { booksCol, jobsCol } from "./mongo";
 import { effectiveStatus, liveRunLength } from "./status";
-import type { BookDoc, ContentStatus, EpisodeDoc, IngestResult, ScriptResult, StudioJob } from "./types";
+import type { BookDoc, ContentStatus, EpisodeDoc, IngestResult, ScriptResult, StudioJob, TranscriptLine } from "./types";
 import { describeChapterFailure } from "./generate-all";
 import { listJobs } from "./jobs";
 
@@ -24,8 +24,74 @@ function lastUpdated(b: BookDoc): Date | null {
   return new Date(Math.max(...dates.map((d) => d.getTime())));
 }
 
+/** Only what the list shows: MongoDB is remote, and a voiced book's transcripts and captions run to about 1 MB. */
+const BOOK_ROW_PROJECTION = { title: 1, author: 1, order: 1, status: 1, updatedAt: 1, "episodes.number": 1, "episodes.status": 1, "episodes.updatedAt": 1 };
+
+/** `startSec` values only, as a plain number array, for a transcript that may be missing. */
+const startSecs = (path: string) => ({
+  $cond: [{ $isArray: path }, { $map: { input: path, as: "line", in: "$$line.startSec" } }, "$$REMOVE"],
+});
+
+/**
+ * The book for a page, without transcript text and captions, which the pages never show: a voiced book's
+ * run to about 1 MB, and MongoDB is remote. The publish checks still need every `startSec`, so transcripts
+ * come back as number arrays, a third of the bytes of `{ startSec }` objects, and `toPageBook` rebuilds
+ * the lines. `fullTranscriptOf` keeps one episode's top-level transcript whole, for the episode editor.
+ */
+export async function findPageBook(id: string, fullTranscriptOf?: number): Promise<BookDoc | null> {
+  const [doc] = await (await booksCol())
+    .aggregate<BookDoc>([
+      { $match: { _id: id } },
+      { $unset: ["episodes.voices.captions"] },
+      {
+        $set: {
+          episodes: {
+            $map: {
+              input: "$episodes",
+              as: "e",
+              in: {
+                $mergeObjects: [
+                  "$$e",
+                  {
+                    transcript: { $cond: [{ $eq: ["$$e.number", fullTranscriptOf ?? null] }, "$$e.transcript", startSecs("$$e.transcript")] },
+                    voices: {
+                      $cond: [
+                        { $isArray: "$$e.voices" },
+                        { $map: { input: "$$e.voices", as: "v", in: { $mergeObjects: ["$$v", { transcript: startSecs("$$v.transcript") }] } } },
+                        "$$REMOVE",
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ])
+    .toArray();
+  return doc ? toPageBook(doc) : null;
+}
+
+/** Turns findPageBook's number arrays back into transcript lines, without their `text`. A whole transcript stays as it is. */
+function toPageBook(doc: BookDoc): BookDoc {
+  const lines = (t: unknown) =>
+    (Array.isArray(t) ? t.map((l: unknown) => (typeof l === "number" ? ({ startSec: l } as TranscriptLine) : l)) : t) as TranscriptLine[];
+  return {
+    ...doc,
+    episodes: (doc.episodes ?? []).map((e) => ({
+      ...e,
+      transcript: lines(e.transcript),
+      ...(e.voices ? { voices: e.voices.map((v) => ({ ...v, transcript: lines(v.transcript) })) } : {}),
+    })),
+  };
+}
+
 export async function listBookRows(): Promise<BookRow[]> {
-  const books = await (await booksCol()).find().sort({ order: 1, _id: 1 }).toArray();
+  const [books, ingests] = await Promise.all([
+    (await booksCol()).find({}, { projection: BOOK_ROW_PROJECTION }).sort({ order: 1, _id: 1 }).toArray(),
+    listJobs({ kind: "ingest" }, 500),
+  ]);
   console.log(`listBookRows: found ${books.length} books in catalog`);
   const rows: BookRow[] = books.map((b) => {
     const eps = b.episodes ?? [];
@@ -45,7 +111,6 @@ export async function listBookRows(): Promise<BookRow[]> {
 
   // Books whose ingest hasn't created the catalog doc yet.
   const known = new Set(books.map((b) => b._id));
-  const ingests = await listJobs({ kind: "ingest" }, 500);
   const seen = new Set<string>();
   for (const j of ingests) {
     if (known.has(j.bookId) || seen.has(j.bookId)) continue;
@@ -101,8 +166,10 @@ export type ChapterRow = {
 };
 
 export async function getBookPageData(id: string) {
-  const book = await (await booksCol()).findOne({ _id: id });
-  const jobs = await listJobs({ bookId: id }, 1000);
+  const [book, jobs] = await Promise.all([
+    findPageBook(id),
+    listJobs({ bookId: id }, 1000),
+  ]);
   const ingests = jobs.filter((j) => j.kind === "ingest");
   const latestIngest = ingests[0] ?? null;
   const succeededIngest = ingests.find((j) => j.status === "succeeded") ?? null;
@@ -117,7 +184,9 @@ export async function getBookPageData(id: string) {
     .sort((a, b) => a[0] - b[0])
     .map(([number, title]) => {
       const chapterJobs = jobs.filter((j) => j.chapter === number && j.kind !== "ingest");
-      const latest = chapterJobs[0];
+      // A clip is local and leaves the episode alone, so it says nothing about the chapter's state.
+      const pipelineJobs = chapterJobs.filter((j) => j.kind !== "clip");
+      const latest = pipelineJobs[0];
       const ep = episodes.find((e) => e.number === number);
       const episodeStatus = ep ? effectiveStatus(ep.status) : null;
       // A whole-book run queues a script and then a render, so the job at work is the oldest active one.
@@ -136,7 +205,7 @@ export async function getBookPageData(id: string) {
         episodeStatus,
         hasScript: chapterJobs.some((j) => j.kind === "script" && j.status === "succeeded"),
         active,
-        error: describeChapterFailure(chapterJobs),
+        error: describeChapterFailure(pipelineJobs),
         latestJobKind: latest?.kind ?? null,
       };
     });

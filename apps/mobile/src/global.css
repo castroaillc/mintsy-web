@@ -1,9 +1,0 @@
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "tailwindcss/utilities.css";
-@import "nativewind/theme";
-
-/* Colors and the Tailwind names for them come from @mintsy/brand. Light is the default;
-   dark sits under prefers-color-scheme, which NativeWind maps to the device appearance. */
-@import "@mintsy/brand/css/native/ink-coral.css";
-@import "@mintsy/brand/css/native/tailwind.css";

@@ -71,6 +71,23 @@ Configured on the Cloud Run service, not in the repo.
 | Sign in with Google / Apple | Plain: `GOOGLE_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `APPLE_CLIENT_ID`, optionally `APPLE_APP_BUNDLE_IDENTIFIER`. Secrets: `GOOGLE_CLIENT_SECRET`, `APPLE_CLIENT_SECRET` (both optional, needed for the web app's redirect flow).      |
 | Set by the platform         | `PORT=8080`, `K_REVISION`; `NODE_ENV=production` comes from the image                                                                                                                                                                |
 
+### Scaling
+
+Set on each Cloud Run service, not in the repo. Deploys only swap the image (`gcloud run deploy --image` for production, `gcloud run services update --image` for preview), so these settings persist across deploys.
+
+| Service              | Min instances | Max instances | Why                                                                                                                                                                                                                       |
+| -------------------- | ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mintsy-api`         | **1**         | 2             | Set on 2026-11-05 by the owner's decision (revision `mintsy-api-00025-8gv`), about $10 a month while idle. One instance stays warm, so app requests skip the cold start and its [catalog load](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows). |
+| `mintsy-api-preview` | 0             | 1             | Scales to zero. The first request after it's idle pays the cold start.                                                                                                                                                    |
+
+With two production instances, each keeps its own catalog copy, so they can briefly disagree after a publish. To check or change the setting:
+
+```sh
+gcloud run services describe mintsy-api --region us-central1 --project mintsy-prod \
+  --format 'value(spec.template.metadata.annotations)'   # autoscaling.knative.dev/minScale, maxScale
+gcloud run services update mintsy-api --region us-central1 --project mintsy-prod --min-instances 1
+```
+
 New secrets: create them in Secret Manager, grant the Cloud Run service account `roles/secretmanager.secretAccessor`, then `gcloud run services update mintsy-api --region us-central1 --project mintsy-prod --update-secrets NAME=NAME:latest`. Full examples: [Premium and RevenueCat](../features/premium.md#production-setup), [Email](../features/email.md#one-time-resend-setup).
 
 ## Production behaviour (`NODE_ENV=production`)

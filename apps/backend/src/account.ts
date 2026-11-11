@@ -1,3 +1,4 @@
+import { deleteAppStoreAccountForUser } from "./app-store.js";
 import { db } from "./db.js";
 import { entitlements } from "./entitlements.js";
 import { env } from "./env.js";
@@ -11,15 +12,17 @@ import { deleteSavedForUser } from "./saved.js";
  * Better Auth deletion so nothing written in between is left behind.
  */
 export async function deleteUserData(userId: string) {
-  const [pushTokens, entitlementDocs, saved, progress, verifications] = await Promise.all([
+  const [pushTokens, entitlementDocs, saved, progress, verifications, appStoreAccounts] = await Promise.all([
     deletePushTokensForUser(userId),
     entitlements.deleteMany({ userId }).then((r) => r.deletedCount),
     deleteSavedForUser(userId),
     deleteProgressForUser(userId),
     // Pending reset-password / delete-account tokens point at the user id
     db.collection("verification").deleteMany({ value: userId }).then((r) => r.deletedCount),
+    // The App Store account token. Later notifications for it then find no account and are ignored
+    deleteAppStoreAccountForUser(userId),
   ]);
-  return { pushTokens, entitlements: entitlementDocs, saved, progress, verifications };
+  return { pushTokens, entitlements: entitlementDocs, saved, progress, verifications, appStoreAccounts };
 }
 
 /**

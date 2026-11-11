@@ -63,8 +63,8 @@ export function IngestPanel({
                 </AlertDescription>
               </Alert>
             )}
-            {(running || ingest.status === "failed" || ingest.log.length > 0) && (
-              <JobLog lines={ingest.log} follow={!!running} defaultOpen={!!running || ingest.status === "failed"} />
+            {(running || ingest.status === "failed" || ingest.logLines > 0) && (
+              <JobLog job={ingest} follow={!!running} defaultOpen={!!running || ingest.status === "failed"} />
             )}
           </CardContent>
         </Card>

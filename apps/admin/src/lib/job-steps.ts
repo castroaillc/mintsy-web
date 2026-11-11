@@ -22,9 +22,17 @@ const STEP_INFO: Record<string, { label: string; description: string }> = {
   script: { label: "Write script", description: "Claude writes the ~5 minute narration, summary and takeaways" },
   scenes: { label: "Plan scenes", description: "Claude splits the narration into visual scenes and checks them" },
   voice: { label: "Voice", description: "Narrates each scene with local Kokoro voices and times the transcript" },
-  render: { label: "Render video", description: "Remotion renders the MP4 and thumbnail" },
+  render: { label: "Render videos", description: "Remotion renders one MP4 per voice and the thumbnail, so about three times as long as a single video" },
   upload: { label: "Upload", description: "Goes to the media bucket and is saved in the catalog (episodes as drafts)" },
   cover: { label: "Render cover", description: "Renders the book cover from its current title, author, category and tone" },
+  clip: { label: "Render clip", description: "Remotion renders a 9:16 clip in studio's work folder. Nothing is uploaded" },
+};
+
+/** Where a step means something else for one kind of job. */
+const STEP_INFO_BY_KIND: Partial<Record<JobView["kind"], Record<string, { label: string; description: string }>>> = {
+  remaster: {
+    upload: { label: "Upload and swap", description: "Goes to the media bucket, then replaces the episode's media in place, live at once if the episode is published" },
+  },
 };
 
 const STEPS_BY_KIND: Record<JobView["kind"], string[]> = {
@@ -33,23 +41,26 @@ const STEPS_BY_KIND: Record<JobView["kind"], string[]> = {
   render: ["chapter", "script", "scenes", "voice", "render", "upload"],
   upload: ["upload"],
   cover: ["cover", "upload"],
+  remaster: ["voice", "render", "upload"],
+  clip: ["clip"],
 };
 
 // `script:`, `script: script.json exists, skipping`, dry run `render 50%: (dry run)`.
 // Not `script narration changed …: regenerating scenes` (no colon right after the name).
 const HEADER = /^([a-z]+)(?: \d+%)?:(?:\s+(.*))?$/;
 
-export function jobSteps(job: JobView): JobStep[] {
+/** `log` is the job's whole log: `job.log` is missing once the job has finished (see useJobLog). */
+export function jobSteps(job: JobView, log: string[]): JobStep[] {
   // A preview render and a cover without upload stop before the upload step
   const names = STEPS_BY_KIND[job.kind].filter(
     (n) => n !== "upload" || !((job.kind === "render" && job.preview) || (job.kind === "cover" && !job.upload)),
   );
   const steps = new Map<string, JobStep>(
-    names.map((name) => [name, { name, ...STEP_INFO[name], state: "pending" as StepState, details: [] }]),
+    names.map((name) => [name, { name, ...(STEP_INFO_BY_KIND[job.kind]?.[name] ?? STEP_INFO[name]), state: "pending" as StepState, details: [] }]),
   );
 
   let current: JobStep | null = null;
-  for (const line of job.log) {
+  for (const line of log) {
     const header = /^\s/.test(line) ? null : line.match(HEADER);
     const step = header ? steps.get(header[1]) : undefined;
     if (step) {

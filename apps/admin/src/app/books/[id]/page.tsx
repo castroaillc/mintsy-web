@@ -9,7 +9,7 @@ import { toJobView } from "@/lib/jobs";
 import { mediaUrl } from "@/lib/media";
 import { getLocalCover } from "@/lib/studio-work";
 import { BookCoverCard } from "./book-cover";
-import { effectiveStatus, liveRunLength } from "@/lib/status";
+import { effectiveStatus, liveRunLength, canPublishBook } from "@/lib/status";
 import { BookStatusToggle } from "./book-status";
 import { ChaptersTable } from "./chapters";
 import { GenerateBook } from "./generate-book";
@@ -75,7 +75,7 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
             </CardContent>
           </Card>
           <div className="space-y-6">
-            <BookStatusToggle bookId={id} status={effectiveStatus(book.status)} liveEpisodes={live} totalEpisodes={book.episodes.length} />
+            <BookStatusToggle bookId={id} status={effectiveStatus(book.status)} liveEpisodes={live} totalEpisodes={book.episodes.length} publishRule={canPublishBook(book.episodes)} />
             <BookCoverCard
               bookId={id}
               local={localCover}
@@ -105,7 +105,7 @@ export default async function BookPage({ params }: PageProps<"/books/[id]">) {
                 initialNow={new Date().toISOString()}
               />
             )}
-            <ChaptersTable bookId={id} chapters={chapters} canQueue={!!book} />
+            <ChaptersTable bookId={id} chapters={chapters} canQueue={!!book} bookPublished={!!book && effectiveStatus(book.status) === "published"} />
           </CardContent>
         </Card>
       )}

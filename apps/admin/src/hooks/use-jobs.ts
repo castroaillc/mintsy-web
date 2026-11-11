@@ -6,12 +6,40 @@ import type { JobView, WorkerView } from "@/lib/types";
 const ACTIVE_MS = 2000;
 const IDLE_MS = 10000;
 
+type JobsResponse = { jobs: JobView[]; workers: WorkerView[]; db: string; now: string };
+
+/**
+ * One request per URL at a time, shared by every hook on the page (the book page has three), and an
+ * answer under a second old is reused rather than asked for again.
+ */
+const shared = new Map<string, { inflight?: Promise<JobsResponse | null>; at: number; data?: JobsResponse }>();
+const REUSE_MS = 1000;
+
+function fetchJobs(url: string): Promise<JobsResponse | null> {
+  const entry = shared.get(url) ?? { at: 0 };
+  shared.set(url, entry);
+  if (entry.inflight) return entry.inflight;
+  if (entry.data && Date.now() - entry.at < REUSE_MS) return Promise.resolve(entry.data);
+  entry.inflight = fetch(url, { cache: "no-store" })
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const data = (await res.json()) as JobsResponse;
+      entry.data = data;
+      entry.at = Date.now();
+      return data;
+    })
+    .finally(() => {
+      entry.inflight = undefined;
+    });
+  return entry.inflight;
+}
+
 function signature(jobs: JobView[]) {
   return jobs.map((j) => `${j.id}:${j.status}`).join("|");
 }
 
 /**
- * Polls /api/jobs every ~2s while anything is queued or running (every 10s otherwise).
+ * Polls /api/jobs ~2s after the last answer while anything is queued or running (10s otherwise).
  * `onSettled` fires when any job changes status, so pages can router.refresh() their server data.
  */
 export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow: string; onStatusChange?: () => void }) {
@@ -31,12 +59,12 @@ export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow:
   useEffect(() => {
     let cancelled = false;
     const url = opts.bookId ? `/api/jobs?bookId=${encodeURIComponent(opts.bookId)}` : "/api/jobs";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // The next poll is scheduled when this one ends, so a slow answer can't make requests pile up.
     const tick = async () => {
       try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as { jobs: JobView[]; workers: WorkerView[]; db: string; now: string };
-        if (cancelled) return;
+        const data = await fetchJobs(url);
+        if (!data || cancelled) return;
         setJobs(data.jobs);
         setWorkers(data.workers);
         setDb(data.db);
@@ -48,13 +76,14 @@ export function useJobs(initial: JobView[], opts: { bookId?: string; initialNow:
         }
       } catch {
         // dev server restarting etc.; try again next tick
+      } finally {
+        if (!cancelled) timer = setTimeout(tick, active ? ACTIVE_MS : IDLE_MS);
       }
     };
     void tick();
-    const t = setInterval(tick, active ? ACTIVE_MS : IDLE_MS);
     return () => {
       cancelled = true;
-      clearInterval(t);
+      clearTimeout(timer);
     };
   }, [active, opts.bookId]);
 

@@ -8,7 +8,7 @@ The browse, stream and checkout web app is paused in `src/paused-app/`, which ha
 |---|---|
 | `src/app/page.tsx` | Landing page |
 | `src/app/privacy/page.tsx` | Privacy policy. Text changes need owner approval. |
-| `src/app/support/page.tsx` | Support page. The mobile app links here. |
+| `src/app/support/page.tsx` | Support page. The retired Expo app linked here; the iOS app has no support links yet. |
 | `src/site.ts` | Site-wide values |
 
 ## Deploying

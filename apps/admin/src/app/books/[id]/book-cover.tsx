@@ -90,7 +90,7 @@ export function BookCoverCard({
               Last cover job <StatusBadge status={latest.status} /> <Time iso={latest.createdAt} />
             </div>
             {latest.error && <p className="text-xs text-destructive">{latest.error}</p>}
-            <JobLog lines={latest.log} follow={active} />
+            <JobLog job={latest} follow={active} />
           </div>
         )}
       </CardContent>

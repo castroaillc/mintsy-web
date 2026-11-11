@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { StatusBadge } from "@/components/badges";
 import { Time } from "@/components/time";
 import { mediaUrl } from "@/lib/media";
-import { booksCol } from "@/lib/mongo";
+import { findPageBook } from "@/lib/catalog";
 import { canPublishEpisode, canUnpublishEpisode, effectiveStatus } from "@/lib/status";
 import { EpisodeEditor } from "./episode-editor";
 
@@ -20,12 +20,15 @@ export default async function EpisodePage({ params }: PageProps<"/books/[id]/epi
   const { id, n: nRaw } = await params;
   const n = Number(nRaw);
   if (!Number.isInteger(n) || n < 1) notFound();
-  const book = await (await booksCol()).findOne({ _id: id });
+  // Only this episode's transcript text is shown; the others are only checked by the publish rule.
+  const book = await findPageBook(id, n);
   const ep = book?.episodes.find((e) => e.number === n);
   if (!book || !ep) notFound();
 
   const status = effectiveStatus(ep.status);
   const rule = status === "published" ? canUnpublishEpisode(book.episodes, n) : canPublishEpisode(book.episodes, n);
+  const voices = ep.voices ?? [];
+  const defaultVoice = voices.find((v) => v.isDefault);
   const video = mediaUrl(ep.videoPath);
   const thumb = mediaUrl(ep.thumbnailPath);
   const numbers = book.episodes.map((e) => e.number).sort((a, b) => a - b);
@@ -67,11 +70,13 @@ export default async function EpisodePage({ params }: PageProps<"/books/[id]/epi
         bookId={id}
         number={n}
         durationSec={ep.durationSec}
+        baseUpdatedAt={ep.updatedAt?.toISOString() ?? null}
         status={status}
         rule={rule}
         videoUrl={video}
         thumbnailUrl={thumb}
         videoPath={ep.videoPath ?? null}
+        voices={voices.length ? { count: voices.length, defaultName: defaultVoice?.name ?? null, lineCount: defaultVoice?.transcript.length ?? (ep.transcript ?? []).length } : null}
         initial={{
           title: ep.title ?? "",
           summary: ep.summary ?? "",

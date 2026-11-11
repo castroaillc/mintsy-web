@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import "dotenv/config";
 
 export const STUDIO_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const WORK_DIR = path.join(STUDIO_DIR, "work");
+/** STUDIO_WORK_DIR points a run at a scratch copy, so test renders can't overwrite real output. */
+export const WORK_DIR = process.env.STUDIO_WORK_DIR ? path.resolve(process.env.STUDIO_WORK_DIR) : path.join(STUDIO_DIR, "work");
 /** The backend's catalog source; `publish` writes episodes into it. */
 export const CATALOG_PATH = path.resolve(STUDIO_DIR, "../backend/scripts/catalog.json");
 export const MEDIA_BUCKET = process.env.MEDIA_BUCKET ?? "gs://mintsy-media";
@@ -24,4 +25,8 @@ export const files = {
   thumbnail: "thumbnail.jpg",
   /** Folder of HLS output, written during upload. */
   hls: "hls",
+  /** Output folders of the voices after the default: renders/<track id>/{episode.mp4,hls,...}. */
+  renders: "renders",
+  /** Beside each voice's episode.mp4: which voice track it was rendered from. */
+  renderStamp: "render-stamp.json",
 };

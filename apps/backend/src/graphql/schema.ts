@@ -1,7 +1,14 @@
 import { GraphQLError } from "graphql";
-import { getPublishedBook, listPublishedBooks, type BookDoc, type EpisodeDoc } from "../catalog.js";
+import {
+  getPublishedBook,
+  getPublishedEpisodeVoices,
+  listPublishedBooks,
+  type BookDoc,
+  type EpisodeDoc,
+  type EpisodeVoiceDoc,
+} from "../catalog.js";
 import { FREE_EPISODES } from "../constants.js";
-import { refreshPremium } from "../entitlements.js";
+import { appAccountTokenFor, AppStoreError, refreshPremium, syncAppStoreTransaction } from "../app-store.js";
 import { hlsUrl, thumbnailUrl, videoUrl } from "../media.js";
 import {
   isValidPushToken,
@@ -13,6 +20,7 @@ import {
   continueWatching,
   CONTINUE_WATCHING_MAX,
   finishedBookIds,
+  parseEpisodeId,
   progressForBook,
   setProgress,
   type ProgressView,
@@ -28,8 +36,10 @@ export const typeDefs = `#graphql
     name: String!
     emailVerified: Boolean!
     image: String
-    "The user's mintsy Premium subscription (RevenueCat entitlement premium)."
+    "The user's mintsy Premium subscription: an App Store subscription this API verified, or the RevenueCat entitlement premium."
     premium: Premium!
+    "The account's App Store token: a UUID (lowercase), the same on every read. Pass it to StoreKit when buying, Product.purchase(options: [.appAccountToken(uuid)]), so the purchase and its renewals are tied to this account."
+    appAccountToken: String!
     "Book ids the user saved to My List, most recently saved first. May include ids no longer in the catalog: skip those."
     savedBookIds: [ID!]!
     "Episode ids (<bookId>-<number>) the user saved, most recently saved first. May include ids no longer in the catalog."
@@ -81,11 +91,11 @@ export const typeDefs = `#graphql
     expiresAt: String
     "False once the user cancelled or billing failed."
     willRenew: Boolean!
-    "RevenueCat period type, lowercased: trial, normal or intro. Null if never subscribed."
+    "trial (free trial), intro (paid introductory offer) or normal; RevenueCat's period type, lowercased, and the same three for App Store purchases. Null if never subscribed."
     periodType: String
     "Store product id of the subscription, e.g. the yearly or monthly product."
     productId: String
-    "Where it was bought (lowercased RevenueCat store): app_store, rc_billing (web), stripe, play_store, promotional, ... Null if never subscribed. Manage the subscription where it was bought."
+    "Where it was bought: app_store (also what syncAppStoreTransaction stores), rc_billing (web), stripe, play_store, promotional, ... (lowercased RevenueCat store names). Null if never subscribed. Manage the subscription where it was bought."
     store: String
   }
 
@@ -112,6 +122,35 @@ export const typeDefs = `#graphql
     thumbnailUrl: String
     "True when the viewer needs Premium to watch: number > 3 (FREE_EPISODES) and the viewer isn't Premium. Signed-out viewers are never Premium."
     locked: Boolean!
+  }
+
+  "One timed caption phrase, on its voice's own timeline."
+  type CaptionPhrase {
+    "Start of the phrase, in seconds (may be fractional)."
+    startSec: Float!
+    "End of the phrase, in seconds (may be fractional)."
+    endSec: Float!
+    text: String!
+  }
+
+  "One narrator's full render of an episode, from episodeVoices."
+  type EpisodeVoice {
+    "Voice id, e.g. af_heart."
+    id: String!
+    "Display name."
+    name: String!
+    "True for the voice that Episode.videoUrl, hlsUrl, durationSec and transcript describe."
+    isDefault: Boolean!
+    "Progressive MP4 of this voice. May be a short-lived signed URL: refetch rather than storing it. Null if signing it failed."
+    videoUrl: String
+    "HLS master playlist of this voice; prefer it for streaming when present and fall back to videoUrl. Null when this voice has no HLS encode, and always while media is private (SIGNED_MEDIA)."
+    hlsUrl: String
+    "This voice's duration in seconds. It can differ from Episode.durationSec."
+    durationSec: Int!
+    "Transcript on this voice's timeline."
+    transcript: [TranscriptLine!]!
+    "Timed caption phrases on this voice's timeline."
+    captions: [CaptionPhrase!]!
   }
 
   type Book {
@@ -167,17 +206,32 @@ export const typeDefs = `#graphql
     book(id: ID!): Book
     "Public catalog search (works signed out) over book titles, authors, categories and episode transcripts. Case-insensitive; the query is trimmed and cut to 100 characters."
     search(query: String!): SearchResult!
+    "The narrator choices for an episode (works signed out), with their videos and timed text. Empty when the episode is locked for the viewer, isn't in the public catalog or doesn't exist, or has no voices: play Episode.videoUrl / hlsUrl instead."
+    episodeVoices(episodeId: ID!): [EpisodeVoice!]!
   }
 
   type Mutation {
-    "Registers an Expo push token for the current user's device."
+    "Registers a push token for the current user's device. Accepts both Expo push tokens (ExponentPushToken[…]) and native APNs device tokens (a 64-char lowercase hex string)."
     registerPushToken(token: String!, platform: String!): Boolean!
     "Removes a push token, e.g. when the user signs out on that device."
     unregisterPushToken(token: String!): Boolean!
     "Sends a test push to all of the current user's devices. Returns the number of devices targeted."
     sendTestPush: Int!
-    "Refetches the current user's subscription from RevenueCat (call right after a purchase or restore), stores and returns it."
+    "Looks at the current user's subscription again, stores and returns it. An App Store subscription is refetched from Apple when the server has App Store Server API credentials, otherwise what's stored is returned; anything else is refetched from RevenueCat."
     refreshPremium: Premium!
+    """
+    Hands the API a StoreKit 2 transaction signed by the App Store (the JWS: VerificationResult.jwsRepresentation)
+    and returns the viewer's Premium. Call it for every verified transaction (a purchase, Transaction.updates,
+    Transaction.currentEntitlements) and finish the transaction once it answers without an error. A valid
+    transaction that changes nothing (older than what's stored, expired, refunded) is not an error.
+    A transaction with an appAccountToken must carry the viewer's (me.appAccountToken); one without (bought
+    outside the app) goes to the first account that syncs it.
+    Errors (extensions.code): UNAUTHENTICATED; APP_STORE_INVALID_TRANSACTION (not a JWS Apple signed;
+    extensions.reason is malformed, chain, signature or payload); APP_STORE_WRONG_ENVIRONMENT;
+    APP_STORE_WRONG_BUNDLE; APP_STORE_WRONG_PRODUCT; APP_STORE_WRONG_ACCOUNT (bought for another mintsy
+    account); APP_STORE_SUBSCRIPTION_IN_USE (the subscription already unlocks another mintsy account).
+    """
+    syncAppStoreTransaction(signedTransaction: String!): Premium!
     "Saves (saved: true) or removes (saved: false) a book or episode in the viewer's My List. Idempotent; re-saving keeps the original position. At most 500 per kind. Returns the updated viewer."
     setSaved(kind: SavedKind!, id: ID!, saved: Boolean!): User!
     """
@@ -208,7 +262,7 @@ function viewerOnly(user: { id: string }, ctx: Context) {
 
 const SAVED_KIND = { BOOK: "book", EPISODE: "episode" } as const satisfies Record<string, SavedKind>;
 
-async function isLocked(episode: EpisodeDoc, ctx: Context) {
+async function isLocked(episode: Pick<EpisodeDoc, "number">, ctx: Context) {
   if (episode.number <= FREE_EPISODES) return false;
   return !(await ctx.viewerPremium()).active;
 }
@@ -231,6 +285,11 @@ export const resolvers = {
       if (!normalizeQuery(args.query)) return EMPTY_RESULT;
       const [catalog, locked] = await Promise.all([listPublishedBooks(), lockCheck(ctx)]);
       return searchCatalog(catalog, args.query, locked);
+    },
+    episodeVoices: async (_parent: unknown, args: { episodeId: string }, ctx: Context) => {
+      const parsed = parseEpisodeId(args.episodeId);
+      if (!parsed || (await isLocked(parsed, ctx))) return [];
+      return getPublishedEpisodeVoices(parsed.bookId, parsed.number);
     },
   },
   Book: {
@@ -260,6 +319,10 @@ export const resolvers = {
     premium: (user: { id: string }, _args: unknown, ctx: Context) => {
       viewerOnly(user, ctx);
       return ctx.viewerPremium();
+    },
+    appAccountToken: (user: { id: string }, _args: unknown, ctx: Context) => {
+      viewerOnly(user, ctx);
+      return appAccountTokenFor(user.id);
     },
     savedBookIds: (user: { id: string }, _args: unknown, ctx: Context) => {
       viewerOnly(user, ctx);
@@ -300,6 +363,11 @@ export const resolvers = {
       (await isLocked(episode, ctx)) ? [] : episode.takeaways,
     thumbnailUrl: (episode: EpisodeDoc) => thumbnailUrl(episode.thumbnailPath),
   },
+  // Only reached through episodeVoices, which has already checked the lock
+  EpisodeVoice: {
+    videoUrl: (voice: EpisodeVoiceDoc) => videoUrl(voice.videoPath),
+    hlsUrl: (voice: EpisodeVoiceDoc) => hlsUrl(voice.hlsPath),
+  },
   Mutation: {
     registerPushToken: async (
       _parent: unknown,
@@ -308,7 +376,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(ctx);
       if (!isValidPushToken(args.token)) {
-        throw new GraphQLError("Invalid Expo push token", {
+        throw new GraphQLError("Invalid push token", {
           extensions: { code: "BAD_USER_INPUT" },
         });
       }
@@ -332,6 +400,19 @@ export const resolvers = {
       const premium = await refreshPremium(user.id);
       ctx.setViewerPremium(premium);
       return premium;
+    },
+    syncAppStoreTransaction: async (_parent: unknown, args: { signedTransaction: string }, ctx: Context) => {
+      const user = requireUser(ctx);
+      try {
+        const premium = await syncAppStoreTransaction(user.id, args.signedTransaction);
+        ctx.setViewerPremium(premium);
+        return premium;
+      } catch (err) {
+        if (!(err instanceof AppStoreError)) throw err;
+        throw new GraphQLError(err.message, {
+          extensions: { code: err.code, ...(err.reason ? { reason: err.reason } : {}) },
+        });
+      }
     },
     setSaved: async (
       _parent: unknown,

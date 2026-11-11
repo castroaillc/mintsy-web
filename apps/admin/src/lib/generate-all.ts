@@ -201,7 +201,3 @@ export function latestRun<T extends RunJob>(jobs: T[]): RunProgress<T> {
     byChapter,
   };
 }
-
-export function hasDryRunLog(job: { log: string[] }) {
-  return job.log.some((line) => line.endsWith("dry run)"));
-}

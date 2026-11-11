@@ -1,4 +1,4 @@
-import { Storage } from "@google-cloud/storage";
+import type { Storage } from "@google-cloud/storage";
 import { mediaUrl } from "./catalog.js";
 import { env } from "./env.js";
 
@@ -21,7 +21,8 @@ const VIDEO = { windowMs: 30 * MIN, ttlMs: 90 * MIN };
 /** Thumbnail: new URL daily, valid 7 days (V4 maximum) → always 6–7 days left. */
 const THUMB = { windowMs: 24 * 60 * MIN, ttlMs: 7 * 24 * 60 * MIN };
 
-let storage: Storage | null = null;
+// Loaded on first use: only SIGNED_MEDIA needs it, and importing it costs ~50-100 ms of startup
+let storage: Promise<Storage> | null = null;
 /** key = `${windowStart}:${path}`; an entry is dead once its window has passed. */
 const cache = new Map<string, { windowEnd: number; url: Promise<string> }>();
 
@@ -32,11 +33,11 @@ function sign(path: string, { windowMs, ttlMs }: { windowMs: number; ttlMs: numb
   const hit = cache.get(key);
   if (hit) return hit.url;
 
-  storage ??= new Storage();
+  storage ??= import("@google-cloud/storage").then(({ Storage }) => new Storage());
   const url = storage
-    .bucket(env.mediaBucket)
-    .file(path)
-    .getSignedUrl({ version: "v4", action: "read", accessibleAt: start, expires: start + ttlMs })
+    .then((s) =>
+      s.bucket(env.mediaBucket).file(path).getSignedUrl({ version: "v4", action: "read", accessibleAt: start, expires: start + ttlMs }),
+    )
     .then(([u]) => u);
   cache.set(key, { windowEnd: start + windowMs, url });
   url.catch(() => cache.delete(key)); // don't cache failures

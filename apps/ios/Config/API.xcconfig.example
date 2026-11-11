@@ -1,0 +1,11 @@
+// Copy to API.xcconfig (gitignored) and fill in. Each variant reads its own URL; the scheme decides the variant.
+// Write `/$()/` for `//`: xcconfig treats `//` as the start of a comment.
+
+// Simulator: localhost reaches the API on this Mac. A physical device needs the Mac's LAN IP.
+MINTSY_API_URL_DEVELOPMENT = http:/$()/localhost:4000
+// The preview API (Cloud Run service for the preview environment). Empty: the Preview build says it isn't configured.
+MINTSY_API_URL_PREVIEW =
+MINTSY_API_URL_PRODUCTION = https:/$()/api.getmintsy.com
+
+// Optional: stream HLS (YES) when the API serves Episode.hlsUrl
+// MINTSY_HLS_ENABLED = YES

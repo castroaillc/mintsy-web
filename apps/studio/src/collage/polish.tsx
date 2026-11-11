@@ -1,16 +1,16 @@
 /**
- * The "polish" layer for collage episodes (CollageEpisodeProps.polish): word-synced captions,
- * a wipe between scenes, a slow camera push with drift, and the speech map used to duck the
- * music bed. Everything is driven by frame + the voice step's word timings, so it renders
- * deterministically.
+ * The "polish" layer for collage episodes (CollageEpisodeProps.polish): a wipe between scenes, a
+ * slow camera push with drift, and the speech map used to duck the music bed. Also the burned-in
+ * word captions (CollageEpisodeProps.captions, separate from polish). Everything is driven by frame
+ * + the voice step's word timings, so it renders deterministically.
  */
 import { noise2D } from "@remotion/noise";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { display } from "../episode/theme";
+import { captionSize, CLIP_HEIGHT, CLIP_SAFE, CLIP_WIDTH } from "./clipLayout";
 import { palette } from "./kit";
-
-export type Word = { text: string; startSec: number; endSec: number };
+import { phrases, type Word } from "./phrases";
 
 /** Shared motion presets, so every element moves with the same feel. */
 export const MOTION = {
@@ -24,27 +24,8 @@ export const MOTION = {
 
 // ─── Captions ──────────────────────────────────────────────────────────────
 
-const MAX_WORDS = 7;
-
-/** Groups words into short caption phrases: break on sentence punctuation, pauses, or length. */
-export function phrases(words: Word[]): Word[][] {
-  const out: Word[][] = [];
-  let cur: Word[] = [];
-  for (const [i, w] of words.entries()) {
-    cur.push(w);
-    const next = words[i + 1];
-    const pause = next ? next.startSec - w.endSec > 0.45 : true;
-    const punct = /[.!?;:]["')\]]*$/.test(w.text) || (/,$/.test(w.text) && cur.length >= 4);
-    if (!next || pause || punct || cur.length >= MAX_WORDS) {
-      out.push(cur);
-      cur = [];
-    }
-  }
-  return out;
-}
-
-/** One phrase at a time along the bottom; the word being spoken is highlighted. */
-export const Captions: React.FC<{ words: Word[] }> = ({ words }) => {
+/** One phrase at a time along the bottom (in portrait, above the platforms' interface); the word being spoken is highlighted. */
+export const Captions: React.FC<{ words: Word[]; portrait?: boolean }> = ({ words, portrait = false }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -59,21 +40,30 @@ export const Captions: React.FC<{ words: Word[] }> = ({ words }) => {
   const enter = spring({ frame: frame - startFrame, fps, config: MOTION.text });
 
   return (
-    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 22, pointerEvents: "none" }}>
+    <AbsoluteFill
+      style={{
+        justifyContent: "flex-end",
+        alignItems: "center",
+        pointerEvents: "none",
+        ...(portrait
+          ? { paddingBottom: CLIP_HEIGHT - CLIP_SAFE.bottom, paddingLeft: CLIP_SAFE.left, paddingRight: CLIP_WIDTH - CLIP_SAFE.lowerRight }
+          : { paddingBottom: 22 }),
+      }}
+    >
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: "4px 10px",
-          maxWidth: 980,
-          padding: "10px 18px",
+          gap: portrait ? "6px 14px" : "4px 10px",
+          maxWidth: portrait ? CLIP_SAFE.lowerRight - CLIP_SAFE.left : 980,
+          padding: portrait ? "16px 20px" : "10px 18px",
           borderRadius: 14,
-          backgroundColor: "rgba(30, 27, 36, 0.78)",
+          backgroundColor: portrait ? "rgba(30, 27, 36, 0.92)" : "rgba(30, 27, 36, 0.78)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
           fontFamily: display,
           fontWeight: 700,
-          fontSize: 34,
+          fontSize: portrait ? captionSize(group.map((w) => w.text)) : 34,
           lineHeight: 1.15,
           letterSpacing: -0.3,
           opacity: interpolate(enter, [0, 1], [0, 1]),
@@ -102,7 +92,7 @@ export const Captions: React.FC<{ words: Word[] }> = ({ words }) => {
                     inset: "2px 0",
                     borderRadius: 8,
                     backgroundColor: palette.yellow,
-                    scale: String(interpolate(pop, [0, 1], [0.6, 1])),
+                    scale: String(interpolate(pop, [0, 1], [portrait ? 0.92 : 0.6, 1])),
                     zIndex: -1,
                   }}
                 />
@@ -121,7 +111,7 @@ export const Captions: React.FC<{ words: Word[] }> = ({ words }) => {
 /** A diagonal brand-colored wipe that hides the cut between two scenes. Lasts 18 frames; the cut is at its middle. */
 export const WIPE_FRAMES = 18;
 
-export const SceneWipe: React.FC = () => {
+export const SceneWipe: React.FC<{ portrait?: boolean }> = ({ portrait = false }) => {
   const frame = useCurrentFrame();
   const sweep = (delay: number) =>
     interpolate(frame, [delay, delay + WIPE_FRAMES - 4], [-130, 130], {
@@ -146,8 +136,9 @@ export const SceneWipe: React.FC = () => {
   );
   return (
     <AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none" }}>
-      {band(palette.yellow, 0, "130%")}
-      {band(palette.pink, 2, "120%")}
+      {/* A tilted band must be wider on a tall frame, or the cut shows at the corners */}
+      {band(palette.yellow, 0, portrait ? "200%" : "130%")}
+      {band(palette.pink, 2, portrait ? "190%" : "120%")}
     </AbsoluteFill>
   );
 };

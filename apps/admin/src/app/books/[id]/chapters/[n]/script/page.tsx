@@ -22,7 +22,8 @@ export default async function ScriptPage({ params }: PageProps<"/books/[id]/chap
   if (!Number.isInteger(n) || n < 1) notFound();
   const script = await latestScript(id, n);
   if (!script) notFound();
-  const book = await (await booksCol()).findOne({ _id: id }, { projection: { title: 1, episodes: 1 } });
+  // Only episode numbers and statuses: a voiced book's transcripts and captions run to about 1 MB from a remote MongoDB.
+  const book = await (await booksCol()).findOne({ _id: id }, { projection: { title: 1, "episodes.number": 1, "episodes.status": 1 } });
   const ep = book?.episodes.find((e) => e.number === n);
   const laterLive = book?.episodes.some((e) => e.number > n && effectiveStatus(e.status) === "published") ?? false;
 

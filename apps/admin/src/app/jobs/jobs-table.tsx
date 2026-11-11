@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/badges";
 import { formatDuration, Time } from "@/components/time";
 import { WorkerBanner } from "@/components/worker-banner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { LogText } from "@/components/job-log";
+import { useJobLog } from "@/hooks/use-job-log";
 import { useJobs } from "@/hooks/use-jobs";
 import type { JobView } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -89,9 +91,7 @@ export function JobsTable({ initialJobs, initialNow }: { initialJobs: JobView[];
                           {j.workerId && <span>worker {j.workerId}</span>}
                           {j.pdfPath && <span className="font-mono">{j.pdfPath}</span>}
                         </div>
-                        <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
-                          {j.log.length ? j.log.join("\n") : "No output yet."}
-                        </pre>
+                        <FullLog job={j} />
                       </TableCell>
                     </TableRow>
                   )}
@@ -102,5 +102,15 @@ export function JobsTable({ initialJobs, initialNow }: { initialJobs: JobView[];
         </Table>
       </div>
     </div>
+  );
+}
+
+/** An expanded row's log. A finished job's is fetched when the row is opened. */
+function FullLog({ job }: { job: JobView }) {
+  const lines = useJobLog(job, true);
+  return (
+    <pre className="max-h-80 overflow-auto rounded-lg border bg-background p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
+      <LogText lines={lines} />
+    </pre>
   );
 }

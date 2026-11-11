@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { callApi } from "@/lib/client-api";
+import type { RuleCheck } from "@/lib/status";
 import type { ContentStatus } from "@/lib/types";
 
 export function BookStatusToggle({
@@ -14,11 +15,13 @@ export function BookStatusToggle({
   status,
   liveEpisodes,
   totalEpisodes,
+  publishRule,
 }: {
   bookId: string;
   status: ContentStatus;
   liveEpisodes: number;
   totalEpisodes: number;
+  publishRule: RuleCheck;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -46,8 +49,13 @@ export function BookStatusToggle({
             <span>{published ? "Published" : "Draft"}</span>
             <span className="text-xs font-normal text-muted-foreground">{published ? "Visible in the app" : "Hidden from the app"}</span>
           </Label>
-          <Switch id="book-published" checked={published} disabled={busy} onCheckedChange={toggle} />
+          <Switch id="book-published" checked={published} disabled={busy || (!published && !publishRule.ok)} onCheckedChange={toggle} />
         </div>
+        {!publishRule.ok && (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm break-words text-destructive" role="alert">
+            {publishRule.reason}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           {liveEpisodes} of {totalEpisodes} episode{totalEpisodes === 1 ? "" : "s"} live (the contiguous published run from episode 1).
           {published && liveEpisodes === 0 && " The app hides a book with no live episodes."}

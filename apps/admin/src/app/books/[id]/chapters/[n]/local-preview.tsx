@@ -14,9 +14,10 @@ const VOICE_LABEL: Record<string, string> = {
   bm_george: "George · UK, male",
 };
 
+export const voiceLabel = (v: PreviewVoice) => (v.provider === "legacy" ? v.voice : (VOICE_LABEL[v.voice] ?? v.voice));
+
 export function LocalPreview({ bookId, chapter, preview }: { bookId: string; chapter: number; preview: Preview }) {
   const base = `/api/books/${bookId}/chapters/${chapter}/preview`;
-  const defaultVoice = preview.voices.find((v) => v.isDefault);
   if (!preview.video && preview.voices.length === 0) return null;
 
   return (
@@ -24,7 +25,7 @@ export function LocalPreview({ bookId, chapter, preview }: { bookId: string; cha
       <CardHeader>
         <CardTitle>Local preview</CardTitle>
         <CardDescription>
-          Straight from studio&apos;s work folder on this machine, before anything is uploaded.
+          Straight from studio&apos;s work folder on this machine, before anything is uploaded. A preview renders one video per voice, so it takes about three times as long as a single video.
           {preview.video && (
             <>
               {" "}
@@ -34,30 +35,45 @@ export function LocalPreview({ bookId, chapter, preview }: { bookId: string; cha
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {preview.video ? (
-          <div className="space-y-1.5">
-            <video
-              key={preview.video.version}
-              src={`${base}/episode.mp4?v=${preview.video.version}`}
-              poster={preview.thumbnail ? `${base}/thumbnail.jpg?v=${preview.video.version}` : undefined}
-              controls
-              preload="metadata"
-              className="aspect-video w-full rounded-lg bg-black"
-            />
-            {defaultVoice && (
-              <p className="text-xs text-muted-foreground">
-                {defaultVoice.provider === "legacy" ? defaultVoice.voice : `Narrated by ${VOICE_LABEL[defaultVoice.voice] ?? defaultVoice.voice}`}
-                {preview.voices.length > 1 && ", the default voice. The other voices are below (audio only)."}
-              </p>
-            )}
+        {preview.voices.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {preview.voices.map((v) => (
+              <div key={v.id} className="space-y-1.5">
+                {v.video && v.videoPath ? (
+                  <video
+                    key={v.video.version}
+                    src={`${base}/${v.videoPath}?v=${v.video.version}`}
+                    poster={v.isDefault && preview.thumbnail ? `${base}/thumbnail.jpg?v=${v.video.version}` : undefined}
+                    controls
+                    preload="metadata"
+                    aria-label={`Episode narrated by ${voiceLabel(v)}`}
+                    className="aspect-video w-full rounded-lg bg-black"
+                  />
+                ) : (
+                  <div className="flex aspect-video items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">Not rendered yet</div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {voiceLabel(v)}
+                  {v.isDefault && preview.voices.length > 1 && <span className="ml-2 text-brand">default</span>}
+                  {v.video && ` · ${v.video.sizeMb} MB`}
+                </p>
+              </div>
+            ))}
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No video rendered yet; the narration is ready below.</p>
-        )}
+        ) : preview.video ? (
+          <video
+            key={preview.video.version}
+            src={`${base}/episode.mp4?v=${preview.video.version}`}
+            poster={preview.thumbnail ? `${base}/thumbnail.jpg?v=${preview.video.version}` : undefined}
+            controls
+            preload="metadata"
+            className="aspect-video w-full rounded-lg bg-black"
+          />
+        ) : null}
 
         {preview.voices.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Voices</h3>
+            <h3 className="text-sm font-medium">Narration by scene (audio only)</h3>
             <div className="divide-y rounded-lg border">
               {preview.voices.map((v) => (
                 <VoicePlayer key={v.id} base={base} voice={v} version={preview.video?.version ?? 0} />
@@ -102,8 +118,8 @@ function VoicePlayer({ base, voice, version }: { base: string; voice: PreviewVoi
       </Button>
       <div className="min-w-40 flex-1">
         <div className="text-sm font-medium">
-          {VOICE_LABEL[voice.voice] ?? voice.voice}
-          {voice.isDefault && <span className="ml-2 text-xs font-normal text-brand">default · in the video</span>}
+          {voiceLabel(voice)}
+          {voice.isDefault && <span className="ml-2 text-xs font-normal text-brand">default</span>}
         </div>
         <div className="font-mono text-xs text-faint">
           {voice.id} · {formatDuration(voice.durationSec * 1000)}

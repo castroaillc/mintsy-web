@@ -1,12 +1,12 @@
 # Brand (`mintsy-web/packages/brand`)
 
-`@mintsy/brand` is everything about how mintsy looks, in one package, used by the mobile app, web, admin and studio. The backend's emails can use it too if they want it.
+`@mintsy/brand` is everything about how mintsy looks, in one package, used by web, admin, studio and (through generated files) the iOS app. The backend's emails can use it too if they want it.
 
 | What | Where |
 |---|---|
 | Color theme: **Ink & Coral**, with dark and light | `css/`, `dist/` |
 | CSS for the web: shadcn/ui variables, Tailwind v4 utilities, theme switching | `css/web.css`, `css/tailwind.css` |
-| CSS for the mobile app (NativeWind 5, gluestack) | `css/native/` |
+| CSS for NativeWind 5 and gluestack, made for the retired Expo app. Nothing uses it now | `css/native/` |
 | Tokens in JS/TS: colors, fonts, radii, brand facts, logo outlines, helpers | `import … from '@mintsy/brand'` |
 | Brand fonts (Space Grotesk, Inter) with their licenses | `fonts/`, `css/fonts.css` |
 | Logos (wordmark `mintsy.` and mark `m.`) as SVG | `assets/logo/` |
@@ -16,7 +16,7 @@ Everything is generated from **`src/tokens.mjs`**. Change a color there, run `np
 
 ## Install
 
-In `mintsy-web`, add it to an app's `package.json` and run `pnpm install` in that app's workspace. `apps/mobile` is its own pnpm workspace, so install there separately. `apps/studio` is too, and links it from `../../packages/brand`.
+In `mintsy-web`, add it to an app's `package.json` and run `pnpm install` in that app's workspace. `apps/studio` is its own pnpm workspace, so install there separately, and links it from `../../packages/brand`.
 
 ```jsonc
 "@mintsy/brand": "workspace:*"
@@ -32,7 +32,7 @@ In `mintsy-web`, add it to an app's `package.json` and run `pnpm install` in tha
 
 Light-mode brand colors pass 4.5:1 with white text.
 
-**One naming difference, on purpose:** in the mobile app `primary` is the neutral strong color (white buttons in dark mode, like gluestack's defaults). On the web, shadcn's `--primary` is the **brand** color, and the app's neutral is available as `--neutral-strong`.
+**One naming difference, on purpose:** in the `css/native/` variables `primary` is the neutral strong color (white buttons in dark mode, like gluestack's defaults). On the web, shadcn's `--primary` is the **brand** color, and that neutral is available as `--neutral-strong`.
 
 ## Admin (Next.js + shadcn/ui + Tailwind v4)
 
@@ -67,68 +67,16 @@ For a web page without Tailwind, import the fonts and the web theme, and use the
 
 Load Oswald from Google Fonts if you need it, and set `<html data-theme="ink-coral">`. Logos are in `assets/logo/`, and `assets/icons/ink-coral/` has `favicon.png` and `apple-touch-icon.png`. `theme-color` is `themes['ink-coral'].dark.background`.
 
-## Mobile app (Expo + NativeWind 5 + gluestack)
+## iOS app
 
-`src/global.css` keeps its Tailwind imports and replaces the whole `@layer theme { … }` block and the `@theme inline { … }` block with two imports:
+The [iOS app](ios.md) doesn't import the package at runtime. `apps/ios/scripts/generate-brand.mjs` reads `src/tokens.mjs` (themes, fonts, radii, cover ink) and `assets/logo/`, and writes:
 
-```css
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "tailwindcss/utilities.css";
-@import "nativewind/theme";
+- `Mintsy/Resources/Brand.xcassets`: color sets (light and dark), the wordmark and mark as SVG, and an app icon per variant.
+- `Mintsy/Brand/Palette.generated.swift` and `BrandFontName.generated.swift`: colors, episode tints, cover ink, radii, and the PostScript names read from the bundled fonts.
 
-@import "@mintsy/brand/css/native/ink-coral.css";
-@import "@mintsy/brand/css/native/tailwind.css";
-```
+`project.yml` bundles the TTFs straight from `fonts/`. The per-variant app icons come from `apps/ios/design/icons/`, not from `assets/icons/`, and the script flags the production icon when it differs from `assets/icons/<theme>/icon.png`.
 
-On web, `src/components/ui/gluestack-ui-provider/index.web.tsx` imports the web variant:
-
-```ts
-import '@mintsy/brand/css/native/ink-coral.web.css';
-```
-
-The token and font names are exactly the ones the app already uses (`bg-brand`, `text-faint`, `font-inter-semibold`, `font-display`…), plus `success` and `brand-on-light`. Fonts still come from `@expo-google-fonts/*`.
-
-In JS, use the tokens for anything that isn't a class name:
-
-```ts
-import { themes, defaultTheme, tintFor, coverInkFor, getTheme } from '@mintsy/brand';
-
-export const EPISODE_TINTS = themes[defaultTheme].tints;   // src/data/types.ts
-const toastAction = getTheme(defaultTheme, 'dark').brandOnLight;
-```
-
-`app.config.ts` (CommonJS `require` works too):
-
-```ts
-import { themes } from '@mintsy/brand';
-const theme = themes['ink-coral'];
-const icons = './node_modules/@mintsy/brand/assets/icons/ink-coral';
-
-icon: `${icons}/icon.png`,
-android: { adaptiveIcon: {
-  backgroundColor: theme.iconBackground,
-  foregroundImage: `${icons}/android-icon-foreground.png`,
-  backgroundImage: `${icons}/android-icon-background.png`,
-  monochromeImage: `${icons}/android-icon-monochrome.png`,
-} },
-// expo-splash-screen plugin
-{ backgroundColor: theme.splashBackground, image: `${icons}/splash-icon.png` },
-```
-
-The logo as a component, with `react-native-svg`:
-
-```tsx
-import Svg, { Path } from 'react-native-svg';
-import { logoPaths, getTheme } from '@mintsy/brand';
-
-const { width, height, letters, dot } = logoPaths.wordmark;
-const c = getTheme();
-<Svg viewBox={`0 0 ${width} ${height}`} height={28} width={(28 * width) / height}>
-  <Path d={letters} fill={c.foreground} />
-  <Path d={dot} fill={c.brand} />
-</Svg>
-```
+After changing the package, run `node scripts/generate-brand.mjs` in `apps/ios` and commit the output. `--check` fails when the generated files are out of date.
 
 ## Backend emails and studio videos
 
@@ -144,7 +92,7 @@ The same JS works anywhere Node runs: `getTheme('ink-coral', 'light').brand` for
 | `tintFor(i, name?)` | backdrop tint for the i-th card, wrapping around |
 | `coverInkFor(hex)` | readable text color on a cover color |
 | `collage` | episode illustration palette |
-| `fonts` | families, weights, CSS stacks, expo-font names |
+| `fonts` | families, weights, CSS stacks, and the expo-font names the retired Expo app used |
 | `logo`, `logoPaths` | wordmark rules; vector outlines of `mintsy.` and `m.` |
 | `radius`, `spacing` | shared radii and layout widths |
 | `hexToRgb`, `rgba` | small color helpers |
@@ -155,7 +103,7 @@ The same JS works anywhere Node runs: `getTheme('ink-coral', 'light').brand` for
 1. Edit `src/tokens.mjs`. To add a theme, copy a block in `themes` and give it a new name; every output picks it up.
 2. `npm run build` regenerates `dist/` and `css/`.
 3. `npm run icons` re-renders the app icons (needs Playwright). `npm run logos` regenerates the logo outlines (needs Python with fontTools).
-4. Commit, then reinstall in each app (`pnpm install`, or bump the pinned commit for git installs).
+4. Commit, then reinstall in each app (`pnpm install`, or bump the pinned commit for git installs), and rerun `generate-brand.mjs` for iOS.
 
 Existing videos keep the old look until they're re-rendered.
 

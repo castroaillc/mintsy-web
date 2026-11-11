@@ -23,6 +23,7 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 | `PORT`               | `4000`                      | HTTP port. Cloud Run sets `8080`.                                                                                                                                                                                                                                                                                                                                    |
 | `MONGODB_DB`         | database from `MONGODB_URI` | App data database (auth, push tokens, entitlements, My List, watch progress). Overrides the database name in the URI. `mintsy` on the single database, `mintsy_app` once split.                                                                                                                                                                                      |
 | `MONGODB_CATALOG_DB` | same database as app data   | Database holding the catalog (`books`), which the API only reads and never writes or indexes. Unset or empty means the catalog is in the app database. `mintsy_studio` in `.env.example`, the default of admin and the studio worker, and in production once split; unset on the single database. See [MongoDB collections](../architecture/mongodb-collections.md). |
+| `CATALOG_CACHE_SECONDS` | `60` | How stale the in-memory copy of the published catalog may get, in seconds. Admin publishes and studio updates show in the API within this long. `0` turns the cache off: every catalog read goes to MongoDB, which costs ~1.3 s per request against Atlas. The tests set `0`. See [Catalog model](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows). |
 | `CORS_ORIGINS`       | empty                       | Comma-separated extra browser origins, added to both CORS and Better Auth's trusted origins. The web app's origin (`https://app.getmintsy.com`, plus `http://localhost:3000` outside production) is built in, so production sets this empty.                                                                                                                         |
 | `WEB_ORIGINS`        | built-in web app origins    | Comma-separated web app origins, trusted by CORS and Better Auth and allowed as `X-Forwarded-Host`. Unset keeps the built-in ones (`https://app.getmintsy.com`, plus `http://localhost:3000` outside production), which is what production uses. Set but empty means no web app, for the preview service. `scripts/smoke-test.sh` then needs `SMOKE_NO_WEB_ORIGIN=1`. |
 | `NODE_ENV`           | unset (`development`)       | `production` (set in the Docker image) turns off the OpenAPI auth reference, Apollo Sandbox and introspection, `exp://` trusted origins, and `http://localhost:3000` as a web origin.                                                                                                                                                                                |
@@ -37,9 +38,13 @@ The server throws `Missing required env var: <NAME>` at startup when one of thes
 
 ## Push notifications
 
-| Name                | Default | Purpose                                                                  |
-| ------------------- | ------- | ------------------------------------------------------------------------ |
-| `EXPO_ACCESS_TOKEN` | unset   | Only needed if "enhanced push security" is enabled for the Expo project. |
+| Name                | Default | Purpose                                                                                                                                              |
+| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_ACCESS_TOKEN` | unset   | Only needed if "enhanced push security" is enabled for the Expo project.                                                                             |
+| `APNS_KEY_ID`       | unset   | 10-character key ID of the APNs auth key from developer.apple.com. All three APNs vars must be set to deliver to native iOS tokens.                  |
+| `APNS_TEAM_ID`      | unset   | Apple developer Team ID.                                                                                                                             |
+| `APNS_AUTH_KEY`     | unset   | Contents of the `.p8` APNs auth key file; line breaks may be written as `\n`.                                                                        |
+| `APNS_BUNDLE_ID`    | unset   | Bundle ID sent as `apns-topic`. Defaults to the first value in `APPLE_APP_BUNDLE_IDENTIFIER` (`com.getmintsy.app`). Set per deployment if different. |
 
 ## Premium (RevenueCat)
 

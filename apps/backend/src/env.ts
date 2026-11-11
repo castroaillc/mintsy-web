@@ -13,7 +13,28 @@ function list(value: string): string[] {
     .filter(Boolean);
 }
 
+/** A number of at least 0 from the environment, or the fallback when it's unset or not one. */
+function nonNegative(value: string | undefined, fallback: number): number {
+  const n = value?.trim() ? Number(value) : NaN;
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
 const isProduction = process.env.NODE_ENV === "production";
+
+const APP_STORE_ENVIRONMENT_NAMES = ["Production", "Sandbox", "Xcode", "LocalTesting"] as const;
+export type AppStoreEnvironment = (typeof APP_STORE_ENVIRONMENT_NAMES)[number];
+
+/**
+ * APP_STORE_ENVIRONMENTS: which StoreKit environments' transactions are accepted (default Production,Sandbox).
+ * Xcode and LocalTesting transactions are signed by a local test certificate, not by Apple, so they can't be
+ * verified. They're only ever accepted outside production, and only when listed here.
+ */
+function appStoreEnvironments(value: string | undefined): AppStoreEnvironment[] {
+  const wanted = list(value || "Production,Sandbox").map((v) => v.toLowerCase());
+  return APP_STORE_ENVIRONMENT_NAMES.filter(
+    (name) => wanted.includes(name.toLowerCase()) && !(isProduction && (name === "Xcode" || name === "LocalTesting")),
+  );
+}
 
 /**
  * The web app (mintsy-web, Next.js). The browser only talks to its own origin: Next.js rewrites
@@ -38,10 +59,20 @@ export const env = {
   // Optional: database holding the catalog (`books`), which this API only reads.
   // Unset = the catalog is in the app database above (see src/db.ts)
   mongodbCatalogDb: process.env.MONGODB_CATALOG_DB || undefined,
+  // Optional: how stale the in-process copy of the published catalog may get, in seconds (default 60).
+  // 0 turns the cache off, so every read goes to MongoDB (the tests do this). See src/catalog.ts
+  catalogCacheSeconds: nonNegative(process.env.CATALOG_CACHE_SECONDS, 60),
   betterAuthSecret: required("BETTER_AUTH_SECRET"),
   betterAuthUrl: required("BETTER_AUTH_URL"),
   // Optional: only needed if "enhanced push security" is enabled for the Expo project
   expoAccessToken: process.env.EXPO_ACCESS_TOKEN || undefined,
+  // APNs (Apple Push Notification service) direct delivery for native iOS tokens.
+  // All three set = native APNs tokens are delivered; unset = skipped with a warning
+  apnsKeyId: process.env.APNS_KEY_ID || undefined,
+  apnsTeamId: process.env.APNS_TEAM_ID || undefined,
+  apnsAuthKey: process.env.APNS_AUTH_KEY?.replace(/\\n/g, "\n") || undefined,
+  // apns-topic for outgoing notifications; defaults to the first APPLE_APP_BUNDLE_IDENTIFIER
+  apnsBundleId: process.env.APNS_BUNDLE_ID || undefined,
   // Public base URL of the media bucket; episode video and thumbnail paths are appended to it
   mediaBaseUrl: (process.env.MEDIA_BASE_URL || "https://storage.googleapis.com/mintsy-media").replace(/\/$/, ""),
   // Name of the media bucket, used when SIGNED_MEDIA is on
@@ -73,6 +104,28 @@ export const env = {
   appleAppBundleIdentifiers: list(
     process.env.APPLE_APP_BUNDLE_IDENTIFIER || "com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview",
   ),
+  // App Store (StoreKit 2) purchases. Bundle IDs whose transactions and notifications are accepted; defaults to
+  // the Sign in with Apple list above, so one variable narrows both for a service like the preview API
+  appStoreBundleIds: list(
+    process.env.APP_STORE_BUNDLE_IDS ||
+      process.env.APPLE_APP_BUNDLE_IDENTIFIER ||
+      "com.getmintsy.app,com.getmintsy.app.dev,com.getmintsy.app.preview",
+  ),
+  // Subscription product ids that grant Premium
+  appStoreProductIds: list(process.env.APP_STORE_PRODUCT_IDS || "mintsy_premium_monthly,mintsy_premium_yearly"),
+  // Accepted StoreKit environments; see appStoreEnvironments above
+  appStoreEnvironments: appStoreEnvironments(process.env.APP_STORE_ENVIRONMENTS),
+  // True when APP_STORE_ENVIRONMENTS asked for Xcode or LocalTesting in production, where they're refused
+  appStoreLocalEnvironmentsRefused:
+    isProduction && /xcode|localtesting/i.test(process.env.APP_STORE_ENVIRONMENTS ?? ""),
+  // App Store Server API credentials (App Store Connect -> Users and Access -> Integrations -> In-App Purchase).
+  // All three set = refreshPremium refetches an App Store subscription from Apple; otherwise it returns what's stored
+  appStoreIssuerId: process.env.APP_STORE_ISSUER_ID || undefined,
+  appStoreKeyId: process.env.APP_STORE_KEY_ID || undefined,
+  // The .p8 file's contents; line breaks may be written as \n
+  appStorePrivateKey: process.env.APP_STORE_PRIVATE_KEY?.replace(/\\n/g, "\n") || undefined,
+  // The app's numeric Apple ID. When set, Production notifications for any other app are ignored
+  appStoreAppAppleId: process.env.APP_STORE_APP_APPLE_ID || undefined,
   corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())

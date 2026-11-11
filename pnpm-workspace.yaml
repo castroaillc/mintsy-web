@@ -1,9 +1,7 @@
 packages:
   - apps/*
-  # apps/mobile is its own workspace with its own lockfile, so Expo and React Native
-  # stay out of the backend image and the website's dependencies.
-  - '!apps/mobile'
-  # apps/studio is also its own workspace with its own lockfile, so Remotion stays out too.
+  # apps/studio is its own workspace with its own lockfile, so Remotion stays out of the
+  # backend image and the website's dependencies.
   - '!apps/studio'
   - packages/*
 
@@ -17,3 +15,9 @@ allowBuilds:
 # Keep each app's peer contexts separate, so the backend's better-auth does not
 # pick up next/react from apps/web (they would end up in the backend image).
 dedupePeerDependents: false
+
+overrides:
+  # typescript-eslint throws on TS 7 when it loads (peer range <6.1.0), and it shares the apps' peer
+  # TypeScript, so the whole workspace uses TS 6 until it supports 7. Remove this then.
+  # A .pnpmfile.cjs could split the versions, but it breaks the backend image's --frozen-lockfile install.
+  typescript: 6.0.3

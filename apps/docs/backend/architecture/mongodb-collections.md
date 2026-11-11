@@ -18,7 +18,7 @@ No query crosses the two: the backend uses no `$lookup` or other cross-collectio
 
 MongoDB must be a **replica set**, because Better Auth uses transactions.
 
-Indexes on the app collections are created at startup (`ensure*Indexes()` in `src/index.ts`). **The backend never writes to the catalog database or creates indexes there**; studio owns those indexes.
+Indexes on the app collections are created at startup (`ensure*Indexes()`, called from `src/index.ts`, through `ensureIndexes()` in `src/db.ts`, which creates only the missing ones). **The backend never writes to the catalog database or creates indexes there**; studio owns those indexes.
 
 ## Overview
 
@@ -77,10 +77,13 @@ interface EpisodeDoc {
   videoPath?: string;      // object path in the media bucket
   hlsPath?: string;        // HLS master playlist, relative to the media bucket
   thumbnailPath?: string;
+  voices?: EpisodeVoiceDoc[]; // one render per narrator, left out of catalog reads
   status?: ContentStatus;
   updatedAt?: Date;
 }
 ```
+
+`EpisodeVoiceDoc` and its rules: [Episode voices](../../contracts.md#episode-voices).
 
 Index: `{ order: 1 }`, created by studio, not by the backend. Without it the listing still works but sorts in memory. See [Catalog model](../catalog/) for publishing rules.
 

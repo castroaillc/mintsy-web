@@ -6,7 +6,9 @@ Everything is generated from **`src/tokens.mjs`**.
 
 ## Install
 
-Add it to an app's `package.json` and run `pnpm install` in that app's workspace. `apps/mobile` is its own pnpm workspace, so install there separately.
+Add it to an app's `package.json` and run `pnpm install` in that app's workspace. Studio is its own workspace and links it from `../../packages/brand`.
+
+The iOS app (`apps/ios`) isn't a pnpm workspace. `apps/ios/scripts/generate-brand.mjs` reads `src/tokens.mjs`, `fonts/` and `assets/` directly and writes the Swift asset catalog, so rerun it after a brand change.
 
 ```jsonc
 "@mintsy/brand": "workspace:*"

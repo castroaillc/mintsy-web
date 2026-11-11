@@ -17,7 +17,7 @@ With the split databases, seeding must use the **studio user's connection string
 :::
 
 ::: danger
-Never run `pnpm seed:catalog` against production Atlas without explicit approval. Books it inserts go live in the app immediately, with no release, unless they're marked as drafts.
+Never run `pnpm seed:catalog` against production Atlas without explicit approval. Books it inserts go live in the app within 60 s (the API's catalog cache), with no release, unless they're marked as drafts.
 :::
 
 ## `catalog.json` format

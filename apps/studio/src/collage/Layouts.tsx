@@ -22,7 +22,7 @@ type Of<T extends Beat["layout"]> = Extract<Beat, { layout: T }>;
 export const CueContext = createContext<Record<string, number>>({});
 
 /** Seconds into the scene at which `cue` is spoken; staggered after the beat start if it isn't found. */
-function useCueSec() {
+export function useCueSec() {
   const cues = useContext(CueContext);
   return (cue: string, beatStart: number, index: number) => {
     const at = cues[cue] ?? beatStart + 0.4 + index * 0.8;
@@ -33,7 +33,7 @@ function useCueSec() {
 
 export const COLORS = palette;
 
-function iconFor(name: string) {
+export function iconFor(name: string) {
   return ICONS[name as IconName] ?? ICONS.star;
 }
 
@@ -47,10 +47,11 @@ export const BACKGROUNDS = {
 } as const;
 export type BackgroundName = keyof typeof BACKGROUNDS;
 
-const TapeLabel: React.FC<{ text: string; color?: string; size?: number }> = ({
+export const TapeLabel: React.FC<{ text: string; color?: string; size?: number; maxWidth?: number }> = ({
   text,
   color = palette.cream,
   size = 30,
+  maxWidth,
 }) => (
   <div
     style={{
@@ -67,7 +68,8 @@ const TapeLabel: React.FC<{ text: string; color?: string; size?: number }> = ({
           ? palette.ink
           : palette.white,
       textTransform: "uppercase",
-      whiteSpace: "nowrap",
+      // With maxWidth a long label wraps; without it the label stays on one line
+      ...(maxWidth ? { maxWidth, textAlign: "center" as const, lineHeight: 1.1 } : { whiteSpace: "nowrap" as const }),
     }}
   >
     {text}
@@ -80,7 +82,10 @@ export const PropView: React.FC<{
   size?: number;
   at: number;
   blinkOffset?: number;
-}> = ({ prop, size = 1, at, blinkOffset = 0 }) => {
+  labelSize?: number;
+  labelMaxWidth?: number;
+}> = ({ prop, size = 1, at, blinkOffset = 0, labelSize, labelMaxWidth }) => {
+  const label = prop.label ? <TapeLabel text={prop.label} size={labelSize} maxWidth={labelMaxWidth} /> : null;
   if (prop.kind === "figure") {
     return (
       <div
@@ -99,7 +104,7 @@ export const PropView: React.FC<{
           scale={0.85 * size}
           blinkOffset={blinkOffset}
         />
-        {prop.label ? <TapeLabel text={prop.label} /> : null}
+        {label}
       </div>
     );
   }
@@ -133,7 +138,7 @@ export const PropView: React.FC<{
           color={palette[prop.color]}
         />
       </div>
-      {prop.label ? <TapeLabel text={prop.label} /> : null}
+      {label}
     </div>
   );
 };
@@ -216,7 +221,7 @@ const StageBeat: React.FC<{ beat: Of<"stage">; start: number }> = ({
 };
 
 /** Text with its highlight phrase colored. */
-function highlighted(text: string, highlight: string, color: string) {
+export function highlighted(text: string, highlight: string, color: string) {
   const at = highlight
     ? text.toLowerCase().indexOf(highlight.toLowerCase())
     : -1;
@@ -230,7 +235,7 @@ function highlighted(text: string, highlight: string, color: string) {
   );
 }
 
-const HIGHLIGHTS = [palette.pink, palette.yellow, palette.mint];
+export const HIGHLIGHTS = [palette.pink, palette.yellow, palette.mint];
 
 const HeadlineBeat: React.FC<{
   beat: Of<"headline">;

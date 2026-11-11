@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Info, Loader2, Plus, Save, Upload, Undo2, X } from "lucide-react";
+import { Info, Loader2, Plus, Save, TriangleAlert, Upload, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Field } from "@/components/field";
 import { StringListEditor } from "@/components/string-list-editor";
@@ -23,21 +23,27 @@ export function EpisodeEditor({
   bookId,
   number,
   durationSec,
+  baseUpdatedAt,
   status,
   rule,
   videoUrl,
   thumbnailUrl,
   videoPath,
+  voices,
   initial,
 }: {
   bookId: string;
   number: number;
   durationSec: number;
+  /** The episode's stored updatedAt when this form loaded; the save route refuses if it has moved on. */
+  baseUpdatedAt: string | null;
   status: ContentStatus;
   rule: RuleCheck;
   videoUrl: string | null;
   thumbnailUrl: string | null;
   videoPath: string | null;
+  /** Null on an episode without voices. */
+  voices: { count: number; defaultName: string | null; lineCount: number } | null;
   initial: Values;
 }) {
   const router = useRouter();
@@ -49,7 +55,7 @@ export function EpisodeEditor({
   const published = status === "published";
 
   function validate() {
-    const r = episodeEditSchema(durationSec).safeParse(v);
+    const r = episodeEditSchema({ durationSec, storedTranscript: initial.transcript, voiceLineCount: voices?.lineCount ?? null }).safeParse(v);
     if (r.success) {
       setErrors({});
       return r.data;
@@ -65,7 +71,7 @@ export function EpisodeEditor({
     if (!data) return void toast.error("Fix the highlighted fields");
     if (published && !confirm("This episode is live. Saving changes the app immediately. Continue?")) return;
     setSaving(true);
-    const res = await callApi(`/api/books/${bookId}/episodes/${number}`, { method: "PATCH", body: data });
+    const res = await callApi(`/api/books/${bookId}/episodes/${number}`, { method: "PATCH", body: { ...data, baseUpdatedAt } });
     setSaving(false);
     if (!res.ok) return void toast.error(res.error);
     toast.success("Episode saved");
@@ -85,6 +91,13 @@ export function EpisodeEditor({
 
   const setLine = (i: number, patch: Partial<TranscriptLine>) =>
     setV((s) => ({ ...s, transcript: s.transcript.map((l, j) => (j === i ? { ...l, ...patch } : l)) }));
+
+  const hasFractional = v.transcript.some((l) => Number.isFinite(l.startSec) && !Number.isInteger(l.startSec));
+  const roundTimes = () =>
+    setV((s) => ({
+      ...s,
+      transcript: s.transcript.map((l) => (Number.isFinite(l.startSec) ? { ...l, startSec: Math.min(Math.round(l.startSec), Math.max(Math.ceil(durationSec) - 1, 0)) } : l)),
+    }));
 
   const toggleBlocked = !rule.ok ? rule.reason : dirty ? "Save or discard your edits first." : null;
   const takeawayErrors = Object.fromEntries(
@@ -124,10 +137,30 @@ export function EpisodeEditor({
           <CardHeader>
             <CardTitle>Transcript</CardTitle>
             <CardDescription>
-              Start times in seconds, ascending, each under the episode length ({durationSec}s).
+              Start times in whole seconds, ascending, each under the episode length ({durationSec}s).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
+            {voices && (
+              <Alert className="border-brand/40 bg-brand/10 text-foreground">
+                <TriangleAlert className="text-brand" />
+                <AlertDescription>
+                  Edits here only affect the default voice&apos;s transcript{voices.defaultName && ` (${voices.defaultName})`}. They don&apos;t change the other{" "}
+                  {voices.count > 1 ? `${voices.count - 1} voice${voices.count === 2 ? "" : "s"}` : "voices"} or the timed captions. The number of lines can&apos;t change, because the app
+                  converts positions between voices by matching lines.
+                </AlertDescription>
+              </Alert>
+            )}
+            {hasFractional && (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-xs text-muted-foreground">
+                <span className="min-w-48 flex-1">
+                  This transcript has fractional start times. Other fields save without touching them, but changing the transcript needs whole seconds.
+                </span>
+                <Button type="button" size="sm" variant="outline" onClick={roundTimes}>
+                  Round to whole seconds
+                </Button>
+              </div>
+            )}
             {errors.transcript && <p className="text-xs text-destructive">{errors.transcript}</p>}
             {v.transcript.map((line, i) => {
               const tErr = errors[`transcript.${i}.startSec`];
@@ -137,7 +170,7 @@ export function EpisodeEditor({
                   <div className="w-24 shrink-0">
                     <Input
                       type="number"
-                      step="0.1"
+                      step="1"
                       min={0}
                       aria-label={`Line ${i + 1} start (s)`}
                       value={Number.isNaN(line.startSec) ? "" : line.startSec}
@@ -162,6 +195,7 @@ export function EpisodeEditor({
                     size="icon-sm"
                     variant="ghost"
                     aria-label="Remove line"
+                    disabled={!!voices}
                     onClick={() => setV({ ...v, transcript: v.transcript.filter((_, j) => j !== i) })}
                   >
                     <X />
@@ -173,6 +207,7 @@ export function EpisodeEditor({
               type="button"
               size="sm"
               variant="outline"
+              disabled={!!voices}
               onClick={() => {
                 const last = v.transcript.at(-1)?.startSec ?? -1;
                 setV({ ...v, transcript: [...v.transcript, { startSec: Math.min(Math.floor(last) + 1, Math.max(durationSec - 1, 0)), text: "" }] });
@@ -238,8 +273,9 @@ export function EpisodeEditor({
         <Alert>
           <Info />
           <AlertDescription>
-            Re-rendering this chapter replaces the title, summary and takeaways with the values in its script.json, and the transcript with the new
-            render&apos;s. To keep text edits, make them in the chapter&apos;s script review before rendering.
+            Uploading a new render replaces the title, summary and takeaways with the values in script.json and the transcript with the render&apos;s, and returns the episode to draft. A
+            remaster (chapter page) swaps the media in place, live at once, and keeps the status, title, summary and takeaways. It replaces transcript timing, and it refuses if the
+            transcript text here differs from the local script, naming the lines. To keep a text edit through either, make it in the chapter&apos;s script review too.
           </AlertDescription>
         </Alert>
       </div>

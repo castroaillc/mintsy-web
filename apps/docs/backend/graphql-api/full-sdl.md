@@ -150,6 +150,51 @@ type Episode {
   locked: Boolean!
 }
 
+"""One timed caption phrase, on its voice's own timeline."""
+type CaptionPhrase {
+  """Start of the phrase, in seconds (may be fractional)."""
+  startSec: Float!
+
+  """End of the phrase, in seconds (may be fractional)."""
+  endSec: Float!
+  text: String!
+}
+
+"""One narrator's full render of an episode, from episodeVoices."""
+type EpisodeVoice {
+  """Voice id, e.g. af_heart."""
+  id: String!
+
+  """Display name."""
+  name: String!
+
+  """
+  True for the voice that Episode.videoUrl, hlsUrl, durationSec and transcript describe.
+  """
+  isDefault: Boolean!
+
+  """
+  Progressive MP4 of this voice. May be a short-lived signed URL: refetch rather than storing it. Null if signing it failed.
+  """
+  videoUrl: String
+
+  """
+  HLS master playlist of this voice; prefer it for streaming when present and fall back to videoUrl. Null when this voice has no HLS encode, and always while media is private (SIGNED_MEDIA).
+  """
+  hlsUrl: String
+
+  """
+  This voice's duration in seconds. It can differ from Episode.durationSec.
+  """
+  durationSec: Int!
+
+  """Transcript on this voice's timeline."""
+  transcript: [TranscriptLine!]!
+
+  """Timed caption phrases on this voice's timeline."""
+  captions: [CaptionPhrase!]!
+}
+
 type Book {
   id: ID!
   title: String!
@@ -234,6 +279,11 @@ type Query {
   Public catalog search (works signed out) over book titles, authors, categories and episode transcripts. Case-insensitive; the query is trimmed and cut to 100 characters.
   """
   search(query: String!): SearchResult!
+
+  """
+  The narrator choices for an episode (works signed out), with their videos and timed text. Empty when the episode is locked for the viewer, isn't in the public catalog or doesn't exist, or has no voices: play Episode.videoUrl / hlsUrl instead.
+  """
+  episodeVoices(episodeId: ID!): [EpisodeVoice!]!
 }
 
 type Mutation {

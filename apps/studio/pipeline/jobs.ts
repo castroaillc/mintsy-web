@@ -6,18 +6,24 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import type { BookDoc, EpisodeDoc } from "@mintsy/shared";
+import { type BookDoc, type EpisodeDoc, FREE_EPISODES } from "@mintsy/shared";
 import type { Db, ObjectId } from "mongodb";
 
 import { runEpisode, type StepName } from "./episode";
 import { bookDir, episodeDir, files } from "./paths";
 import { renderCover, uploadCover } from "./steps/cover";
 import { type BookInfo, ingest } from "./steps/ingest";
-import { type CatalogEpisode, episodeFields, mediaPrefix, uploadMedia } from "./steps/publish";
+import { CLIP_HEIGHT, CLIP_WIDTH } from "../src/collage/clipLayout";
+import { clipName, type ClipResult, renderClip } from "./steps/clip";
+import { type EpisodeFields, type EpisodeMedia, episodeFields, mediaPrefix, uploadMedia } from "./steps/publish";
+import { render } from "./steps/render";
 import type { Script } from "./steps/script";
+import { transcriptSentences, writeVoice } from "./steps/voice";
+import { kokoroVoices } from "./tts";
 import { normalize, readJson, writeJson } from "./util";
+import { checkEpisodeVoices, type EpisodeVoiceDoc, voiceName } from "./voices";
 
-export type JobKind = "ingest" | "script" | "render" | "upload" | "cover";
+export type JobKind = "ingest" | "script" | "render" | "upload" | "cover" | "remaster" | "clip";
 export type JobStatus = "queued" | "running" | "succeeded" | "failed";
 export interface StudioJob {
   _id: ObjectId;
@@ -28,6 +34,14 @@ export interface StudioJob {
   regenerate?: boolean;
   /** render: render locally only (work/<book>/ep-NN), no upload and no change to `books`. */
   preview?: boolean;
+  /** remaster: replace transcript text that differs in `books` (admin edits exist only there). Off by default: the job refuses. */
+  overwriteTranscript?: boolean;
+  /** clip: voice id such as "af_heart". Defaults to the episode's default voice. */
+  voice?: string;
+  /** clip: first scene, 1-based. Defaults to 1, the scripted hook. */
+  startScene?: number;
+  /** clip: last scene, inclusive. Defaults to the first that reaches the minimum length. */
+  endScene?: number;
   /** cover: also upload it and set the book's coverPath (live at once if the book is published). */
   upload?: boolean;
   scriptJson?: unknown;
@@ -56,6 +70,14 @@ export interface RenderResult {
   /** Bucket path of the HLS master playlist. */
   hlsPath?: string;
 }
+/** remaster: the same paths, plus what changed. */
+export interface RemasterResult extends RenderResult {
+  hlsPath: string;
+  /** Voice ids now on the episode, default first. */
+  voices: string[];
+  /** Transcript lines whose text in `books` differed and were overwritten. Above 0 only with overwriteTranscript. */
+  transcriptLinesChanged: number;
+}
 /** render with preview: true. */
 export interface PreviewResult {
   durationSec: number;
@@ -65,7 +87,12 @@ export interface CoverResult {
   /** Set when the job uploaded the cover. */
   coverPath?: string;
 }
-export type JobResult = IngestResult | ScriptResult | RenderResult | PreviewResult | CoverResult;
+export type JobResult = IngestResult | ScriptResult | RenderResult | RemasterResult | PreviewResult | CoverResult | ClipJobResult;
+export type { ClipResult };
+/** clip: where it is, and whether the episode a viewer would land on is live. */
+export interface ClipJobResult extends ClipResult {
+  episodePublished: boolean;
+}
 
 const DEFAULT_COVER_TONE = "#E7DFCF";
 const DEFAULT_TINT = "#3B3426";
@@ -80,6 +107,8 @@ export async function runJob(db: Db, job: StudioJob): Promise<JobResult> {
   if (job.kind === "script") return DRY_RUN ? dryScript(job, chapter) : scriptJob(job, chapter);
   if (job.kind === "render") return DRY_RUN ? dryRender(db, job, chapter) : renderJob(db, job, chapter);
   if (job.kind === "upload") return DRY_RUN ? dryUpload(db, job, chapter) : uploadJob(db, job, chapter);
+  if (job.kind === "clip") return DRY_RUN ? dryClip(db, job, chapter) : clipJob(db, job, chapter);
+  if (job.kind === "remaster") return DRY_RUN ? dryRemaster(db, job, chapter) : remasterJob(db, job, chapter);
   throw new Error(`Unknown job kind "${String(job.kind)}"`);
 }
 
@@ -121,11 +150,19 @@ async function insertDraftBook(db: Db, bookId: string, info: Omit<BookInfo, "cha
   console.log(res.upsertedCount ? `  added draft book "${bookId}" to books` : `  book "${bookId}" already in books, left as is`);
 }
 
-/** Inserts or replaces episode `number` in the book, always as a draft (a re-render unpublishes it). */
-async function upsertDraftEpisode(db: Db, bookId: string, episode: CatalogEpisode & Required<Pick<CatalogEpisode, "videoPath" | "thumbnailPath" | "hlsPath">>) {
+/** Episode as written to `books`. `voices` is required, so that every write replaces the stored list. */
+type EpisodeWrite = Omit<EpisodeFields, "voices"> & EpisodeMedia;
+
+/**
+ * Inserts or replaces episode `number` in the book, always as a draft (a re-render unpublishes it).
+ * Replacing goes field by field, which keeps fields this write leaves out; `voices` is always in
+ * the write (`[]` for an episode voiced before Kokoro), so stale voices can't survive.
+ */
+export async function upsertDraftEpisode(db: Db, bookId: string, episode: EpisodeWrite) {
+  checkEpisodeVoices(episode);
   const books = booksOf(db);
   const now = new Date();
-  const doc: EpisodeDoc = { ...episode, status: "draft", updatedAt: now };
+  const doc: EpisodeDoc & { voices: EpisodeVoiceDoc[] } = { ...episode, status: "draft", updatedAt: now };
   const set = Object.fromEntries(Object.entries(doc).map(([k, v]) => [`episodes.$.${k}`, v]));
   const updated = await books.updateOne({ _id: bookId, "episodes.number": episode.number }, { $set: { ...set, updatedAt: now } });
   if (updated.matchedCount === 0) {
@@ -136,6 +173,67 @@ async function upsertDraftEpisode(db: Db, bookId: string, episode: CatalogEpisod
     if (pushed.matchedCount === 0) throw new Error(`Book "${bookId}" is not in books; run an ingest job first`);
   }
   console.log(`  saved draft episode ${episode.number} of "${bookId}" to books`);
+}
+
+type Line = { text: string };
+
+/** Lines whose text differs, including extra lines on either side. Timing is ignored. */
+export function transcriptDifferences(stored: Line[], next: Line[]) {
+  const differences: { line: number; stored?: string; next?: string }[] = [];
+  for (let i = 0; i < Math.max(stored.length, next.length); i++) {
+    if (stored[i]?.text !== next[i]?.text) differences.push({ line: i + 1, stored: stored[i]?.text, next: next[i]?.text });
+  }
+  return differences;
+}
+
+const SHOWN_DIFFERENCES = 3;
+
+/**
+ * Admin transcript edits exist only in `books`, so a remaster never replaces differing text unless
+ * the job says so. Runs before rendering, before uploading and again before the write, because an
+ * admin can save an edit during the render.
+ */
+function checkTranscriptKept(job: Pick<StudioJob, "bookId" | "chapter" | "overwriteTranscript">, stored: Line[], next: Line[]) {
+  const differences = transcriptDifferences(stored, next);
+  if (differences.length === 0 || job.overwriteTranscript) return differences.length;
+  const quote = (text?: string) => (text === undefined ? "(no line)" : JSON.stringify(text));
+  const shown = differences.slice(0, SHOWN_DIFFERENCES).map((d) => `line ${d.line}: books has ${quote(d.stored)}, the remaster would write ${quote(d.next)}`);
+  const more = differences.length > SHOWN_DIFFERENCES ? `; and ${differences.length - SHOWN_DIFFERENCES} more` : "";
+  throw new Error(
+    `Remaster refused for "${job.bookId}" episode ${job.chapter}: ${differences.length} transcript line(s) in books differ from what it would write, and nothing was changed (${stored.length} stored, ${next.length} new). They may be admin edits. Review them, then queue the job with overwriteTranscript: true to replace them. ${shown.join("; ")}${more}`,
+  );
+}
+
+const REMASTER_NEEDS_EPISODE = (bookId: string, number: number) => `Book "${bookId}" has no episode ${number} in books; remaster only replaces an existing episode`;
+
+/** The stored episode a remaster will replace. Throws if there's none, because remaster never creates one. */
+async function remasterTarget(db: Db, bookId: string, number: number) {
+  const book = await booksOf(db).findOne({ _id: bookId, "episodes.number": number }, { projection: { "episodes.$": 1 } });
+  const episode = book?.episodes[0];
+  if (!episode) throw new Error(REMASTER_NEEDS_EPISODE(bookId, number));
+  return episode;
+}
+
+/**
+ * Swaps an episode's media in one atomic write: media paths, durationSec, transcript and voices.
+ * Leaves status, title, summary and takeaways alone, so a live episode stays live.
+ */
+export async function swapEpisodeMedia(db: Db, job: Pick<StudioJob, "bookId" | "overwriteTranscript">, episode: EpisodeWrite): Promise<RemasterResult> {
+  const { bookId } = job;
+  checkEpisodeVoices(episode);
+  if (episode.voices.length === 0) throw new Error("A remaster must store at least one voice");
+  const current = await remasterTarget(db, bookId, episode.number);
+  const transcriptLinesChanged = checkTranscriptKept({ ...job, chapter: episode.number }, current.transcript ?? [], episode.transcript);
+  const { durationSec, transcript, videoPath, thumbnailPath, hlsPath, voices } = episode;
+  const now = new Date();
+  const fields = { videoPath, thumbnailPath, hlsPath, durationSec, transcript, voices, updatedAt: now };
+  const set = Object.fromEntries(Object.entries(fields).map(([k, v]) => [`episodes.$.${k}`, v]));
+  const updated = await booksOf(db).updateOne({ _id: bookId, "episodes.number": episode.number }, { $set: { ...set, updatedAt: now } });
+  if (updated.matchedCount === 0) throw new Error(REMASTER_NEEDS_EPISODE(bookId, episode.number));
+
+  if (transcriptLinesChanged > 0) console.warn(`  overwrote ${transcriptLinesChanged} differing transcript line(s) in books, as overwriteTranscript asked`);
+  console.log(`  swapped media of episode ${episode.number} of "${bookId}" (status ${current.status ?? "published"} kept)`);
+  return { durationSec, videoPath, thumbnailPath, hlsPath, voices: voices.map((v) => v.id), transcriptLinesChanged };
 }
 
 /** Makes sure the book is in `books` (e.g. ingested with the CLI before the worker existed). */
@@ -205,10 +303,12 @@ async function renderJob(db: Db, job: StudioJob, chapter: number): Promise<Rende
   }
   console.log("upload:");
   const fields = await episodeFields(chapter, dir);
-  const media = await uploadMedia(job.bookId, chapter, dir);
+  const media = await uploadMedia(job.bookId, chapter, dir, fields);
   await upsertDraftEpisode(db, job.bookId, { ...fields, ...media });
-  return { durationSec: fields.durationSec, ...media };
+  return renderResult(fields, media);
 }
+
+const renderResult = ({ durationSec }: EpisodeFields, { videoPath, thumbnailPath, hlsPath }: EpisodeMedia): RenderResult => ({ durationSec, videoPath, thumbnailPath, hlsPath });
 
 /** Uploads the episode as it was last rendered (e.g. by a preview) and saves it as a draft. */
 async function uploadJob(db: Db, job: StudioJob, chapter: number): Promise<RenderResult> {
@@ -219,9 +319,72 @@ async function uploadJob(db: Db, job: StudioJob, chapter: number): Promise<Rende
   }
   console.log("upload:");
   const fields = await episodeFields(chapter, dir);
-  const media = await uploadMedia(job.bookId, chapter, dir);
+  const media = await uploadMedia(job.bookId, chapter, dir, fields);
   await upsertDraftEpisode(db, job.bookId, { ...fields, ...media });
-  return { durationSec: fields.durationSec, ...media };
+  return renderResult(fields, media);
+}
+
+/**
+ * Re-renders an existing episode from its local script.json and scenes.json, and swaps its media in
+ * place. Nothing reaches `books` until every voice has rendered and uploaded, so a failure at any
+ * point leaves the episode as it was (at worst with unreferenced objects in the bucket).
+ * Runs the voice and render steps directly, so it can't fall back to the paid script and scenes steps.
+ */
+async function remasterJob(db: Db, job: StudioJob, chapter: number): Promise<RemasterResult> {
+  if (job.scriptJson !== undefined || job.scenesJson !== undefined || job.preview) {
+    throw new Error("remaster takes no script, scenes or preview: it re-renders the episode as it stands");
+  }
+  const current = await remasterTarget(db, job.bookId, chapter);
+  const dir = episodeDir(job.bookId, chapter);
+  for (const f of [path.join(dir, files.script), path.join(dir, files.scenes), path.join(bookDir(job.bookId), files.book)]) {
+    if (!existsSync(f)) throw new Error(`No ${f}: remaster needs the episode's local files and won't regenerate them`);
+  }
+  // The transcript's text comes straight from the narration, so a refusal needn't wait for a render
+  const scenes = await readJson<{ narration: string }[]>(path.join(dir, files.scenes));
+  const lines = scenes.flatMap((scene) => transcriptSentences(normalize(scene.narration))).map((text) => ({ text }));
+  checkTranscriptKept({ ...job, chapter }, current.transcript ?? [], lines);
+  console.log("voice:");
+  await writeVoice(dir);
+  console.log("render:");
+  await render(job.bookId, dir);
+  console.log("upload:");
+  const fields = await episodeFields(chapter, dir);
+  checkTranscriptKept({ ...job, chapter }, (await remasterTarget(db, job.bookId, chapter)).transcript ?? [], fields.transcript);
+  const media = await uploadMedia(job.bookId, chapter, dir, fields);
+  return swapEpisodeMedia(db, job, { ...fields, ...media });
+}
+
+/** Whether the app shows this episode: the same rule as the backend's public catalog. Reads only. */
+async function episodeIsLive(db: Db, bookId: string, chapter: number) {
+  const book = await booksOf(db).findOne({ _id: bookId }, { projection: { status: 1, "episodes.number": 1, "episodes.status": 1 } });
+  if (!book || book.status === "draft") return false;
+  const sorted = [...book.episodes].sort((a, b) => a.number - b.number);
+  for (const [i, episode] of sorted.entries()) {
+    if (episode.number !== i + 1 || episode.status === "draft") return false;
+    if (episode.number === chapter) return true;
+  }
+  return false;
+}
+
+/** A clip's viewers land on the app, so one above the free episodes would send them to the paywall. */
+function checkClipEpisode(chapter: number) {
+  if (chapter > FREE_EPISODES) {
+    throw new Error(`Clips are only for the free episodes (1 to ${FREE_EPISODES}): episode ${chapter} lands on the paywall`);
+  }
+}
+
+async function warnIfNotLive(db: Db, job: StudioJob, chapter: number) {
+  const episodePublished = await episodeIsLive(db, job.bookId, chapter);
+  if (!episodePublished) console.warn(`  warning: episode ${chapter} of "${job.bookId}" isn't published, so viewers of this clip can't watch it in the app yet`);
+  return episodePublished;
+}
+
+/** Renders a vertical clip into work/<book>/ep-NN/clips/. Only reads `books`, and never touches the bucket. */
+async function clipJob(db: Db, job: StudioJob, chapter: number): Promise<ClipJobResult> {
+  checkClipEpisode(chapter);
+  const episodePublished = await warnIfNotLive(db, job, chapter);
+  const clip = await renderClip(job.bookId, episodeDir(job.bookId, chapter), { voice: job.voice, startScene: job.startScene, endScene: job.endScene });
+  return { ...clip, episodePublished };
 }
 
 /** Renders the book's cover from its current metadata in `books`; with upload, publishes it as coverPath. */
@@ -319,6 +482,48 @@ async function dryUpload(db: Db, job: StudioJob, chapter: number): Promise<Rende
   return (await dryRender(db, { ...job, preview: false }, chapter, [])) as RenderResult;
 }
 
+async function dryRemaster(db: Db, job: StudioJob, chapter: number): Promise<RemasterResult> {
+  const current = await remasterTarget(db, job.bookId, chapter);
+  await fakeSteps(["voice", "render 0%", "render 50%", "render 100%", "upload", "hls"]);
+  const transcript = current.transcript?.length ? current.transcript : [{ startSec: 4, text: "Dry run." }];
+  const durationSec = current.durationSec || 60;
+  const hash = createHash("sha256").update(job._id.toHexString()).digest("hex").slice(0, 8);
+  const media = fakeMedia(mediaPrefix(job.bookId, chapter, hash), durationSec, transcript);
+  const { title, summary, takeaways } = current;
+  return swapEpisodeMedia(db, job, { number: chapter, title, summary, takeaways, durationSec, transcript, ...media });
+}
+
+/** Valid paths and voices for a fake render: each later voice runs a little longer than the one before. */
+function fakeMedia(prefix: string, durationSec: number, transcript: { startSec: number; text: string }[]): EpisodeMedia {
+  const voices = kokoroVoices().map((id, n) => {
+    const stretch = (sec: number) => Math.round(sec * (1 + n * 0.05));
+    const voicePrefix = n === 0 ? prefix : `${prefix}-${id}`;
+    const lines = transcript.map((l) => ({ startSec: stretch(l.startSec), text: l.text }));
+    return {
+      id,
+      name: voiceName(id),
+      isDefault: n === 0,
+      videoPath: `${voicePrefix}.mp4`,
+      hlsPath: `${voicePrefix}/master.m3u8`,
+      durationSec: stretch(durationSec),
+      transcript: lines,
+      captions: lines.map((l) => ({ startSec: l.startSec + 0.25, endSec: l.startSec + 3.5, text: l.text })),
+    };
+  });
+  return { videoPath: `${prefix}.mp4`, thumbnailPath: `${prefix}.jpg`, hlsPath: `${prefix}/master.m3u8`, voices };
+}
+
+async function dryClip(db: Db, job: StudioJob, chapter: number): Promise<ClipJobResult> {
+  checkClipEpisode(chapter);
+  const episodePublished = await warnIfNotLive(db, job, chapter);
+  await fakeSteps(["clip 0%", "clip 50%", "clip 100%"]);
+  const voice = job.voice ?? kokoroVoices()[0];
+  const startScene = job.startScene ?? 1;
+  const endScene = job.endScene ?? startScene;
+  const name = clipName(voice, startScene, endScene);
+  return { videoPath: `clips/${name}.mp4`, thumbnailPath: `clips/${name}.jpg`, voice, startScene, endScene, durationSec: 30, width: CLIP_WIDTH, height: CLIP_HEIGHT, episodePublished };
+}
+
 async function dryCover(db: Db, job: StudioJob): Promise<CoverResult> {
   await fakeSteps(job.upload ? ["cover", "upload"] : ["cover"]);
   if (!job.upload) return {};
@@ -346,6 +551,7 @@ async function dryRender(
   const transcript = narration.flatMap((p) => p.match(/[^.!?]+[.!?]+/g) ?? [p]).map((text, i) => ({ startSec: 4 + i * 6, text: text.trim() }));
   const durationSec = 4 + transcript.length * 6 + 2;
   if (job.preview) return { durationSec, preview: true };
+  const media = fakeMedia(prefix, durationSec, transcript);
   const episode = {
     number: chapter,
     title: String(script.title),
@@ -353,9 +559,7 @@ async function dryRender(
     takeaways: Array.isArray(script.takeaways) ? script.takeaways.map(String) : [],
     transcript,
     durationSec,
-    videoPath: `${prefix}.mp4`,
-    thumbnailPath: `${prefix}.jpg`,
-    hlsPath: `${prefix}/master.m3u8`,
+    ...media,
   };
   await upsertDraftEpisode(db, job.bookId, episode);
   return { durationSec, videoPath: episode.videoPath, thumbnailPath: episode.thumbnailPath, hlsPath: episode.hlsPath };

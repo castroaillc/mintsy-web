@@ -1,6 +1,6 @@
 import { MongoServerError } from "mongodb";
 import { books } from "./catalog.js";
-import { db } from "./db.js";
+import { db, ensureIndexes } from "./db.js";
 
 /** "My List": books and episodes a user saved. One doc per saved item. */
 export type SavedKind = "book" | "episode";
@@ -19,8 +19,10 @@ export const MAX_SAVED_PER_KIND = 500;
 export const savedItems = db.collection<SavedItemDoc>("saved_items");
 
 export async function ensureSavedIndexes() {
-  await savedItems.createIndex({ userId: 1, kind: 1, id: 1 }, { unique: true });
-  await savedItems.createIndex({ userId: 1, kind: 1, savedAt: -1 });
+  await ensureIndexes(savedItems, [
+    { key: { userId: 1, kind: 1, id: 1 }, unique: true },
+    { key: { userId: 1, kind: 1, savedAt: -1 } },
+  ]);
 }
 
 /** Saved ids of one kind, most recently saved first. */

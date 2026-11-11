@@ -12,12 +12,12 @@ Data is stored in two MongoDB databases on one cluster: `mintsy_app` holds the c
 
 | Client                                     | How                                                                                                                                                  |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| iPhone app (`mobile-app`, Expo)            | Calls `https://api.getmintsy.com` directly. Better Auth Expo client keeps the session cookie in SecureStore and sends it as a `Cookie` header.       |
+| iPhone app (`apps/ios`, native Swift)      | Calls the API directly. Keeps the session cookie in a Keychain cookie jar and sends it as a `Cookie` header.                                         |
 | Web app (`apps/web`, app.getmintsy.com)    | The browser only talks to app.getmintsy.com. Next.js rewrites `/api/auth/*` and `/graphql` to this API, so cookies are first-party on the web host.  |
 | Admin dashboard (`apps/admin`, local only) | Writes the `books` and `studio_jobs` collections directly in MongoDB; it doesn't call this API.                                                      |
 | Studio worker (`apps/studio`)              | Writes draft books and episodes to `books` directly, and uploads media to `gs://mintsy-media`. See [Studio pipeline](../catalog/studio-pipeline.md). |
 | RevenueCat                                 | Posts subscription events to `/webhooks/revenuecat`; the API also calls RevenueCat's REST API.                                                       |
-| Expo push service                          | The API sends push messages through it.                                                                                                              |
+| Expo push service                          | The API sends push messages through it. No app registers push tokens since the Expo app was retired.                                                |
 | Resend                                     | The API sends transactional email through it.                                                                                                        |
 
 See [Authentication > Clients](../authentication/clients.md) for exactly how each client authenticates.
@@ -26,11 +26,12 @@ See [Authentication > Clients](../authentication/clients.md) for exactly how eac
 
 `main()` in `src/index.ts`:
 
-1. Connects the shared `MongoClient` (`src/db.ts`).
-2. Creates the app database's indexes: `ensurePushIndexes`, `ensureEntitlementIndexes`, `ensureSavedIndexes`, `ensureProgressIndexes`. Nothing is created in the catalog database, which is read-only for the API.
-3. Builds the Express app and middleware (see [Request flow](request-flow.md)).
-4. Starts Apollo Server with the drain-HTTP-server plugin and mounts it at `/graphql`.
-5. Listens on `PORT` and logs which optional integrations are missing.
+1. In parallel: connects the shared `MongoClient` (`src/db.ts`) and then ensures the app database's indexes (`ensurePushIndexes`, `ensureEntitlementIndexes`, `ensureSavedIndexes`, `ensureProgressIndexes`, concurrently), while Apollo Server starts with the drain-HTTP-server plugin. `ensureIndexes()` in `src/db.ts` lists a collection's indexes and creates only missing ones, so a normal start costs one round trip per collection. Nothing is created in the catalog database, which is read-only for the API.
+2. As soon as MongoDB is connected, starts loading the published catalog into memory (`warmCatalog()`, see [Catalog model](../catalog/#how-the-api-reads-it-and-how-fast-a-publish-shows)). This doesn't hold up startup. The first catalog request waits for this load instead of starting another.
+3. Builds the Express app and middleware (see [Request flow](request-flow.md)) and mounts Apollo at `/graphql`.
+4. Listens on `PORT` and logs which optional integrations are missing, plus one `Startup:` line: ms from process start to listening, split into Node boot + imports, MongoDB connect, indexes and Apollo.
+
+The server only listens once MongoDB and Apollo are ready. That's deliberate: Cloud Run's startup probe is a TCP check on the port, and the deploy checks `/health`. A revision that can't reach MongoDB therefore never takes traffic, and no request meets a half-initialised client.
 
 `SIGINT` / `SIGTERM` stop Apollo, close the MongoDB client and exit.
 

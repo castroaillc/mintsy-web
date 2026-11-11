@@ -15,12 +15,12 @@ Every mutation needs a session. Without one it fails with `UNAUTHENTICATED`.
 
 ### registerPushToken
 
-Registers an Expo push token for the current user's device.
+Registers a push token for the current user's device. Accepts both Expo push tokens and native APNs device tokens.
 
-| Argument   | Type      | Notes                                                                                                      |
-| ---------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `token`    | `String!` | Must be a valid Expo push token (`Expo.isExpoPushToken`), else `BAD_USER_INPUT` "Invalid Expo push token". |
-| `platform` | `String!` | Stored as given, e.g. `ios`. Not validated.                                                                |
+| Argument   | Type      | Notes                                                                                                                                                                 |
+| ---------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `token`    | `String!` | An Expo push token (`ExponentPushToken[…]`) or a native APNs device token (a 64-char lowercase hex string from `UIApplication.shared.currentPushToken`). Otherwise `BAD_USER_INPUT` "Invalid push token". |
+| `platform` | `String!` | Stored as given. Use `ios` for production APNs, `ios-dev` for sandbox (Simulator / TestFlight), or `expo` for Expo-managed tokens.                                   |
 
 Upserts by token: if another user had registered the same device token, it now belongs to this user. Returns `true`.
 
