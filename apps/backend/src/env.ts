@@ -126,6 +126,12 @@ export const env = {
   appStorePrivateKey: process.env.APP_STORE_PRIVATE_KEY?.replace(/\\n/g, "\n") || undefined,
   // The app's numeric Apple ID. When set, Production notifications for any other app are ignored
   appStoreAppAppleId: process.env.APP_STORE_APP_APPLE_ID || undefined,
+  // Sign in with Apple key, used to sign the client_secret for Apple's token and revoke endpoints (exchanging
+  // the app's authorization code at sign-in, revoking the token on account deletion). Unset key = both are off.
+  appleTeamId: process.env.APPLE_TEAM_ID || "9496L7QUB2",
+  appleKeyId: process.env.APPLE_KEY_ID || undefined,
+  // The .p8 contents (PEM). Literal "\n" sequences are accepted for single-line values.
+  applePrivateKey: process.env.APPLE_PRIVATE_KEY ? process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n").trim() : undefined,
   corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())

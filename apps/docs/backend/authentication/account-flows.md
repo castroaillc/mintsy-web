@@ -50,6 +50,8 @@ Deletion is immediate. `src/account.ts`:
 2. When `REVENUECAT_SECRET_API_KEY` is set, it calls RevenueCat `DELETE /v1/subscribers/{id}`. Failures are logged, not fatal; 404 counts as deleted.
 3. It logs `[audit] account deleted: user <id>` (no email).
 
+Before any of that, `revokeAppleTokens()` (`src/apple.ts`) revokes the user's Sign in with Apple tokens at Apple, when a token is stored. It's best effort and never blocks the deletion; see [Apple token revocation](./social-sign-in.md#apple-token-revocation).
+
 It does **not** cancel an App Store / Play subscription; the app tells the user to cancel in the store.
 
 ::: warning

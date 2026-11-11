@@ -184,6 +184,7 @@ interface ClipJobResult {
 
 - Entitlement `premium`, offering `default` with `$rc_annual` and `$rc_monthly`, products `mintsy_premium_monthly` and `mintsy_premium_yearly`. RevenueCat's `app_user_id` is the Better Auth user id.
 - `Episode.locked = number > FREE_EPISODES && !viewer.premium.active`, and signed out counts as not Premium. Locked episodes return `videoUrl: null`, `hlsUrl: null`, `transcript: []` and `takeaways: []`.
+- `books`, `book(id)` and `search` need no session. A signed-out request gets episodes 1 to `FREE_EPISODES` unlocked, with `videoUrl`. The app's guest mode depends on this: guests browse and play the free episodes without an account (see [Mobile](services/mobile.md#navigation)).
 - `POST /webhooks/revenuecat` checks `Authorization` against `REVENUECAT_WEBHOOK_AUTH`, is idempotent by event id and is order-safe by `event_timestamp_ms`. With `REVENUECAT_SECRET_API_KEY` set, it refetches the subscriber from RevenueCat's v1 REST API, so that key must be a v1 `sk_` key.
 - After a purchase, restore or entitlement change, an app should call `refreshPremium`, then refetch the catalog. The iOS app has no purchases yet.
 
@@ -191,10 +192,11 @@ interface ClipJobResult {
 
 `<scheme>` is `mintsy` (production), `mintsy-preview` (preview builds) or `mintsy-dev` (dev builds), all in the backend's `trustedOrigins`. The iOS app hasn't built these flows or their deep links yet ([what's left](services/ios.md)).
 
+- **Sign in with Apple / Google (native):** `signIn.social({ provider, idToken: { token, nonce?, user? }, additionalData?: { appleAuthorizationCode } })`. `additionalData` is optional and Apple only: the app sends Apple's one-time authorization code with the identity token so the backend can store a revocable Apple token. Older builds without it sign in as before. Details: [Apple token revocation](backend/authentication/social-sign-in.md#apple-token-revocation).
 - **Password reset:** `requestPasswordReset({ email, redirectTo: <scheme>://reset-password })`, then an emailed link, then `<scheme>://reset-password/?token=<token>`, then `resetPassword({ newPassword, token })`. Links last 1 hour, work once, and the reset revokes every session.
 - **Change email:** `changeEmail({ newEmail, callbackURL: <scheme>://email-changed })`. Opening the link never creates a session.
 - **Change password:** `changePassword({ currentPassword, newPassword, revokeOtherSessions: true })`.
-- **Delete account:** `deleteUser({ password })`. Backend hooks delete push tokens, entitlements, saved items, watch progress and verification docs, then call RevenueCat `DELETE /v1/subscribers/{id}`. Store subscriptions aren't cancelled.
+- **Delete account:** `deleteUser({ password })`. Backend hooks first revoke the user's stored Sign in with Apple tokens at Apple (best effort, never blocks), then delete push tokens, entitlements, saved items, watch progress and verification docs, then call RevenueCat `DELETE /v1/subscribers/{id}`. Store subscriptions aren't cancelled. On iOS, an account with Apple linked confirms deletion by signing in with Apple again, which sends a fresh authorization code, so there's a token to revoke even for accounts that signed in before the app sent one.
 
 ## My List and watch progress
 

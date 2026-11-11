@@ -24,8 +24,8 @@ const collected = [
     where: "Our database (MongoDB Atlas), via our API on Google Cloud",
   },
   {
-    what: "If you sign in with Apple or Google: your Apple or Google account ID, the sign-in token Apple or Google issues (which contains the same details as below), and, with Google, a link to your Google profile photo",
-    why: "To sign you in with Apple or Google and connect that sign-in to your mintsy account",
+    what: "If you sign in with Apple or Google: your Apple or Google account ID, the sign-in token Apple or Google issues (which contains the same details as below), and, with Google, a link to your Google profile photo. With Apple in the app, also the refresh and access tokens Apple issues for your sign-in",
+    why: "To sign you in with Apple or Google and connect that sign-in to your mintsy account. We keep Apple's tokens only so we can revoke them when you delete your account.",
     where: "Our database, while your account exists",
   },
   {
@@ -108,6 +108,12 @@ export default function Privacy() {
         </table>
       </div>
 
+      <h2>Using mintsy without an account</h2>
+      <p>
+        You can browse mintsy and watch the free episodes without an account. We don&apos;t store anything about you on our servers while you do, apart from basic request
+        logs. Your app preferences and theme stay on your device. Saving to My List, keeping your watch progress, notifications and mintsy Premium need an account.
+      </p>
+
       <h2>Signing in with Apple or Google</h2>
       <p>
         You can create a mintsy account and sign in with Sign in with Apple, Sign in with Google, or an email address and password. Sign in with Google uses Google&apos;s
@@ -123,6 +129,10 @@ export default function Privacy() {
           Your name. Apple shares it only the first time you sign in, and only if you choose to. With Google, it comes from your Google profile.
         </li>
         <li>With Google, a link to your profile photo.</li>
+        <li>
+          With Apple in the app, a refresh token and access token from Apple, which we use only to revoke your Sign in with Apple authorization at Apple when you delete your
+          account.
+        </li>
       </ul>
       <p>
         We never receive your Apple or Google password. We don&apos;t post to your Apple or Google account, and we don&apos;t access any other data in it. Apple and Google
@@ -142,7 +152,7 @@ export default function Privacy() {
       <p>
         mintsy Premium is an optional subscription. You buy it through the Apple App Store or Google Play, which handle the payment; we never see your card or other payment
         details. We use RevenueCat, Inc. to manage subscriptions. The app identifies you to RevenueCat by your mintsy account ID, a random identifier, not your email address.
-        RevenueCat receives purchase and subscription information from the store (such as the product, transaction and renewal dates, trial status, store, and country and
+        Before you sign in, RevenueCat uses a random anonymous ID instead. RevenueCat receives purchase and subscription information from the store (such as the product, transaction and renewal dates, trial status, store, and country and
         currency), along with app and device information its software collects (such as app version, operating system and IP address). You can read{" "}
         <a href="https://www.revenuecat.com/privacy">RevenueCat&apos;s privacy policy</a>.
       </p>
@@ -158,7 +168,7 @@ export default function Privacy() {
       <h2>What stays on your device</h2>
       <p>
         Your onboarding answers (interests, daily goal and reminder time), app preferences (such as autoplay, captions and playback speed), theme, and daily reminder schedule
-        are stored only on your device. So are your book ratings, recent searches and the time you watch each day (used for your streak). Daily reminders are scheduled locally
+        are stored only on your device. So is the time you watch each day (used for your streak). Daily reminders are scheduled locally
         and don&apos;t involve our servers.
       </p>
       <p>The app also keeps a copy of your watch progress on your device, so it works offline and syncs with our servers when you reconnect.</p>
@@ -199,9 +209,10 @@ export default function Privacy() {
       <p>We keep your account information, including your saved list, watch progress and subscription status, while your account exists.</p>
       <p>
         You can delete your account in the app: open your profile, then Settings › Delete account, and confirm with your password. If you sign in only with Apple or Google,
-        there&apos;s no password to enter; instead we may ask you to sign in with Apple or Google again first. Deletion happens immediately. It removes your account, sign-in
-        sessions, any Apple and Google sign-in links, My List, watch progress, push notification tokens and subscription status from our database, and we ask RevenueCat to delete its
-        customer record for you. We keep only a log entry with your account ID (not your email address) recording that the deletion happened.
+        there&apos;s no password to enter; instead we may ask you to sign in with Apple or Google again first. On iPhone and iPad, if your account uses Sign in with Apple,
+        we always ask you to confirm with Apple. Deletion happens immediately. We first ask Apple to revoke your Sign in with Apple tokens, then remove your account, sign-in
+        sessions, any Apple and Google sign-in links, My List, watch progress, push notification tokens and subscription status from our database, and we ask RevenueCat to
+        delete its customer record for you. We keep only a log entry with your account ID (not your email address) recording that the deletion happened.
       </p>
       <p>Deleting your account doesn&apos;t cancel an App Store or Google Play subscription; cancel it in your store&apos;s subscription settings first.</p>
       <p>

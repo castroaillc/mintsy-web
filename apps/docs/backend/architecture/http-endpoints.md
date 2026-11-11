@@ -16,7 +16,7 @@ Everything the server answers, apart from GraphQL operations (see [GraphQL API](
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `POST /api/auth/sign-up/email`          | `{ email, password, name }`. Sets the session cookie.                                                                        |
 | `POST /api/auth/sign-in/email`          | `{ email, password }`. Sets the session cookie.                                                                              |
-| `POST /api/auth/sign-in/social`         | `{ provider: "google" \| "apple", idToken: { token, nonce? } }` (native; sets the session cookie) or `{ provider, callbackURL }` (web redirect flow). |
+| `POST /api/auth/sign-in/social`         | `{ provider: "google" \| "apple", idToken: { token, nonce? }, additionalData?: { appleAuthorizationCode } }` (native; sets the session cookie) or `{ provider, callbackURL }` (web redirect flow). |
 | `GET /api/auth/list-accounts`           | The user's sign-in methods (`providerId`: `credential`, `google`, `apple`).                                                  |
 | `POST /api/auth/sign-out`               | Ends the session.                                                                                                            |
 | `GET /api/auth/get-session`             | Current session and user.                                                                                                    |

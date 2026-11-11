@@ -27,9 +27,9 @@ A JSON array of books. Each is a `BookDoc` with `id` instead of `_id`:
 ```json
 [
   {
-    "id": "psychology-of-money",
-    "title": "The Psychology of Money",
-    "author": "Morgan Housel",
+    "id": "the-science-of-getting-rich",
+    "title": "The Science of Getting Rich",
+    "author": "Wallace D. Wattles",
     "category": "Finance",
     "coverTone": "#E7DFCF",
     "tint": "#24382F",
@@ -38,7 +38,7 @@ A JSON array of books. Each is a `BookDoc` with `id` instead of `_id`:
     "episodes": [
       {
         "number": 1,
-        "title": "No One’s Crazy",
+        "title": "The Right to Be Rich",
         "summary": "...",
         "durationSec": 292,
         "transcript": [{ "startSec": 0, "text": "..." }],
@@ -51,15 +51,15 @@ A JSON array of books. Each is a `BookDoc` with `id` instead of `_id`:
         "durationSec": 0,
         "transcript": [],
         "takeaways": [],
-        "videoPath": "books/psychology-of-money/4.mp4",
-        "thumbnailPath": "books/psychology-of-money/4.jpg"
+        "videoPath": "books/the-science-of-getting-rich/4.mp4",
+        "thumbnailPath": "books/the-science-of-getting-rich/4.jpg"
       }
     ]
   }
 ]
 ```
 
-(Abbreviated: episodes 2 and 3 are left out of this example; the real file has every episode.)
+(Abbreviated: episodes 2 and 3 are left out of this example; a real entry has every episode.)
 
 `videoPath` / `thumbnailPath` are optional (an episode without them has `videoUrl: null`). Entries have no `status`, so seeded books and episodes count as **published**. `keyIdeas` isn't needed.
 
@@ -90,6 +90,6 @@ A JSON array of books. Each is a `BookDoc` with `id` instead of `_id`:
 
 ## Current contents
 
-`scripts/catalog.json` has 9 books (83 episodes): `psychology-of-money`, `intelligent-investor`, `rich-dad-poor-dad`, `teach-you-to-be-rich`, `common-sense-investing`, `thinking-fast-and-slow`, `atomic-habits`, `lean-startup`, `deep-work`. Only one episode has media paths (`psychology-of-money` episode 4); the rest would be seeded with `videoUrl: null`.
+`scripts/catalog.json` is an empty array (`[]`), so `pnpm seed:catalog` inserts nothing. The in-copyright books it used to hold were removed so they can't be re-seeded into the app. The catalog should contain only books mintsy has rights to (public domain); new books come in through the admin dashboard, not this file.
 
 TODO: confirm whether `catalog.json` should be kept up to date with production, or frozen as a bootstrap snapshot.

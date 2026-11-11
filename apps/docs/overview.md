@@ -24,7 +24,8 @@ flowchart LR
   RC[(RevenueCat)]
   Stores[(App Store)]
   Resend[(Resend)]
-  Claude[("Claude Code CLI<br/>subscription login")]
+  Claude[(Claude API)]
+  Apple[(Sign in with Apple)]
 
   Admin -->|queue jobs, edit, publish| Studio
   Studio -->|claim jobs| Worker
@@ -39,6 +40,9 @@ flowchart LR
   RC -->|webhook| API
   API -->|REST| RC
   API -->|email| Resend
+  API -->|"token exchange, revoke on deletion"| Apple
+  API -->|push (APNs)| App
+  App -->|privacy and support links| Web
 ```
 
 Web doesn't call the API, and the iOS app doesn't link to it yet.

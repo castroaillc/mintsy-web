@@ -24,14 +24,14 @@ Every step writes a file in `work/<book>/ep-<nn>/` (`book.json` and `pages.json`
 
 ```sh
 pnpm worker                       # runs queued studio_jobs from the admin dashboard, one at a time
-pnpm run pipeline ingest ~/Books/psychology-of-money.pdf --book psychology-of-money
-pnpm run pipeline episode --book psychology-of-money --chapter 4 [--from scenes] [--to voice]
-pnpm run pipeline publish --book psychology-of-money --chapter 4   # legacy: writes catalog.json
+pnpm run pipeline ingest ~/Books/the-science-of-getting-rich.pdf --book the-science-of-getting-rich
+pnpm run pipeline episode --book the-science-of-getting-rich --chapter 4 [--from scenes] [--to voice]
+pnpm run pipeline publish --book the-science-of-getting-rich --chapter 4   # legacy: writes catalog.json
 ```
 
 (`pnpm run` is required: pnpm 12 has its own `pipeline` command.)
 
-The `--book` id becomes the book's id in the app; use the existing id (for example `psychology-of-money`) to fill in that series' episodes.
+The `--book` id becomes the book's id in the app; use the existing id (for example `the-science-of-getting-rich`) to fill in that series' episodes.
 
 ## Steps in detail
 
